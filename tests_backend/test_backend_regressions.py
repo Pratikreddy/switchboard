@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -6,11 +7,13 @@ from unittest import mock
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+import switchboard.api as api_module
 from switchboard.api import _raise_for_action_result, collect_workspace, get_workspace_latest, git_pull
 from switchboard.config import Settings
 from switchboard.collectors import CollectionCoordinator
+from switchboard.freshness import freshen_node_viewers, freshness_envelope
 from switchboard.manifests import ManifestStore, save_json
-from switchboard.models import CollectRequest, GitHubBackupRequest, GitPullRequest, NodeActionRequest, PullBundleRequest, ResolvedServer, ScopeEntry, LocationSpec, ServiceManifest
+from switchboard.models import CollectRequest, GitHubBackupRequest, GitPullRequest, NodeActionRequest, ProjectCreateRequest, ProjectPatchRequest, PullBundleRequest, ResolvedServer, ScopeEntry, LocationSpec, ServiceManifest
 from switchboard.storage import SnapshotStore, read_json
 
 
@@ -24,6 +27,110 @@ class BackendRegressionTests(unittest.TestCase):
         body = get_workspace_latest("zapp")
         for key in ("workspace", "servers", "services", "summary", "repo_inventory", "docs_index", "logs_index"):
             self.assertIn(key, body)
+
+    def test_latest_uses_current_manifest_service_list_over_archived_snapshot(self) -> None:
+        body = get_workspace_latest("1")
+        current_service_ids = set(body.get("workspace", {}).get("services", []))
+        latest_service_ids = {service.get("service_id") for service in body.get("services", [])}
+        self.assertEqual(latest_service_ids, current_service_ids)
+        self.assertNotIn("gmail-day-to-day", latest_service_ids)
+
+    def test_latest_marks_archive_mismatch_stale_while_manifest_services_win(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "1",
+                        "name": "Current Company",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": [],
+                        "services": ["current-service"],
+                        "notes": "",
+                    }
+                ],
+            )
+            save_json(settings.manifest_dir / "servers.json", [])
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "current-service",
+                        "workspace_id": "1",
+                        "display_name": "Current Service",
+                    }
+                ],
+            )
+            save_json(settings.manifest_dir / "projects.json", [])
+            save_json(settings.manifest_dir / "project-environments.json", [])
+            save_json(settings.manifest_dir / "api-flows.json", [])
+            save_json(settings.manifest_dir.parent / "manager.manifest.json", {"managed_roots": []})
+            snapshot = {
+                "generated": "2026-05-10T00:00:00+00:00",
+                "workspace": {
+                    "workspace_id": "1",
+                    "name": "Archived Company",
+                    "tags": [],
+                    "favorite_tier": "primary",
+                    "servers": [],
+                    "services": ["old-service", "deleted-service"],
+                    "notes": "",
+                },
+                "servers": [],
+                "services": [
+                    {"service_id": "old-service", "status": "ok"},
+                    {"service_id": "deleted-service", "status": "ok"},
+                ],
+                "repo_inventory": [],
+                "docs_index": [],
+                "logs_index": [],
+                "summary": {"status": "ok", "server_count": 0, "service_count": 2},
+            }
+            archive_path = settings.archive_dir / "2026-05-10T00-00-00+00-00" / "workspace-1.json"
+            save_json(archive_path, snapshot)
+            save_json(
+                settings.evidence_dir / "run-history.json",
+                {
+                    "generated": snapshot["generated"],
+                    "runs": [
+                        {
+                            "workspace_id": "1",
+                            "generated": snapshot["generated"],
+                            "archive_path": str(archive_path.relative_to(settings.evidence_dir.parent)),
+                            "status": "ok",
+                            "service_count": 2,
+                            "server_count": 0,
+                        }
+                    ],
+                },
+            )
+
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            with (
+                mock.patch.object(api_module, "settings", settings),
+                mock.patch.object(api_module, "manifest_store", manifests),
+                mock.patch.object(api_module, "snapshot_store", snapshots),
+            ):
+                body = api_module.get_workspace_latest("1")
+
+            self.assertEqual(body["workspace"]["company_name"], "Current Company")
+            self.assertEqual(body["company"]["company_id"], "1")
+            self.assertEqual([service["service_id"] for service in body["services"]], ["current-service"])
+            self.assertEqual(body["summary"]["service_count"], 1)
+            self.assertEqual(body["freshness"]["freshness_state"], "Stale")
+            self.assertEqual(body["freshness"]["stale_reason"], "archive_service_list_mismatch")
+            self.assertEqual(body["archived_service_ids"], ["deleted-service", "old-service"])
+            self.assertEqual(body["current_service_ids"], ["current-service"])
 
     def test_git_pull_rejects_non_allowlisted_path(self) -> None:
         with self.assertRaises(HTTPException) as ctx:
@@ -40,6 +147,116 @@ class BackendRegressionTests(unittest.TestCase):
         self.assertIsInstance(body["services"], list)
         for service in body["services"]:
             self.assertIn("status", service)
+
+    def test_manual_consolidation_scope_source_loads_agent_ops_manifest(self) -> None:
+        manifests = ManifestStore(Settings())
+        agent_ops = next(
+            service for service in manifests.load_services() if service.service_id == "agent-ops"
+        )
+        self.assertIn(
+            "manual_consolidation",
+            {entry.source for entry in agent_ops.scope_entries},
+        )
+
+    def test_node_viewer_prefers_current_manifest_over_stale_runtime_cache(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "project"
+            switchboard_root = project_root / "switchboard"
+            switchboard_root.mkdir(parents=True)
+            save_json(
+                switchboard_root / "node.manifest.json",
+                {
+                    "service_id": "switch",
+                    "installed_version": "1.12.6",
+                    "bootstrap_version": "1.12.6",
+                    "runtime_port": 8010,
+                    "updated_at": "2026-05-15T00:00:00+00:00",
+                },
+            )
+            save_json(
+                root / "switchboard" / "manager.manifest.json",
+                {
+                    "managed_roots": [
+                        {
+                            "root_id": "switch",
+                            "service_id": "switch",
+                            "project_root": str(project_root),
+                            "last_seen_version": "1.12.6",
+                            "manifest_updated_at": "2026-05-15T00:00:00+00:00",
+                        }
+                    ]
+                },
+            )
+
+            with mock.patch("switchboard.freshness.port_listening", return_value=False):
+                rows = freshen_node_viewers(
+                    manager_root=root,
+                    service_payload={
+                        "service_id": "switch",
+                        "locations": [
+                            {
+                                "location_id": "local",
+                                "server_id": "local",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                            }
+                        ],
+                    },
+                    cached_rows=[
+                        {
+                            "service_id": "switch",
+                            "location_id": "local",
+                            "installed_version": "1.12.2",
+                            "runtime_port": 8010,
+                            "manifest_updated_at": "2026-04-22T00:00:00+00:00",
+                        }
+                    ],
+                    control_center_version="1.12.6",
+                )
+
+            self.assertEqual(rows[0]["installed_version"], "1.12.6")
+            self.assertEqual(rows[0]["target_manager_port"], 8020)
+            self.assertEqual(rows[0]["legacy_runtime_port"], 8010)
+            self.assertEqual(rows[0]["freshness_state"], "Manager unreachable")
+            self.assertEqual(rows[0]["refresh_action"], "Check 8020")
+
+    def test_freshness_envelope_marks_archive_older_than_truth_stale(self) -> None:
+        envelope = freshness_envelope(
+            data_as_of="2026-05-14T00:00:00+00:00",
+            truth_as_of="2026-05-15T00:00:00+00:00",
+            source="archive_snapshot",
+            refresh_action="Collect",
+        )
+        self.assertEqual(envelope["freshness_state"], "Stale")
+        self.assertEqual(envelope["stale_reason"], "cache_older_than_truth")
+        self.assertEqual(envelope["refresh_action"], "Collect")
+
+    def test_legacy_47_node_health_api_flows_are_disabled(self) -> None:
+        flows = json.loads(Path("switchboard/manifests/api-flows.json").read_text(encoding="utf-8"))
+        legacy = [flow for flow in flows if "legacy-node-health" in flow.get("tags", [])]
+        self.assertTrue(legacy)
+        for flow in legacy:
+            self.assertFalse(flow.get("enabled"), flow["flow_id"])
+            self.assertIn("unverified", flow.get("tags", []), flow["flow_id"])
+            self.assertRegex(flow.get("base_url", ""), r":870[1-9]|:8710")
+        aichat_flow = next(flow for flow in legacy if flow["flow_id"] == "aichat-node-health")
+        self.assertEqual(aichat_flow["base_url"], "http://192.168.3.47:8702")
+
+    def test_legacy_47_node_health_ports_are_not_current_service_ports(self) -> None:
+        services = json.loads(Path("switchboard/manifests/services.json").read_text(encoding="utf-8"))
+        for service in services:
+            for location in service.get("locations", []):
+                if location.get("server_id") != "pesu_dev_47":
+                    continue
+                runtime = location.get("runtime", {})
+                old_ports = [
+                    port for port in runtime.get("expected_ports", []) if 8701 <= int(port) <= 8710
+                ]
+                self.assertEqual(old_ports, [], service["service_id"])
+                self.assertNotRegex(runtime.get("healthcheck_command", ""), r"870[1-9]|8710")
+                if "legacy/unverified" in runtime.get("notes", ""):
+                    self.assertIn("8020", runtime["notes"])
 
     def test_remote_service_node_actions_are_manager_limited(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -129,6 +346,156 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertIn("remote manager", deploy["message"].lower())
             self.assertIn("remote manager", upgrade["message"].lower())
             self.assertIn("remote manager", restart["message"].lower())
+
+    def test_project_service_assignment_moves_ownership_and_renames_cleanly(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "pesu",
+                        "name": "PESU",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": [],
+                        "services": ["aichat", "aichat_test", "aichat_ingestion"],
+                        "notes": "",
+                    },
+                    {
+                        "workspace_id": "zapp",
+                        "name": "ZAPP",
+                        "tags": [],
+                        "favorite_tier": "none",
+                        "servers": [],
+                        "services": ["docgen"],
+                        "notes": "",
+                    },
+                ],
+            )
+            save_json(settings.manifest_dir / "servers.json", [])
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {"service_id": "aichat", "workspace_id": "pesu", "display_name": "aichat"},
+                    {"service_id": "aichat_test", "workspace_id": "pesu", "display_name": "aichat_test"},
+                    {"service_id": "aichat_ingestion", "workspace_id": "pesu", "display_name": "aichat_ingestion"},
+                    {"service_id": "docgen", "workspace_id": "zapp", "display_name": "docgen"},
+                ],
+            )
+            save_json(
+                settings.manifest_dir / "projects.json",
+                [
+                    {
+                        "project_id": "aichat_project",
+                        "workspace_id": "pesu",
+                        "display_name": "aichat",
+                        "parent_project_id": None,
+                        "service_ids": ["aichat"],
+                        "tags": [],
+                        "notes": "",
+                    },
+                    {
+                        "project_id": "aichat_test_project",
+                        "workspace_id": "pesu",
+                        "display_name": "aichat_test",
+                        "parent_project_id": None,
+                        "service_ids": ["aichat_test"],
+                        "tags": [],
+                        "notes": "",
+                    },
+                    {
+                        "project_id": "aichat_child",
+                        "workspace_id": "pesu",
+                        "display_name": "child",
+                        "parent_project_id": "aichat_project",
+                        "service_ids": [],
+                        "tags": [],
+                        "notes": "",
+                    },
+                ],
+            )
+            save_json(
+                settings.manifest_dir / "project-environments.json",
+                [
+                    {
+                        "environment_id": "aichat_prod",
+                        "project_id": "aichat_project",
+                        "display_name": "aichat prod",
+                        "kind": "prod",
+                        "deployments": [],
+                        "tags": [],
+                        "notes": "",
+                    }
+                ],
+            )
+
+            manifests = ManifestStore(settings)
+
+            created = manifests.create_project(
+                "pesu",
+                ProjectCreateRequest(
+                    project_id="combined",
+                    display_name="Combined",
+                    service_ids=["aichat_ingestion", "aichat_ingestion"],
+                ),
+            )
+            self.assertEqual(created.service_ids, ["aichat_ingestion"])
+
+            moved = manifests.patch_project(
+                "aichat_project",
+                ProjectPatchRequest(service_ids=["aichat", "aichat_test", "aichat_ingestion"]),
+            )
+            self.assertEqual(moved.service_ids, ["aichat", "aichat_test", "aichat_ingestion"])
+            projects_by_id = {project.project_id: project for project in manifests.load_projects()}
+            self.assertEqual(projects_by_id["aichat_test_project"].service_ids, [])
+            self.assertEqual(projects_by_id["combined"].service_ids, [])
+            all_pesu_service_owners = [
+                service_id
+                for project in projects_by_id.values()
+                if project.workspace_id == "pesu"
+                for service_id in project.service_ids
+            ]
+            self.assertEqual(len(all_pesu_service_owners), len(set(all_pesu_service_owners)))
+
+            renamed_display = manifests.patch_project(
+                "aichat_project",
+                ProjectPatchRequest(display_name="AI Chat Suite"),
+            )
+            self.assertEqual(renamed_display.project_id, "aichat_project")
+            self.assertEqual(renamed_display.display_name, "AI Chat Suite")
+
+            renamed_id = manifests.patch_project(
+                "aichat_project",
+                ProjectPatchRequest(project_id="ai_chat_suite"),
+            )
+            self.assertEqual(renamed_id.project_id, "ai_chat_suite")
+            projects_by_id = {project.project_id: project for project in manifests.load_projects()}
+            self.assertEqual(projects_by_id["aichat_child"].parent_project_id, "ai_chat_suite")
+            environments = manifests.load_project_environments()
+            self.assertEqual(environments[0].project_id, "ai_chat_suite")
+
+            cleared_parent = manifests.patch_project(
+                "aichat_child",
+                ProjectPatchRequest(parent_project_id=None),
+            )
+            self.assertIsNone(cleared_parent.parent_project_id)
+            projects_by_id = {project.project_id: project for project in manifests.load_projects()}
+            self.assertIsNone(projects_by_id["aichat_child"].parent_project_id)
+            raw_projects = json.loads((settings.manifest_dir / "projects.json").read_text(encoding="utf-8"))
+            raw_child = next(item for item in raw_projects if item["project_id"] == "aichat_child")
+            self.assertIn("parent_project_id", raw_child)
+            self.assertIsNone(raw_child["parent_project_id"])
+
+            with self.assertRaises(ValueError):
+                manifests.patch_project("ai_chat_suite", ProjectPatchRequest(service_ids=["docgen"]))
 
     def test_delete_service_clears_active_service_data(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -314,7 +681,22 @@ class BackendRegressionTests(unittest.TestCase):
                     "checks": [{"service_id": "emailagent", "findings": [{"path": ".env"}]}],
                 },
             )
-            save_json(private_state_dir / "runtime-cache.json", {"generated": "", "cache": {}})
+            save_json(
+                private_state_dir / "runtime-cache.json",
+                {
+                    "generated": "",
+                    "runtime_checks": {"emailagent": {"emailagent_local": {"service_id": "emailagent"}}},
+                    "node_sync": {"emailagent": {"emailagent_local": {"service_id": "emailagent"}}},
+                    "node_viewer": {"emailagent": {"emailagent_local": {"service_id": "emailagent"}}},
+                    "task_ledger": {"emailagent": {"emailagent_local": {"tasks": [{"service_id": "emailagent"}]}}},
+                    "environment_runtime_snapshots": {
+                        "env": {
+                            "locations": [{"service_id": "emailagent"}, {"service_id": "other"}],
+                            "process_findings": [{"service_id": "emailagent"}, {"service_id": "other"}],
+                        }
+                    },
+                },
+            )
 
             bundle_dir = downloads_dir / "pesu" / "emailagent"
             bundle_dir.mkdir(parents=True, exist_ok=True)
@@ -358,6 +740,13 @@ class BackendRegressionTests(unittest.TestCase):
                 read_json(archive_dir / archive_token / "workspace-pesu.json", {})["services"],
                 [],
             )
+            runtime_cache = read_json(private_state_dir / "runtime-cache.json", {})
+            self.assertNotIn("emailagent", runtime_cache.get("runtime_checks", {}))
+            self.assertNotIn("emailagent", runtime_cache.get("node_sync", {}))
+            self.assertNotIn("emailagent", runtime_cache.get("node_viewer", {}))
+            self.assertNotIn("emailagent", runtime_cache.get("task_ledger", {}))
+            self.assertEqual(runtime_cache["environment_runtime_snapshots"]["env"]["locations"], [{"service_id": "other"}])
+            self.assertEqual(runtime_cache["environment_runtime_snapshots"]["env"]["process_findings"], [{"service_id": "other"}])
 
     def test_pull_bundle_includes_repo_entries(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -692,6 +1081,134 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(dry_run["action"], "dry_run")
             history = read_json(evidence_dir / "github-backup-history.json", {"runs": []})
             self.assertEqual(history["runs"][0]["repository_count"], 1)
+
+    def test_palimpsest_export_summarizes_sensitive_runtime_state(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            manifest_dir = root / "switchboard" / "manifests"
+            evidence_dir = root / "docs" / "evidence"
+            archive_dir = evidence_dir / "archive"
+            private_state_dir = root / "state" / "private"
+            downloads_dir = root / "downloads"
+            project_root = root / "svc"
+            project_root.mkdir()
+            save_json(
+                manifest_dir / "servers.json",
+                [
+                    {
+                        "server_id": "local_mac",
+                        "company_id": "p",
+                        "name": "Local Mac",
+                        "connection_type": "local",
+                        "host": "127.0.0.1",
+                        "username": "p",
+                        "port": 22,
+                        "tags": [],
+                    }
+                ],
+            )
+            save_json(
+                manifest_dir / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "p",
+                        "name": "P",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": ["local_mac"],
+                        "services": ["svc"],
+                        "notes": "",
+                    }
+                ],
+            )
+            save_json(
+                manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "p",
+                        "display_name": "Svc",
+                        "locations": [
+                            {
+                                "location_id": "svc-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                                "role": "primary",
+                                "is_primary": True,
+                                "path_aliases": [],
+                            }
+                        ],
+                        "repo_paths": [str(project_root)],
+                        "scope_entries": [
+                            {
+                                "entry_id": "doc-sensitive",
+                                "kind": "doc",
+                                "path": "/private/source_tree/backend/poller/src/gmail_client.py",
+                                "path_type": "file",
+                                "source": "user_added",
+                                "enabled": True,
+                            }
+                        ],
+                    }
+                ],
+            )
+            save_json(manifest_dir / "projects.json", [])
+            save_json(manifest_dir / "project-environments.json", [])
+            save_json(manifest_dir / "api-flows.json", [])
+            settings = Settings(
+                manifest_dir=manifest_dir,
+                evidence_dir=evidence_dir,
+                archive_dir=archive_dir,
+                private_state_dir=private_state_dir,
+                downloads_dir=downloads_dir,
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            snapshots.persist_task_ledger(
+                "svc",
+                "svc-local",
+                [
+                    {
+                        "timestamp": "2026-05-14T00:00:00Z",
+                        "title": "Safe title",
+                        "summary": "raw body from zappinfobot@example.com to pratik.sr@example.com",
+                        "notes": ["mail_test_note with Gmail ids"],
+                        "tags": ["task"],
+                        "agent": "Codex",
+                        "tool": "codex",
+                    }
+                ],
+            )
+            snapshots.append_pull_bundle(
+                {
+                    "bundle_id": "bundle-1",
+                    "service_id": "svc",
+                    "server_id": "local_mac",
+                    "location_id": "svc-local",
+                    "created_at": "2026-05-14T00:01:00Z",
+                    "status": "ok",
+                    "files": [
+                        {
+                            "source_path": "/private/source_tree/backend/poller/src/gmail_client.py",
+                            "target_path": "/tmp/source_tree/backend/poller/src/gmail_client.py",
+                        }
+                    ],
+                    "diff_summary": {"added_count": 1},
+                }
+            )
+
+            payload = coordinator.export_palimpsest_state()
+            serialized = json.dumps(payload)
+
+            self.assertIn("scope_summary", serialized)
+            self.assertNotIn("zappinfobot@example.com", serialized)
+            self.assertNotIn("pratik.sr@example.com", serialized)
+            self.assertNotIn("mail_test_note", serialized)
+            self.assertNotIn("backend/poller/src/gmail_client.py", serialized)
+            self.assertEqual(payload["runtime_state"]["svc"]["task_ledger"]["latest"]["title"], "Safe title")
+            self.assertEqual(payload["runtime_state"]["svc"]["pull_bundles"]["latest"]["bundle_id"], "bundle-1")
 
 
 if __name__ == "__main__":

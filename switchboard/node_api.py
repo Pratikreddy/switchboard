@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
+from .defaults import DEFAULT_NODE_PORT
 from .node import (
     list_manager_roots,
     list_node_files,
@@ -257,7 +258,7 @@ def create_manager_node_app(manager_root: str | Path) -> FastAPI:
             "version": __version__,
             "manager_id": manifest.get("manager_id", ""),
             "manager_root": str(manager_root),
-            "runtime_port": manifest.get("runtime_port", 8711),
+            "runtime_port": manifest.get("runtime_port", DEFAULT_NODE_PORT),
             "root_count": len(enabled_roots),
         }
 
@@ -389,7 +390,7 @@ def create_manager_node_app(manager_root: str | Path) -> FastAPI:
         <div class="muted">Switchboard Manager Node</div>
         <h1>{html.escape(str(manifest.get("manager_id", "manager")))}</h1>
         <p><strong>Manager root:</strong> <code>{html.escape(str(manager_root))}</code></p>
-        <p><strong>Runtime port:</strong> <code>{html.escape(str(manifest.get("runtime_port", 8711)))}</code></p>
+        <p><strong>Runtime port:</strong> <code>{html.escape(str(manifest.get("runtime_port", DEFAULT_NODE_PORT)))}</code></p>
       </section>
       <table>
         <thead><tr><th>Root ID</th><th>Project</th><th>Root</th><th>Verify</th></tr></thead>

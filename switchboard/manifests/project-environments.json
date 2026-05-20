@@ -13,14 +13,6 @@
         "version": "1.12.1",
         "runtime_services": [
           {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8701,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
-          {
             "name": "sysdocs-dashboard",
             "host": "127.0.0.1",
             "port": 8550,
@@ -31,7 +23,7 @@
         ],
         "dependencies": [],
         "cross_dependencies": [],
-        "notes": "The node API on 8701 is the local verification surface for this project. The optional dashboard on 8550 is started separately with `bash dashboard/start.sh`."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -54,14 +46,6 @@
         "root": "/home/pesu/aichat",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8702,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "aichat-backend",
             "host": "127.0.0.1",
@@ -121,11 +105,11 @@
             "kind": "service",
             "name": "aichat_ingestion",
             "host": "127.0.0.1",
-            "port": 8709,
-            "notes": "separate sibling ingestion node rooted in `/home/pesu/aichat_test/project` that writes extracted assets and Milvus corpora used by aichat retrieval"
+            "port": null,
+            "notes": "Sibling project dependency; old per-project Switchboard node port removed in 1.12.6. Use manager node 8020 after bootstrap for Switchboard health."
           }
         ],
-        "notes": "Main chat backend is on 8506. Auxiliary token dashboard is on 8505. The Switchboard node on 8702 is the local verification surface for this project."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -148,14 +132,6 @@
         "root": "/home/pesu/aichat_test",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8708,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "aichat-test-frontend",
             "host": "127.0.0.1",
@@ -200,11 +176,11 @@
             "kind": "service",
             "name": "aichat_ingestion",
             "host": "127.0.0.1",
-            "port": 8709,
-            "notes": "separate sibling node under `/home/pesu/aichat_test/project` that owns ingestion scripts, extracted assets, mappings, and ingestion logs"
+            "port": null,
+            "notes": "Sibling project dependency; old per-project Switchboard node port removed in 1.12.6. Use manager node 8020 after bootstrap for Switchboard health."
           }
         ],
-        "notes": "The Switchboard node on 8708 is always kept up. The Streamlit frontend on 8504 is intentionally left down by default on this host."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -227,14 +203,6 @@
         "root": "/home/pesu/compareanswers",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8703,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "compareanswers-api",
             "host": "127.0.0.1",
@@ -261,7 +229,7 @@
           }
         ],
         "cross_dependencies": [],
-        "notes": "The Switchboard node on 8703 is the local verification surface for this project. The live compareanswers app surface is the Flask API on 8507."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -284,14 +252,6 @@
         "root": "/home/pesu/process documents",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8705,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "process-chat-api",
             "host": "127.0.0.1",
@@ -349,7 +309,7 @@
           }
         ],
         "cross_dependencies": [],
-        "notes": "The Switchboard node on 8705 is the local verification surface for this project. The chat API on 8000 and the ingest service on 8099 are separate runtime layers within the same project root."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -372,14 +332,6 @@
         "root": "/home/pesu/emailagent",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8704,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "email-poller",
             "host": "127.0.0.1",
@@ -421,7 +373,7 @@
           }
         ],
         "cross_dependencies": [],
-        "notes": "The Switchboard node on 8704 is the local verification surface for this project. The Gmail poller is the main runtime; the repo-local backend on 8010 is optional."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -444,14 +396,6 @@
         "root": "/home/pesu/adminchat",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8706,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "adminchat-batch-pipeline",
             "host": "127.0.0.1",
@@ -492,7 +436,7 @@
           }
         ],
         "cross_dependencies": [],
-        "notes": "The Switchboard node on 8706 is the local verification surface for this project. The pipeline itself is batch-oriented and intentionally not modeled as an always-on HTTP app."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -515,14 +459,6 @@
         "root": "/home/pesu/RAG",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8707,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "rag-local-app",
             "host": "127.0.0.1",
@@ -556,7 +492,7 @@
           }
         ],
         "cross_dependencies": [],
-        "notes": "The Switchboard node on 8707 is the local verification surface for this project. The optional repo app is documented but intentionally not treated as always-on."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [
@@ -579,14 +515,6 @@
         "root": "/home/pesu/aichat_test/project",
         "version": "1.12.1",
         "runtime_services": [
-          {
-            "name": "switchboard-node",
-            "host": "127.0.0.1",
-            "port": 8709,
-            "purpose": "project-local Switchboard node API",
-            "health_path": "/api/health",
-            "owner": ""
-          },
           {
             "name": "ingestion-runner",
             "host": "127.0.0.1",
@@ -657,7 +585,7 @@
             "notes": "separate sibling test frontend that validates this content when enabled"
           }
         ],
-        "notes": "The Switchboard node on 8709 is the local verification surface for this ingestion subtree. The ingestion pipeline itself is batch-oriented and intentionally not modeled as an always-on HTTP app."
+        "notes": "Old per-project Switchboard node-health ports were removed from this local Control Center record in 1.12.6. Use the one manager node on 8020 after bootstrap; keep remote preflight read-only until cutover is approved. Product/runtime service ports remain listed here."
       }
     ],
     "tags": [

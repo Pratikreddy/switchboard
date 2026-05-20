@@ -48,16 +48,22 @@
     "workspace_id": "1",
     "name": "P",
     "tags": [
-      "company"
+      "company",
+      "personal-systems",
+      "palimpsest",
+      "switchboard"
     ],
     "favorite_tier": "primary",
     "servers": [],
     "services": [
       "switch",
       "finance",
-      "syspriv"
+      "syspriv",
+      "agent-ops",
+      "palimpsest",
+      "x-collector"
     ],
-    "notes": "moi"
+    "notes": "Personal systems workspace for Switchboard, Palimpsest, finance, 080, local collectors, and metadata-only future sources."
   },
   {
     "workspace_id": "4",

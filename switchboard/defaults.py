@@ -1,5 +1,7 @@
 """Shared framework defaults."""
 
+DEFAULT_NODE_PORT = 8020
+
 DEFAULT_EXCLUDE_GLOBS = [
     "venv",
     ".venv",

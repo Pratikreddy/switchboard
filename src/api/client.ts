@@ -65,6 +65,17 @@ import { isApiError } from '../types/switchboard'
 
 const BASE = '/api'
 
+function normalizeFreshness(result: any) {
+  return {
+    data_as_of: result?.data_as_of ?? result?.freshness?.data_as_of ?? '',
+    truth_as_of: result?.truth_as_of ?? result?.freshness?.truth_as_of ?? '',
+    freshness_state: result?.freshness_state ?? result?.freshness?.freshness_state ?? '',
+    stale_reason: result?.stale_reason ?? result?.freshness?.stale_reason ?? '',
+    refresh_action: result?.refresh_action ?? result?.freshness?.refresh_action ?? '',
+    freshness_source: result?.freshness_source ?? result?.freshness?.freshness_source ?? '',
+  }
+}
+
 function favoriteRank(value: string | number | undefined): number {
   if (value === 1 || value === 'primary') return 1
   if (value === 2 || value === 'secondary') return 2
@@ -73,6 +84,7 @@ function favoriteRank(value: string | number | undefined): number {
 
 function normalizeService(service: any) {
   return {
+    ...normalizeFreshness(service),
     service_id: service.service_id,
     workspace_id: service.workspace_id,
     display_name: service.display_name,
@@ -104,6 +116,7 @@ function normalizeService(service: any) {
     node_sync: (service.node_sync ?? []).map(normalizeNodeSync),
     task_ledger: (service.task_ledger ?? []).map(normalizeTaskLedgerEntry),
     node_viewer: (service.node_viewer ?? []).map(normalizeNodeViewer),
+    saved_scope_generated_at: service.saved_scope_generated_at ?? '',
   } satisfies Service
 }
 
@@ -232,6 +245,7 @@ function normalizePortInfo(port: any) {
 
 function normalizeRuntimeCheck(result: any): RuntimeCheckResult {
   return {
+    ...normalizeFreshness(result),
     service_id: result.service_id,
     location_id: result.location_id,
     server_id: result.server_id,
@@ -427,6 +441,7 @@ function normalizeApiFlowRun(result: any): ApiFlowRunRecord {
 
 function normalizeNodeSync(result: any): NodeSyncResult {
   return {
+    ...normalizeFreshness(result),
     service_id: result.service_id,
     location_id: result.location_id,
     direction: result.direction ?? 'from_node',
@@ -438,15 +453,22 @@ function normalizeNodeSync(result: any): NodeSyncResult {
     include_runtime_config: result.include_runtime_config ?? true,
     managed_docs: (result.managed_docs ?? []).map(normalizeManagedDoc),
     doc_index: result.doc_index ? normalizeDocIndex(result.doc_index) : undefined,
+    server_id: result.server_id ?? '',
+    message: result.message ?? '',
+    scope_snapshot_generated_at: result.scope_snapshot_generated_at ?? '',
+    skipped: Boolean(result.skipped),
   }
 }
 
 function normalizeNodeViewer(result: any): NodeViewerEntry {
   return {
+    ...normalizeFreshness(result),
     service_id: result.service_id ?? '',
     location_id: result.location_id ?? '',
     server_id: result.server_id ?? '',
     root: result.root ?? '',
+    connection_status: result.connection_status ?? 'ok',
+    last_inspected_at: result.last_inspected_at ?? '',
     node_present: Boolean(result.node_present),
     bootstrap_ready: Boolean(result.bootstrap_ready),
     runtime_ready: Boolean(result.runtime_ready),
@@ -455,7 +477,10 @@ function normalizeNodeViewer(result: any): NodeViewerEntry {
     manifest_updated_at: result.manifest_updated_at ?? '',
     runtime_status: result.runtime_status ?? 'missing',
     runtime_pid: typeof result.runtime_pid === 'number' ? result.runtime_pid : undefined,
-    runtime_port: result.runtime_port ?? 8010,
+    runtime_port: result.runtime_port ?? 8020,
+    target_manager_port: result.target_manager_port ?? 8020,
+    legacy_runtime_port: typeof result.legacy_runtime_port === 'number' ? result.legacy_runtime_port : undefined,
+    legacy_runtime_port_label: result.legacy_runtime_port_label ?? '',
     needs_install: Boolean(result.needs_install),
     needs_upgrade: Boolean(result.needs_upgrade),
     needs_bootstrap: Boolean(result.needs_bootstrap),
@@ -489,6 +514,7 @@ function normalizeFile(file: any) {
 
 function normalizeWorkspaceLatest(raw: any): WorkspaceLatest {
   const services = (raw.services ?? []).map((entry: any) => ({
+    ...normalizeFreshness(entry),
     service_id: entry.service_id,
     status: entry.status ?? 'unverified',
     ports: (entry.ports ?? []).map(normalizePortInfo),
@@ -512,6 +538,7 @@ function normalizeWorkspaceLatest(raw: any): WorkspaceLatest {
   }))
 
   return {
+    freshness: normalizeFreshness(raw),
     workspace: normalizeWorkspace(raw.workspace, []),
     servers: (raw.servers ?? []).map((server: any) => ({
       server_id: server.server_id,
@@ -523,15 +550,21 @@ function normalizeWorkspaceLatest(raw: any): WorkspaceLatest {
     })),
     services,
     summary: {
+      ...normalizeFreshness(raw.summary ?? raw),
       run_id: raw.generated ?? 'unverified',
       workspace_id: raw.workspace?.workspace_id ?? '',
       timestamp: raw.generated ?? '',
       status: raw.summary?.status ?? 'unverified',
       triggered_by: 'system',
+      server_count: raw.summary?.server_count ?? raw.servers?.length ?? 0,
+      service_count: raw.summary?.service_count ?? raw.services?.length ?? 0,
+      node_sync_count: raw.summary?.node_sync_count ?? 0,
+      node_sync_blocked_count: raw.summary?.node_sync_blocked_count ?? 0,
     },
     repo_inventory: (raw.repo_inventory ?? []).map((repo: any) => normalizeRepoSummary(repo, [])),
     docs_index: (raw.docs_index ?? []).map((file: any) => normalizeFile({ ...file, kind: 'doc' })),
     logs_index: (raw.logs_index ?? []).map((file: any) => normalizeFile({ ...file, kind: 'log' })),
+    node_sync_results: (raw.node_sync_results ?? []).map(normalizeNodeSync),
   }
 }
 
@@ -871,8 +904,9 @@ export const inspectNode = (
     method: 'POST',
     body: JSON.stringify({ location_id: locationId }),
   }).then((res) => {
-    if (isApiError(res)) return res
+    if (isApiError(res) && !(res as any).node) return res
     return {
+      status: res.status,
       node: normalizeNodeViewer(res.node),
       before: res.before ? normalizeNodeViewer(res.before) : undefined,
       after: res.after ? normalizeNodeViewer(res.after) : undefined,
@@ -890,6 +924,7 @@ export const deployNode = (
   }).then((res) => {
     if (isApiError(res)) return res
     return {
+      status: res.status,
       node: normalizeNodeViewer(res.node),
       before: res.before ? normalizeNodeViewer(res.before) : undefined,
       after: res.after ? normalizeNodeViewer(res.after) : undefined,
@@ -908,6 +943,7 @@ export const upgradeNode = (
   }).then((res) => {
     if (isApiError(res)) return res
     return {
+      status: res.status,
       node: normalizeNodeViewer(res.node),
       before: res.before ? normalizeNodeViewer(res.before) : undefined,
       after: res.after ? normalizeNodeViewer(res.after) : undefined,
@@ -926,6 +962,7 @@ export const restartNode = (
   }).then((res) => {
     if (isApiError(res)) return res
     return {
+      status: res.status,
       node: normalizeNodeViewer(res.node),
       before: res.before ? normalizeNodeViewer(res.before) : undefined,
       after: res.after ? normalizeNodeViewer(res.after) : undefined,
@@ -956,10 +993,10 @@ export const preflightPullBundle = (
   id: string,
   req: PullBundleRequest,
 ): Promise<ApiResult<PullBundlePreflight>> =>
-  apiFetch<PullBundlePreflight>(`/services/${id}/pull-bundles/preflight`, {
+  apiFetch<any>(`/services/${id}/pull-bundles/preflight`, {
     method: 'POST',
     body: JSON.stringify(req),
-  })
+  }).then((res) => (isApiError(res) ? res : { ...res, freshness: normalizeFreshness(res.freshness ?? res) } satisfies PullBundlePreflight))
 
 export const listPullBundles = (
   id: string,
@@ -974,6 +1011,7 @@ export const listPullBundles = (
 
 export function normalizeTaskLedgerEntry(entry: any): TaskLedgerEntry {
   return {
+    ...normalizeFreshness(entry),
     timestamp: entry.timestamp ?? '',
     title: entry.title ?? '',
     task_id: entry.task_id,

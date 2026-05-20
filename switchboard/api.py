@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 
 from . import __version__
 from .collectors import CollectionCoordinator
 from .config import get_settings
+from .freshness import file_mtime, freshen_node_viewers, freshness_envelope, latest_timestamp, timestamp_before
 from .manifests import ManifestStore
 from .models import (
     ActionLockRequest,
@@ -34,6 +38,7 @@ from .models import (
     ServerPatchRequest,
     ServiceCreateRequest,
     ServicePatchRequest,
+    WorkspaceManifest,
     WorkspaceCreateRequest,
     WorkspacePatchRequest,
 )
@@ -46,6 +51,78 @@ snapshot_store = SnapshotStore(settings, manifest_store)
 coordinator = CollectionCoordinator(settings, manifest_store, snapshot_store)
 
 app = FastAPI(title="Switchboard", version=__version__)
+
+
+def _manager_root() -> Path:
+    return settings.manifest_dir.parent.parent
+
+
+def _runtime_cache_generated() -> str:
+    try:
+        cache = snapshot_store._read_runtime_cache()
+    except Exception:
+        return ""
+    return str(cache.get("generated", "") or "")
+
+
+def _workspace_truth_as_of(workspace_id: str) -> str:
+    manifest_files = [
+        settings.manifest_dir / "workspaces.json",
+        settings.manifest_dir / "services.json",
+        settings.manifest_dir / "servers.json",
+        settings.manifest_dir / "projects.json",
+        settings.manifest_dir / "project-environments.json",
+        settings.manifest_dir.parent / "manager.manifest.json",
+    ]
+    return latest_timestamp(_runtime_cache_generated(), *(file_mtime(path) for path in manifest_files))
+
+
+def _service_truth_as_of(payload: dict[str, object]) -> str:
+    root_times: list[str] = []
+    for location in payload.get("locations", []) or []:
+        if not isinstance(location, dict):
+            continue
+        root = str(location.get("root", ""))
+        if not root:
+            continue
+        root_times.append(file_mtime(Path(root) / "switchboard" / "node.manifest.json"))
+    return latest_timestamp(
+        file_mtime(settings.manifest_dir / "services.json"),
+        file_mtime(settings.manifest_dir.parent / "manager.manifest.json"),
+        _runtime_cache_generated(),
+        *root_times,
+    )
+
+
+def _attach_record_freshness(
+    record: dict[str, object],
+    *,
+    data_field: str,
+    truth_as_of: str,
+    source: str,
+    refresh_action: str,
+) -> dict[str, object]:
+    data_as_of = str(record.get(data_field, "") or "")
+    reason = "cache_older_than_truth" if truth_as_of and (not data_as_of or timestamp_before(data_as_of, truth_as_of)) else ""
+    return {
+        **record,
+        **freshness_envelope(
+            data_as_of=data_as_of,
+            truth_as_of=truth_as_of,
+            source=source,
+            stale_reason=reason,
+            refresh_action=refresh_action if reason else "",
+        ),
+    }
+
+
+def _workspace_payload(workspace: WorkspaceManifest) -> dict[str, object]:
+    payload = workspace.model_dump(mode="json")
+    return {
+        **payload,
+        "company_id": payload.get("workspace_id", ""),
+        "company_name": payload.get("name", ""),
+    }
 
 
 def _normalize_latest_snapshot(snapshot: dict[str, object]) -> dict[str, object]:
@@ -69,23 +146,140 @@ def _enrich_service_payload(payload: dict[str, object]) -> dict[str, object]:
     if not service_id:
         return enriched
     runtime_state = snapshot_store.get_service_runtime_state(service_id)
-    enriched["runtime_checks"] = runtime_state["runtime_checks"]
-    enriched["node_sync"] = runtime_state["node_sync"]
-    enriched["node_viewer"] = snapshot_store.get_service_node_viewer(service_id)
+    service_truth_as_of = _service_truth_as_of(enriched)
+    enriched["runtime_checks"] = [
+        _attach_record_freshness(
+            dict(entry),
+            data_field="checked_at",
+            truth_as_of=service_truth_as_of,
+            source="runtime_cache",
+            refresh_action="Check ports",
+        )
+        for entry in runtime_state["runtime_checks"]
+    ]
+    enriched["node_sync"] = [
+        _attach_record_freshness(
+            dict(entry),
+            data_field="timestamp",
+            truth_as_of=service_truth_as_of,
+            source="runtime_cache",
+            refresh_action="Sync From Node",
+        )
+        for entry in runtime_state["node_sync"]
+    ]
+    try:
+        saved_scope_generated_at = datetime.fromtimestamp(
+            (manifest_store.settings.manifest_dir / "services.json").stat().st_mtime,
+            timezone.utc,
+        ).replace(microsecond=0).isoformat()
+    except OSError:
+        saved_scope_generated_at = str(runtime_state.get("generated", ""))
+    enriched["saved_scope_generated_at"] = saved_scope_generated_at
+    enriched["freshness"] = freshness_envelope(
+        data_as_of=latest_timestamp(
+            *(entry.get("checked_at", "") for entry in runtime_state["runtime_checks"]),
+            *(entry.get("timestamp", "") for entry in runtime_state["node_sync"]),
+        ),
+        truth_as_of=service_truth_as_of,
+        source="service_manifest",
+        refresh_action="Collect",
+    )
+    enriched["node_viewer"] = freshen_node_viewers(
+        manager_root=_manager_root(),
+        service_payload=enriched,
+        cached_rows=snapshot_store.get_service_node_viewer(service_id),
+        control_center_version=__version__,
+    )
     task_ledger = snapshot_store.get_service_task_ledger(service_id)
-    enriched["task_ledger"] = task_ledger.get("tasks", [])
+    enriched["task_ledger"] = [
+        _attach_record_freshness(
+            dict(entry),
+            data_field="timestamp",
+            truth_as_of=service_truth_as_of,
+            source="runtime_cache",
+            refresh_action="Sync From Node",
+        )
+        for entry in task_ledger.get("tasks", [])
+    ]
     return enriched
 
 
 def _enrich_latest_snapshot(snapshot: dict[str, object]) -> dict[str, object]:
     normalized = _normalize_latest_snapshot(snapshot)
+    workspace = normalized.get("workspace", {})
+    workspace_id = str(workspace.get("workspace_id", "") if isinstance(workspace, dict) else "")
+    manifest_services_by_id: dict[str, dict[str, object]] = {}
+    current_workspace: dict[str, object] | None = None
+    if workspace_id:
+        try:
+            current_workspace = _workspace_payload(manifest_store.get_workspace(workspace_id))
+            normalized["workspace"] = current_workspace
+            normalized["company"] = current_workspace
+        except KeyError:
+            pass
+        manifest_services_by_id = {
+            service.service_id: service.model_dump(mode="json")
+            for service in manifest_store.load_services()
+            if service.workspace_id == workspace_id
+        }
+    truth_as_of = _workspace_truth_as_of(workspace_id)
+    data_as_of = str(normalized.get("generated", "") or "")
+    snapshot_services_by_id = {
+        str(service.get("service_id", "")): service
+        for service in normalized.get("services", [])
+        if isinstance(service, dict)
+    }
+    archived_service_ids = sorted(service_id for service_id in snapshot_services_by_id if service_id)
+    current_service_ids = sorted(service_id for service_id in manifest_services_by_id if service_id)
+    service_list_mismatch = bool(current_service_ids and archived_service_ids != current_service_ids)
+    reason = (
+        "archive_service_list_mismatch"
+        if service_list_mismatch
+        else "archive_older_than_truth"
+        if truth_as_of and (not data_as_of or timestamp_before(data_as_of, truth_as_of))
+        else ""
+    )
+    freshness = freshness_envelope(
+        data_as_of=data_as_of,
+        truth_as_of=truth_as_of,
+        source="archive_snapshot",
+        stale_reason=reason,
+        refresh_action="Collect" if reason else "",
+    )
+    normalized["freshness"] = freshness
+    normalized["archived_service_ids"] = archived_service_ids
+    normalized["current_service_ids"] = current_service_ids
+    summary = normalized.setdefault("summary", {})
+    if isinstance(summary, dict):
+        summary.update(freshness)
+    service_sources = list(manifest_services_by_id.values()) or [
+        service for service in normalized.get("services", []) if isinstance(service, dict)
+    ]
     services = []
-    for service in normalized.get("services", []):
-        if isinstance(service, dict):
-            services.append(_enrich_service_payload(service))
-        else:
-            services.append(service)
+    for source in service_sources:
+        service_id = str(source.get("service_id", ""))
+        snapshot_service = snapshot_services_by_id.get(service_id, {})
+        merged = {**snapshot_service, **source}
+        for key in (
+            "status",
+            "ports",
+            "firewall_status",
+            "firewall_active",
+            "repo_summaries",
+            "docs_count",
+            "doc_count",
+            "logs_count",
+            "log_count",
+            "secret_path_count",
+        ):
+            if key in snapshot_service:
+                merged[key] = snapshot_service[key]
+        services.append(_enrich_service_payload(merged))
     normalized["services"] = services
+    if isinstance(summary, dict):
+        summary["service_count"] = len(services)
+        if current_workspace is not None:
+            summary["server_count"] = len(current_workspace.get("servers", []) or [])
     return normalized
 
 
@@ -169,14 +363,18 @@ def get_workspace_latest(workspace_id: str) -> dict[str, object]:
             ]
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        freshness = freshness_envelope(
+            data_as_of="",
+            truth_as_of=_workspace_truth_as_of(workspace_id),
+            source="manifest",
+            stale_reason="missing_latest_snapshot",
+            refresh_action="Collect",
+        )
+        workspace_payload = _workspace_payload(workspace)
         return {
             "generated": None,
-            "workspace": workspace.model_dump(mode="json"),
-            "company": {
-                **workspace.model_dump(mode="json"),
-                "company_id": workspace.workspace_id,
-                "company_name": workspace.name,
-            },
+            "workspace": workspace_payload,
+            "company": workspace_payload,
             "servers": [
                 {
                     **server,
@@ -193,10 +391,12 @@ def get_workspace_latest(workspace_id: str) -> dict[str, object]:
             "repo_inventory": [],
             "docs_index": [],
             "logs_index": [],
+            "freshness": freshness,
             "summary": {
                 "status": "unverified",
                 "server_count": len(workspace.servers),
                 "service_count": len(services),
+                **freshness,
             },
         }
     return _enrich_latest_snapshot(latest)

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, FileStack, FolderTree, LoaderCircle, Pencil, RefreshCw, Save, Server, Trash2, X } from 'lucide-react'
+import { ArrowLeft, FileStack, FolderTree, LoaderCircle, Pencil, RefreshCw, Server, Save, Trash2, X } from 'lucide-react'
 import type {
   ActionLock,
   ManagedDocConfig,
@@ -9,6 +9,7 @@ import type {
   Service,
   ServiceLocationDraft,
   ServiceRunResult,
+  RepoSummary as RepoSummaryRecord,
   RunRecord,
   ScopeEntry,
   ServerRecord,
@@ -20,6 +21,7 @@ import {
   getService,
   getServiceScope,
   getActionLocks,
+  getNodeViewer,
   listServers,
   getWorkspaceRuns,
   inspectNode,
@@ -61,14 +63,12 @@ function parsePorts(value: string): number[] {
     .filter((port) => Number.isFinite(port) && port > 0 && port <= 65535)
 }
 
-const SERVICE_PANEL_KEYS = ['project', 'network', 'runtime', 'managed_docs', 'task_ledger', 'repositories', 'scope', 'pull_bundles', 'secret_paths', 'run_history'] as const
+const SERVICE_PANEL_KEYS = ['port_health', 'project', 'runtime', 'managed_docs', 'task_ledger', 'repositories', 'scope', 'pull_bundles', 'secret_paths', 'run_history'] as const
 type ServicePanelKey = (typeof SERVICE_PANEL_KEYS)[number]
-type ViewPreset = 'simple' | 'ops' | 'full'
-const VIEW_PRESETS: Record<ViewPreset, ServicePanelKey[]> = {
-  simple: ['project', 'runtime', 'task_ledger', 'pull_bundles'],
-  ops: ['project', 'runtime', 'repositories', 'scope', 'pull_bundles', 'secret_paths'],
-  full: [...SERVICE_PANEL_KEYS],
-}
+const DEFAULT_OPEN_PANELS: ServicePanelKey[] = ['project', 'runtime', 'task_ledger', 'pull_bundles']
+const CONTROL_CENTER_PORT = 8009
+const DEFAULT_MANAGER_PORT = 8020
+const DEV_UI_PORT = 5173
 type NodeActionKey = 'inspect' | 'deploy' | 'upgrade' | 'restart'
 type LocationActionKey = NodeActionKey | 'runtime_check' | 'sync_from_node' | 'sync_to_node'
 type PersistedActionKey = 'node_deploy' | 'node_upgrade' | 'node_restart' | 'runtime_check' | 'sync_from_node' | 'sync_to_node'
@@ -163,6 +163,21 @@ function serverShellCommand(server?: ServerRecord, command?: string) {
   return command
 }
 
+function formatTimestampLabel(value?: string) {
+  if (!value) return 'never'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+}
+
+function isTimestampAfter(left?: string, right?: string) {
+  if (!left) return false
+  if (!right) return true
+  const leftMs = Date.parse(left)
+  const rightMs = Date.parse(right)
+  if (Number.isNaN(leftMs) || Number.isNaN(rightMs)) return false
+  return leftMs > rightMs
+}
+
 function stripCodeFence(value?: string) {
   if (!value) return ''
   const trimmed = value.trim()
@@ -235,12 +250,12 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
   const [actionLockStatus, setActionLockStatus] = useState<'online' | 'offline'>('online')
   const [actionStartTimes, setActionStartTimes] = useState<Record<string, string>>({})
   const [panelOpen, setPanelOpen] = useState<Record<string, boolean>>({})
-  const [viewPreset, setViewPreset] = useState<ViewPreset>('simple')
   const [locationPanels, setLocationPanels] = useState<Record<string, boolean>>({})
   const [nodeActionResults, setNodeActionResults] = useState<Record<string, NodeActionResult>>({})
   const [nodeActionLoading, setNodeActionLoading] = useState<Record<string, NodeActionKey | null>>({})
   const [locationActionEvents, setLocationActionEvents] = useState<Record<string, LocationActionEvent[]>>({})
   const [bundleHistoryMeta, setBundleHistoryMeta] = useState<{ count: number; latestCreatedAt: string }>({ count: 0, latestCreatedAt: '' })
+  const [pullBundleRefreshKey, setPullBundleRefreshKey] = useState(0)
   const [projectEnvironments, setProjectEnvironments] = useState<ProjectEnvironmentView[]>([])
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [docPreviewId, setDocPreviewId] = useState<string | null>(null)
@@ -251,11 +266,10 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
   }, [])
 
   useEffect(() => {
-    const storedPreset = localStorage.getItem(`service-view:${serviceId}`) as ViewPreset | null
-    if (storedPreset && VIEW_PRESETS[storedPreset]) setViewPreset(storedPreset)
     const next: Record<string, boolean> = {}
     for (const key of SERVICE_PANEL_KEYS) {
-      next[key] = sessionStorage.getItem(panelStorageKey(serviceId, key)) === 'true'
+      const stored = sessionStorage.getItem(panelStorageKey(serviceId, key))
+      next[key] = stored === null ? DEFAULT_OPEN_PANELS.includes(key) : stored === 'true'
     }
     setPanelOpen(next)
   }, [serviceId])
@@ -300,15 +314,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
   }, [offline])
 
   useEffect(() => {
-    if (offline) return
-    listPullBundles(serviceId).then((result) => {
-      if (!isApiError(result)) {
-        setBundleHistoryMeta({
-          count: result.length,
-          latestCreatedAt: result[0]?.created_at ?? '',
-        })
-      }
-    })
+    void refreshBundleHistoryMeta()
   }, [offline, serviceId])
 
   useEffect(() => {
@@ -370,7 +376,28 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
 
   const docs = runResult?.docs_files ?? []
   const logs = runResult?.logs_files ?? []
-  const repos = runResult?.repo_summaries ?? []
+  const configuredRepoPaths = useMemo(() => {
+    const paths = new Set<string>()
+    for (const path of service?.repo_paths ?? []) paths.add(path)
+    for (const path of service?.allowed_git_pull_paths ?? []) paths.add(path)
+    for (const entry of scopeEntries) {
+      if (entry.enabled && entry.kind === 'repo') paths.add(entry.path)
+    }
+    return [...paths]
+  }, [scopeEntries, service?.allowed_git_pull_paths, service?.repo_paths])
+  const repos = useMemo<RepoSummaryRecord[]>(() => {
+    const collected = runResult?.repo_summaries ?? []
+    if (collected.length > 0) return collected
+    return configuredRepoPaths.map((path) => ({
+      path,
+      branch: '',
+      commit: '',
+      dirty: false,
+      status: 'unverified',
+      is_allowlisted: Boolean(service?.allowed_git_pull_paths?.includes(path)),
+      push_mode: 'blocked',
+    }))
+  }, [configuredRepoPaths, runResult?.repo_summaries, service?.allowed_git_pull_paths])
 
   async function handleDelete() {
     if (!service || deleting) return
@@ -393,6 +420,48 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
     setRuntimeDraft(updated.locations.map((location) => ({ ...location, runtime: { ...location.runtime } })))
     setRuntimeExecutionMode(updated.execution_mode)
     setManagedDocsDraft(updated.managed_docs.map((entry) => ({ ...entry })))
+  }
+
+  async function refreshBundleHistoryMeta() {
+    if (offline) return
+    const result = await listPullBundles(serviceId)
+    if (isApiError(result)) return
+    setBundleHistoryMeta({
+      count: result.length,
+      latestCreatedAt: result[0]?.created_at ?? '',
+    })
+  }
+
+  async function refreshAfterNodeSync(fallbackService: Service) {
+    const [serviceSettled, scopeSettled, nodeViewerSettled, bundleSettled] = await Promise.allSettled([
+      getService(serviceId),
+      getServiceScope(serviceId),
+      getNodeViewer(serviceId),
+      listPullBundles(serviceId),
+    ])
+    const serviceResult = serviceSettled.status === 'fulfilled' ? serviceSettled.value : null
+    const scopeResult = scopeSettled.status === 'fulfilled' ? scopeSettled.value : null
+    const nodeViewerResult = nodeViewerSettled.status === 'fulfilled' ? nodeViewerSettled.value : null
+    const bundleResult = bundleSettled.status === 'fulfilled' ? bundleSettled.value : null
+    let nextService = fallbackService
+    if (serviceResult && !isApiError(serviceResult)) {
+      nextService = serviceResult
+    }
+    if (nodeViewerResult && !isApiError(nodeViewerResult)) {
+      nextService = { ...nextService, node_viewer: nodeViewerResult.locations }
+    }
+    handleServiceUpdated(nextService)
+    if (scopeResult && !isApiError(scopeResult)) {
+      setScopeEntries(scopeResult.scope_entries)
+      setScopeDraft(scopeResult.scope_entries.map((entry) => ({ ...entry })))
+    }
+    if (bundleResult && !isApiError(bundleResult)) {
+      setBundleHistoryMeta({
+        count: bundleResult.length,
+        latestCreatedAt: bundleResult[0]?.created_at ?? '',
+      })
+    }
+    setPullBundleRefreshKey((current) => current + 1)
   }
 
   const runtimeChecksByLocation = useMemo(() => {
@@ -530,17 +599,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
       sessionStorage.setItem(panelStorageKey(serviceId, key), String(next))
       return { ...current, [key]: next }
     })
-  }
-
-  function applyViewPreset(preset: ViewPreset) {
-    const enabled = new Set(VIEW_PRESETS[preset])
-    const next = Object.fromEntries(SERVICE_PANEL_KEYS.map((key) => [key, enabled.has(key)]))
-    for (const key of SERVICE_PANEL_KEYS) {
-      sessionStorage.setItem(panelStorageKey(serviceId, key), String(Boolean(next[key])))
-    }
-    localStorage.setItem(`service-view:${serviceId}`, preset)
-    setViewPreset(preset)
-    setPanelOpen(next)
   }
 
   function toggleLocationPanel(locationId: string) {
@@ -843,16 +901,13 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
       })
       return
     }
-    handleServiceUpdated(result.service)
-    setService((current) =>
-      current
-        ? {
-            ...result.service,
-            node_sync: [result.sync, ...(result.service.node_sync ?? []).filter((entry) => entry.location_id !== result.sync.location_id)],
-          }
-        : result.service,
-    )
-    setRuntimeMessage('Synced from node.')
+    const syncedService = {
+      ...result.service,
+      node_sync: [result.sync, ...(result.service.node_sync ?? []).filter((entry) => entry.location_id !== result.sync.location_id)],
+    }
+    handleServiceUpdated(syncedService)
+    await refreshAfterNodeSync(syncedService)
+    setRuntimeMessage('Synced from node. Service, scope, node viewer, and pull-bundle state refreshed.')
     recordLocationAction(locationId, {
       action: 'sync_from_node',
       status: 'ok',
@@ -1117,26 +1172,169 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
         )}
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.16em] text-gray-500">View Settings</div>
-          <div className="mt-1 text-sm text-gray-400">Choose how much service detail is visible on this machine.</div>
-        </div>
-        <div className="flex rounded-lg border border-gray-800 bg-gray-950 p-1">
-          {(['simple', 'ops', 'full'] as ViewPreset[]).map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => applyViewPreset(preset)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-                viewPreset === preset ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {preset}
-            </button>
-          ))}
-        </div>
-      </div>
+      {service && (
+        <AccordionSection
+          title="Port Health"
+          icon={<Server className="h-4 w-4 text-cyan-400" />}
+          open={Boolean(panelOpen.port_health)}
+          onToggle={() => togglePanel('port_health')}
+          summary={`Control Center :${CONTROL_CENTER_PORT} · manager target :${DEFAULT_MANAGER_PORT} · dev UI :${DEV_UI_PORT}`}
+          className="border-cyan-900/40 bg-cyan-950/10"
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-cyan-300">
+                Port Health
+              </div>
+              <div className="mt-1 text-sm text-gray-300">
+                Control Center <span className="font-mono text-cyan-200">:{CONTROL_CENTER_PORT}</span> pulls from the machine manager node <span className="font-mono text-cyan-200">:{DEFAULT_MANAGER_PORT}</span>. Product runtime ports stay separate.
+              </div>
+            </div>
+            <div className="rounded-full border border-gray-800 bg-gray-950 px-3 py-1 text-xs text-gray-300">
+              Dev UI <span className="font-mono text-cyan-200">:{DEV_UI_PORT}</span> is only this local frontend.
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Control Center API</div>
+                  <div className="mt-1 font-mono text-sm text-white">127.0.0.1:{CONTROL_CENTER_PORT}</div>
+                </div>
+                <StatusBadge status={offline ? 'unreachable' : 'ok'} />
+              </div>
+            </div>
+
+            {service.locations.map((location) => {
+              const latestRuntime = runtimeChecksByLocation.get(location.location_id)
+              const nodeViewer = nodeViewerByLocation.get(location.location_id)
+              const serverMeta = servers.find((server) => server.server_id === location.server_id)
+              const managerPort = nodeViewer?.target_manager_port || DEFAULT_MANAGER_PORT
+              const managerFreshness = nodeViewer?.freshness_state || 'Unverified'
+              const managerUnreachable = managerFreshness === 'Manager unreachable'
+              const managerPortLabel =
+                managerPort === DEFAULT_MANAGER_PORT
+                  ? `:${DEFAULT_MANAGER_PORT}`
+                  : `cached :${managerPort} / target :${DEFAULT_MANAGER_PORT}`
+              const configuredPorts = location.runtime.expected_ports ?? []
+              const detectedPorts = new Set((latestRuntime?.detected_ports ?? []).map((port) => port.port))
+              const missingPorts = new Set(latestRuntime?.missing_ports ?? [])
+              const portCheckDetails: ConfirmDetails = {
+                preflight: [
+                  serverMeta?.vpn_required ? 'VPN is required for this host; a timeout means VPN/network blocked, not success.' : 'Server route should already be reachable.',
+                  'This checks listeners and optional health output only. It does not start, stop, deploy, sync, or write files.',
+                  'Control Center, manager node, dev UI, and product runtime ports are reported as separate roles.',
+                ],
+                commandPreview: [
+                  `POST /services/${serviceId}/runtime/check {"location_id":"${location.location_id}"}`,
+                  serverShellCommand(serverMeta, `ss -ltnp 2>/dev/null || lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null`),
+                  location.runtime.healthcheck_command
+                    ? serverShellCommand(serverMeta, location.runtime.healthcheck_command)
+                    : 'Health check skipped because no command is configured.',
+                ].filter(Boolean),
+                followUp: [
+                  'If the manager port is stale or stopped, inspect the node/manager state before trusting sync or pull bundles.',
+                  'If product runtime ports are missing, fix the service runtime outside the Switchboard manager port.',
+                ],
+                confirmLabel: 'Check Ports',
+              }
+              const portRole = (port: number) => {
+                if (port === CONTROL_CENTER_PORT) return 'control center'
+                if (port === DEFAULT_MANAGER_PORT) return 'manager node'
+                if (port === DEV_UI_PORT) return 'dev UI'
+                return 'product runtime'
+              }
+              return (
+                <div
+                  key={location.location_id}
+                  className={`rounded-xl border p-3 ${
+                    managerUnreachable
+                      ? 'border-amber-500/40 bg-amber-950/20'
+                      : managerFreshness && managerFreshness !== 'Fresh'
+                        ? 'border-amber-800/50 bg-gray-950'
+                        : 'border-gray-800 bg-gray-950'
+                  }`}
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="text-xs uppercase tracking-[0.16em] text-gray-500">{location.location_id}</div>
+                      <div className="mt-1 text-sm text-white">
+                        Manager node <span className="font-mono text-cyan-200">{managerPortLabel}</span>
+                        <span className="text-gray-500"> · </span>
+                        <span className={managerUnreachable ? 'text-amber-200' : 'text-gray-300'}>
+                          {managerUnreachable ? 'Manager unreachable' : nodeViewer?.runtime_status?.replace('_', ' ') || 'not inspected'}
+                        </span>
+                      </div>
+                      <div className="mt-1 font-mono text-xs text-gray-500 break-all">{location.server_id} · {location.root}</div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                        <span className={`rounded-full border px-2 py-1 ${
+                          managerUnreachable
+                            ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+                            : managerFreshness === 'Fresh'
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                              : 'border-gray-800 bg-gray-900 text-gray-300'
+                        }`}>
+                          {managerFreshness || 'Unverified'}
+                        </span>
+                        {nodeViewer?.legacy_runtime_port_label && (
+                          <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
+                            {nodeViewer.legacy_runtime_port_label}
+                          </span>
+                        )}
+                        {(nodeViewer?.stale_reason || nodeViewer?.refresh_action) && (
+                          <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-gray-400">
+                            {nodeViewer.refresh_action || 'Inspect Node'}{nodeViewer.stale_reason ? ` · ${nodeViewer.stale_reason}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {configuredPorts.length === 0 ? (
+                          <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-[11px] text-gray-500">
+                            No product runtime ports configured
+                          </span>
+                        ) : (
+                          configuredPorts.map((port) => {
+                            const detected = detectedPorts.has(port)
+                            const missing = missingPorts.has(port)
+                            return (
+                              <span
+                                key={`${location.location_id}:${port}`}
+                                className={`rounded-full border px-2 py-1 text-[11px] ${
+                                  detected
+                                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                                    : missing
+                                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+                                      : 'border-gray-800 bg-gray-900 text-gray-300'
+                                }`}
+                              >
+                                <span className="font-mono">:{port}</span> {portRole(port)}
+                              </span>
+                            )
+                          })
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Last check: {latestRuntime ? `${latestRuntime.status} at ${new Date(latestRuntime.checked_at).toLocaleString()}` : 'not captured yet'}
+                        {latestRuntime?.freshness_state && latestRuntime.freshness_state !== 'Fresh' ? ` · ${latestRuntime.freshness_state}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => initiateAction('runtime_check', location.location_id, portCheckDetails)}
+                      disabled={offline || checkingRuntimeLocation === location.location_id || Boolean(activeLocks.runtime_check)}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-100 transition-colors hover:border-cyan-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${checkingRuntimeLocation === location.location_id || activeLocks.runtime_check ? 'animate-spin' : ''}`} />
+                      {checkingRuntimeLocation === location.location_id || activeLocks.runtime_check ? 'Checking...' : 'Check ports'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </AccordionSection>
+      )}
 
       {deleteError && (
         <div className="mb-6 rounded-xl border border-red-900/70 bg-red-950/40 px-4 py-3 text-sm text-red-200">
@@ -1197,46 +1395,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
           </div>
         </div>
       )}
-
-      <AccordionSection
-        title="Network"
-        icon={<Server className="w-4 h-4 text-cyan-400" />}
-        open={Boolean(panelOpen.network)}
-        onToggle={() => togglePanel('network')}
-        summary={
-          service?.execution_mode !== 'networked'
-            ? `Execution mode ${service?.execution_mode ?? 'networked'} · port monitoring optional`
-            : runResult
-            ? `${runResult.ports.length} open ports · firewall ${runResult.firewall_status || (runResult.firewall_active ? 'active' : 'inactive')}`
-            : 'No network snapshot captured yet'
-        }
-      >
-        {service?.execution_mode !== 'networked' ? (
-          <div className="text-sm text-gray-400">
-            This service is tracked as <span className="text-cyan-300">{service?.execution_mode ?? 'networked'}</span>, so port-heavy network status is secondary. Use the Runtime panel for deployment root, command hints, bundle flow, and node state.
-          </div>
-        ) : runResult ? (
-          <>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {runResult.ports.map((p) => (
-              <span key={p.port} className="font-mono text-sm bg-gray-800 text-cyan-400 px-3 py-1 rounded-md">
-                :{p.port} <span className="text-gray-500 text-xs">{p.protocol}</span>
-              </span>
-            ))}
-            {runResult.ports.length === 0 && (
-              <span className="text-sm text-gray-500">No open ports detected</span>
-            )}
-          </div>
-          <div className="text-xs text-gray-500">
-            Firewall: <span className={runResult.firewall_active ? 'text-green-400' : 'text-yellow-400'}>
-              {runResult.firewall_status || (runResult.firewall_active ? 'active' : 'inactive')}
-            </span>
-          </div>
-          </>
-        ) : (
-          <div className="text-sm text-gray-500">No network snapshot captured yet.</div>
-        )}
-      </AccordionSection>
 
       {service && (
         <AccordionSection
@@ -1452,7 +1610,23 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               const remoteNodeActionBlocked = serverMeta?.connection_type === 'ssh'
               const rootManifestVersion = nodeViewer?.installed_version || ''
               const managerVersion = nodeViewer?.manager_version || ''
-              const rootManifestStale = Boolean(managerManaged && managerVersion && rootManifestVersion && managerVersion !== rootManifestVersion)
+              const lastInspectedAt = nodeViewer?.last_inspected_at || ''
+              const lastSyncedFromNodeAt = latestSync?.direction === 'from_node' ? latestSync.timestamp : ''
+              const pullAuthorityUpdatedAt = lastSyncedFromNodeAt || latestSync?.timestamp || ''
+              const savedScopeGeneratedAt = service.saved_scope_generated_at || ''
+              const connectionStatus = nodeViewer?.connection_status ?? 'unverified'
+              const nodeNeedsSync =
+                connectionStatus === 'ok' &&
+                Boolean(lastInspectedAt) &&
+                isTimestampAfter(lastInspectedAt, lastSyncedFromNodeAt)
+              const freshnessState =
+                connectionStatus === 'vpn_or_network_blocked'
+                  ? 'VPN/network blocked'
+                  : nodeNeedsSync
+                    ? 'Needs sync'
+                    : nodeViewer?.freshness_state || 'Needs inspect'
+              const nodeTruthFresh = freshnessState === 'Fresh' && connectionStatus === 'ok'
+              const rootManifestStale = Boolean(nodeTruthFresh && managerManaged && managerVersion && rootManifestVersion && managerVersion !== rootManifestVersion)
               const managerRoot = nodeViewer?.manager_root || '/Users/p/Desktop/dashboard'
               const managerRootId = nodeViewer?.manager_root_id || serviceId
               const normalizeCommand = `switchboard node normalize-root --manager-root ${quoteShell(managerRoot)} --project-root ${quoteShell(location.root)} --root-id ${quoteShell(managerRootId)} --service-id ${quoteShell(serviceId)} --display-name ${quoteShell(service.display_name)}`
@@ -1469,7 +1643,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                 ? 'Manager Status'
                 : 'Normalize First'
               const syncBlocked = nodeViewer?.node_present === true && !nodeViewer.bootstrap_ready
-              const nodePort = nodeViewer?.runtime_port ?? 8010
+              const nodePort = nodeViewer?.target_manager_port ?? DEFAULT_MANAGER_PORT
               const nodeStartCommand = managerManaged
                 ? `switchboard node manager-status --manager-root ${quoteShell(managerRoot)} --port ${nodePort}`
                 : normalizeCommand
@@ -1516,8 +1690,8 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               ].filter(Boolean)
               const inspectDetails: ConfirmDetails = {
                 preflight: [
-                  serverMeta?.vpn_required ? 'VPN access must already be up for this server.' : 'Server route should already be reachable.',
-                  'This reads node manifest, pid/log state, and active listeners only.',
+                  serverMeta?.vpn_required ? 'VPN is off or network blocked if this times out. Turn VPN on for live verification.' : 'Server route should already be reachable.',
+                  'Inspect Node is read-only: it reads node state only and does not import saved scope.',
                   nodeViewer?.node_present ? `Tracked node manifest already exists at ${nodeManifestPath}.` : 'No tracked node manifest is cached yet; inspect will confirm whether one exists on disk.',
                 ],
                 commandPreview: [`POST /services/${serviceId}/node/inspect {"location_id":"${location.location_id}"}`, inspectCommand].filter(Boolean),
@@ -1529,7 +1703,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               }
               const deployDetails: ConfirmDetails = {
                 preflight: [
-                  serverMeta?.vpn_required ? 'VPN access must already be up for this server.' : 'Server route should already be reachable.',
+                  serverMeta?.vpn_required ? 'VPN is off or network blocked if this times out. Turn VPN on for live verification.' : 'Server route should already be reachable.',
                   remoteNodeActionBlocked
                     ? 'Remote service-level node actions are blocked; use that machine’s manager workflow.'
                     : managerManaged
@@ -1548,13 +1722,13 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               }
               const restartDetails: ConfirmDetails = {
                 preflight: [
-                  serverMeta?.vpn_required ? 'VPN access must already be up for this server.' : 'Server route should already be reachable.',
+                  serverMeta?.vpn_required ? 'VPN is off or network blocked if this times out. Turn VPN on for live verification.' : 'Server route should already be reachable.',
                   remoteNodeActionBlocked
                     ? 'Remote service-level node runtime actions are blocked; use that machine’s manager workflow.'
                     : managerManaged
                     ? `This checks the single manager port ${nodePort}; it will not start a project-specific node.`
                     : 'This local root must be normalized before runtime checks; no project-specific node will be started.',
-                  managerManaged ? 'Manager-owned roots do not get their own node runtime.' : 'One-port mode blocks per-project runtime starts from this page.',
+                  managerManaged ? 'Manager-owned roots use the machine manager node on port 8020.' : 'This page does not start per-project manager nodes.',
                 ],
                 commandPreview: restartCommandPreview,
                 followUp: [
@@ -1565,7 +1739,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               }
               const runtimeCheckDetails: ConfirmDetails = {
                 preflight: [
-                  serverMeta?.vpn_required ? 'VPN access must already be up for this server.' : 'Server route should already be reachable.',
+                  serverMeta?.vpn_required ? 'VPN is off or network blocked if this times out. Turn VPN on for live verification.' : 'Server route should already be reachable.',
                   'Snapshot reads listeners, exposure, process ownership, and optional health output.',
                   location.runtime.healthcheck_command ? 'A health command is configured and will be executed as part of this snapshot.' : 'No health command is configured, so health will stay skipped.',
                 ],
@@ -1578,9 +1752,9 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               }
               const syncFromDetails: ConfirmDetails = {
                 preflight: [
-                  serverMeta?.vpn_required ? 'VPN access must already be up for this server.' : 'Server route should already be reachable.',
+                  serverMeta?.vpn_required ? 'VPN is off or network blocked if this times out. Turn VPN on for live verification.' : 'Server route should already be reachable.',
                   syncBlocked ? 'Bootstrap is still not ready, so sync from node is blocked until the node writes its first bootstrap/task-ledger entry.' : 'Node bootstrap is ready, so manifest and scope data can be imported.',
-                  'This will update control-center records from the selected node location.',
+                  'Sync From Node imports node state into Control Center and refreshes service, scope, node viewer, and pull-bundle panels.',
                 ],
                 commandPreview: syncFromCommandPreview,
                 followUp: [
@@ -1591,7 +1765,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               }
               const syncToDetails: ConfirmDetails = {
                 preflight: [
-                  serverMeta?.vpn_required ? 'VPN access must already be up for this server.' : 'Server route should already be reachable.',
+                  serverMeta?.vpn_required ? 'VPN is off or network blocked if this times out. Turn VPN on for live verification.' : 'Server route should already be reachable.',
                   syncBlocked ? 'Bootstrap is still not ready, so sync to node is blocked until the node writes its first bootstrap/task-ledger entry.' : 'Node bootstrap is ready, so scope and runtime metadata can be mirrored.',
                   'This writes the control-center service scope and runtime metadata into the selected project root.',
                 ],
@@ -1650,17 +1824,39 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                               </span>
                             </>
                           )}
-                          <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
-                            {managerManaged ? `manager ${managerVersion || 'active'}` : `node ${rootManifestVersion || 'not installed'}`}
+                          <span className={`rounded-full border px-2 py-1 ${
+                            freshnessState === 'Fresh'
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                              : freshnessState === 'VPN/network blocked'
+                                ? 'border-orange-500/30 bg-orange-500/10 text-orange-200'
+                                : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+                          }`}>
+                            {freshnessState}
                           </span>
+                          {nodeTruthFresh ? (
+                            <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
+                              {managerManaged ? `manager ${managerVersion || 'active'}` : `node ${rootManifestVersion || 'not installed'}`}
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
+                              {nodeViewer?.refresh_action || (freshnessState === 'Manager unreachable' ? 'Check 8020' : 'Inspect Node')}
+                            </span>
+                          )}
                           {rootManifestStale && (
                             <span className="rounded-full border border-amber-700 bg-amber-950/30 px-2 py-1 text-amber-200">
                               root manifest {rootManifestVersion}
                             </span>
                           )}
-                          <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
-                            bootstrap {nodeViewer?.bootstrap_ready ? 'ready' : 'not ready'}
-                          </span>
+                          {nodeTruthFresh && (
+                            <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
+                              bootstrap {nodeViewer?.bootstrap_ready ? 'ready' : 'not ready'}
+                            </span>
+                          )}
+                          {nodeViewer?.legacy_runtime_port_label && (
+                            <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
+                              {nodeViewer.legacy_runtime_port_label}
+                            </span>
+                          )}
                           <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
                             runtime {nodeViewer?.runtime_status || 'missing'}
                           </span>
@@ -1736,6 +1932,15 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                         <div className="text-xs uppercase tracking-[0.16em] text-rose-300">Backend Offline</div>
                         <div className="mt-1 text-sm text-rose-100">
                           Action locks could not be refreshed from the control-center backend. Stale session progress was cleared instead of being treated as real runtime activity.
+                        </div>
+                      </div>
+                    )}
+
+                    {connectionStatus === 'vpn_or_network_blocked' && (
+                      <div className="rounded-xl border border-orange-700/40 bg-orange-950/20 p-3">
+                        <div className="text-xs uppercase tracking-[0.16em] text-orange-300">VPN / Network Blocked</div>
+                        <div className="mt-1 text-sm text-orange-100">
+                          VPN is off or network blocked. Turn VPN on for live verification. Switchboard is not inferring freshness from this timeout.
                         </div>
                       </div>
                     )}
@@ -1829,7 +2034,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                             </>
                           ) : (
                             <div className="mt-1 text-sm text-cyan-100/80">
-                              No project environment is linked to this location yet. Add one in Projects &amp; Environments to unlock the dedicated API Lab page.
+                              No project environment is linked to this location yet. Add one in Projects to unlock the dedicated API Lab page.
                             </div>
                           )}
                         </div>
@@ -1851,6 +2056,12 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                     <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Node Viewer</div>
                     {nodeViewer ? (
                       <div className="mt-2 grid gap-2 text-sm text-gray-300 md:grid-cols-2">
+                        <div className="flex items-center gap-2"><span className="text-gray-500">Connection:</span> <StatusBadge status={connectionStatus} /></div>
+                        <div><span className="text-gray-500">Freshness:</span> {freshnessState}</div>
+                        <div><span className="text-gray-500">Last inspected:</span> {formatTimestampLabel(lastInspectedAt)}</div>
+                        <div><span className="text-gray-500">Last synced from node:</span> {formatTimestampLabel(lastSyncedFromNodeAt)}</div>
+                        <div><span className="text-gray-500">Saved scope updated:</span> {formatTimestampLabel(savedScopeGeneratedAt)}</div>
+                        <div><span className="text-gray-500">Pull authority updated:</span> {formatTimestampLabel(pullAuthorityUpdatedAt)}</div>
                         <div><span className="text-gray-500">Root manifest:</span> {rootManifestVersion || 'not installed'}</div>
                         <div><span className="text-gray-500">Manager version:</span> {managerManaged ? managerVersion || 'active' : 'not manager-owned'}</div>
                         <div><span className="text-gray-500">Bootstrap:</span> {nodeViewer.bootstrap_version || 'not ready'}</div>
@@ -1861,6 +2072,11 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                         <div><span className="text-gray-500">Port:</span> {nodeViewer.runtime_port}</div>
                         <div><span className="text-gray-500">Runtime ready:</span> {nodeViewer.runtime_ready ? 'yes' : 'no'}</div>
                         {nodeViewer.last_error && <div className="md:col-span-2 text-amber-200">{nodeViewer.last_error}</div>}
+                        {nodeNeedsSync && (
+                          <div className="md:col-span-2 text-xs text-amber-200">
+                            Inspect is newer than the last Sync From Node. Run Sync From Node with VPN on before trusting pull bundles.
+                          </div>
+                        )}
                         {nodeViewer.manager_managed && (
                           <div className="md:col-span-2 text-xs text-cyan-200">
                             This root is owned by the local Switchboard manager; service actions do not install or start a per-project node runtime.
@@ -1885,7 +2101,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                           <div className="text-[11px] uppercase tracking-[0.14em] text-gray-500">{managerManaged ? 'Manager Command' : 'Normalize Command'}</div>
                           <pre className="mt-2 overflow-x-auto text-xs text-cyan-200">{nodeStartCommand}</pre>
                           <div className="mt-2 text-xs text-gray-500">
-                            One-port mode keeps Switchboard runtime ownership on the manager. Project roots are normalized, snapshotted, and verified under that manager instead of running separate node listeners.
+                            Switchboard runtime ownership stays on the machine manager node. Project roots are normalized, snapshotted, and verified under that manager instead of running separate project node listeners.
                           </div>
                         </div>
                         {nodeTransition?.before && nodeTransition?.after && (
@@ -2503,7 +2719,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
           onToggle={() => togglePanel('pull_bundles')}
           summary={bundleHistoryMeta.count > 0 ? `${bundleHistoryMeta.count} bundles · latest ${new Date(bundleHistoryMeta.latestCreatedAt).toLocaleString()}` : 'No bundle history yet'}
         >
-          <PullBundlePanel service={service} disabled={offline} />
+          <PullBundlePanel service={service} disabled={offline} refreshKey={pullBundleRefreshKey} />
         </AccordionSection>
       )}
 

@@ -34,8 +34,8 @@ Example format:
     - Notes:
       - Added the first standard handoff.
     - Runtime:
-      - expected_ports: 8010
-      - healthcheck_command: curl http://127.0.0.1:8010/api/health
+      - expected_ports: 8020
+      - healthcheck_command: curl http://127.0.0.1:8020/api/health
 ```
 
 ## 2026-04-06T15:30:38+00:00 | Fix self-conflicting sync and bundle locks
@@ -104,6 +104,7 @@ Example format:
   - exclude | file | /Users/p/Desktop/dashboard/.DS_Store
   - exclude | file | /Users/p/Desktop/dashboard/.env
   - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
 - Notes:
   - Generated agent instructions cover Codex, Claude Code, Gemini CLI, Qwen Code, opencode, and generic agents.
   - Local build, wheel build, focused backend tests, commit, push, and service restart were completed.
@@ -284,3 +285,739 @@ Example format:
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/reports | true
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime | true
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static | true
+
+## 2026-05-13T11:58:10+00:00 | Repair freshness and VPN-blocked state
+- Tags: task, freshness, pull-bundle, node-sync
+- Summary: Made VPN-required SSH timeouts show as VPN/network blocked, made pull bundle preflight block stale or missing remote node authority, and exposed inspect/sync/scope/pull authority timestamps in the service UI.
+- Changed Paths: switchboard/collectors.py, switchboard/api.py, src/api/client.ts, src/types/switchboard.ts, src/components/PullBundlePanel.tsx, src/pages/ServiceDetailPage.tsx, tests_backend/test_runtime_and_node_sync.py, tests/freshness-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Pratik wants freshness fixed as a system problem: VPN blocks must be named, inspect/sync/pull authority timestamps must be visible, and stale pull bundles must be blocked before GitHub backup.
+- Scope Check: Project shape did not change. Pull scope logic changed only as a preflight guard; no live `.47` check, manager normalization, archive, Palimpsest export, task-ledger density, or GitHub backup automation was run.
+- Notes:
+  - Inspect Node is now surfaced as read-only node state, not saved-scope import.
+  - Sync From Node remains the import action and refreshes service, scope, node viewer, and pull-bundle panel state after success.
+  - Remote pull bundle preflight now names stale/missing node-local authority and tells the operator to run Sync From Node after turning VPN on.
+  - VPN-required connection failures are not treated as proof of remote freshness.
+
+## 2026-05-14T01:34:00+00:00 | Model Palimpsest projection and personal source lanes
+- Tags: task, handoff, decision, scope
+- Summary: Added Agent Ops, Palimpsest, X collector, 080, Union Bank, Gmail metadata, and Drive metadata lanes to the personal workspace and tightened Palimpsest export to a summarized projection.
+- Changed Paths: switchboard/manifests/services.json, switchboard/manifests/projects.json, switchboard/manifests/workspaces.json, switchboard/manager.manifest.json, switchboard/collectors.py, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Confirmed the implementation should make Switchboard and Palimpsest siblings with projection sync, while keeping personal data local-private.
+- Scope Check: Control-center scope still stays inside Switchboard source, manifests, tests, and canonical task state; new personal-system lanes are manifest entries, not raw data imports.
+- Notes:
+  - Agent Ops is registered as a manager-inherited root at `/Users/p/Desktop/main/agent-ops`.
+  - Palimpsest owns source/evidence data while Switchboard owns project, task, runtime, freshness, and sync state.
+  - 080 is modeled as a mixed clothing/media/machine project instead of a normal backend service.
+  - Gmail and Drive are parked as metadata-only future sources; no OAuth, bodies, attachments, or Drive contents were connected.
+  - `export-palimpsest` now summarizes task ledgers, scope entries, and pull bundles instead of exporting detailed notes or pull-bundle file paths.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | dir | /Users/p/Desktop/dashboard/switchboard/manifests
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+
+## 2026-05-14T01:44:45+00:00 | Record manager boundary correction for Palimpsest export
+- Tags: handoff, decision, scope
+- Summary: Documented that the Palimpsest export redaction code/test edits were made from the manager lane and now require separate Switchboard code-agent review before release.
+- Changed Paths: CHANGELOG.md, switchboard/local/tasks-completed.md, switchboard/local/control-center-handoff.md, /Users/p/Desktop/main/agent-ops/README.md, /Users/p/Desktop/main/agent-ops/AGENTS.md, /Users/p/Desktop/main/agent-ops/tasks/current.md, /Users/p/Desktop/main/agent-ops/decisions/0002-agent-manager-code-boundary.md, /Users/p/Desktop/main/agent-ops/handoffs/2026-05-14-switchboard-export-redaction-review.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants Codex to operate as the Switchboard manager: make nodes, pull/bootstrap state, track gaps, and delegate code changes to separate agents.
+- Scope Check: This correction is documentation and ledger-only; it does not change Switchboard source, tests, manifests, runtime behavior, or Palimpsest data.
+- Changelog:
+  - Marked the manager-made Palimpsest exporter/test edits as needing Switchboard code-agent review.
+  - Added the Agent Ops rule that manager work tracks state and handoffs but does not patch sibling code.
+  - Added a dedicated handoff for reviewing the Palimpsest export redaction work.
+- Notes:
+  - The prior `Model Palimpsest projection and personal source lanes` entry remains as historical record, but its exporter/test portion is not accepted release work until reviewed.
+  - Future unsafe-code findings from the manager lane should stop at `needs-review` and become handoffs.
+  - Live Switchboard/project state must be inspected before declaring project lanes complete.
+  - No code files were edited in this correction pass.
+  - No tests were run because this was documentation and manager-ledger work only.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md
+  - doc | dir | /Users/p/Desktop/main/agent-ops
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+
+## 2026-05-14T01:49:11+00:00 | Register X collector manager node
+- Tags: task, handoff, scope
+- Summary: Registered `/Users/p/Desktop/main/xscrapin` as the `x-collector` Switchboard-managed root for local-private Palimpsest source tracking.
+- Changed Paths: switchboard/manager.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/xscrapin/AGENTS.md, /Users/p/Desktop/main/xscrapin/switchboard/node.manifest.json, /Users/p/Desktop/main/xscrapin/switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/tasks/current.md, /Users/p/Desktop/main/agent-ops/switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants Switchboard to make nodes and track live project/source state, not silently implement code changes.
+- Scope Check: Manager metadata only; no scraper source, raw X records, Palimpsest data, or runtime behavior changed.
+- Notes:
+  - X collector is now a registered minion root.
+  - The root is not a git repository.
+  - This records source tracking; any scraper behavior change must be delegated to an implementation agent.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/manager.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | dir | /Users/p/Desktop/main/xscrapin/switchboard
+  - doc | file | /Users/p/Desktop/main/agent-ops/tasks/current.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+
+## 2026-05-14T01:53:22+00:00 | Fix `.47` pull-scope freshness import
+- Tags: task, freshness, sync, pull-bundle, scope
+- Summary: Fixed pull-bundle preflight copy so VPN/network blocked appears only on actual connection failures, normalized old `.47` node snapshot schema during Sync From Node, imported current `.47` scope snapshots into the local Control Center, and confirmed pull-bundle preflight is no longer stale for the `.47` services.
+- Changed Paths: switchboard/collectors.py, switchboard/manifests/services.json, src/components/PullBundlePanel.tsx, src/pages/ServiceDetailPage.tsx, src/types/switchboard.ts, tests_backend/test_runtime_and_node_sync.py, tests/freshness-contract.test.ts, GOALS.md, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Pratik approved the next small task: fix stale/VPN preflight wording, run saved-credential Sync From Node for `.47`, then rerun pull-bundle preflight without touching the server.
+- Scope Check: Remote `.47` was read-only; no normalize, upgrade, sync-to-node, archive, delete, or remote file edits were run. The only intentional data mutation was local Control Center import state from approved Sync From Node.
+- Notes:
+  - Preflight now says `VPN is off or network blocked` only when a real connection action fails.
+  - Stale remote authority now says `Run Sync From Node with VPN on`.
+  - Sync From Node now normalizes legacy scope kinds: `source`, `ui`, `asset`, and `config` become `code`; `meta` becomes `doc`; legacy `pattern` path types become `glob`.
+  - Sync From Node now normalizes legacy managed-doc id `streamlit_changelog` to `changelog`.
+  - Imported `.47` scope snapshots generated on 2026-05-10 and 2026-05-12 into local Control Center state for `aichat`, `sys_docs`, `emailagent`, `compareanswers`, `aichat_test`, `ingest_service`, `adminchat`, `rag`, `aichat_ingestion`, and `c`.
+  - Pull-bundle preflight after import reported `ok`, `authority_stale=false`, and `suspicious_count=0` for all `.47` services checked.
+  - Old per-project external node ports remain a separate manager/minion cleanup task; this pass did not change port topology or manager normalization.
+  - `GOALS.md` now records that old `870x` per-project node-health ports are legacy scaffolding and the one-port cleanup is still open.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_runtime_and_node_sync.py
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts
+  - doc | file | /Users/p/Desktop/dashboard/GOALS.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/manifests/services.json
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+
+## 2026-05-14T02:07:09+00:00 | Record Agent Ops manager presence
+- Tags: handoff, scope
+- Summary: Recorded the manager-presence update that makes Agent Ops the hub for cross-agent bridge tracking and points local agents back to Source Status before cross-project/source-data work.
+- Changed Paths: AGENTS.md, CHANGELOG.md, switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants future build phases to run through Codex manager presence, Switchboard tracking, and project-local agent notes.
+- Scope Check: Switchboard documentation/ledger update only; no Switchboard source code, tests, manifests, runtime behavior, or release package changed.
+- Notes:
+  - Central bridge tracker is `/Users/p/Desktop/main/agent-ops/bridges/source-status.md`.
+  - Tool-boundary note is `/Users/p/Desktop/main/agent-ops/handoffs/2026-05-14-tool-boundaries.md`.
+  - Agent communication note is `/Users/p/Desktop/main/agent-ops/handoffs/2026-05-14-agent-manager-presence.md`.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/AGENTS.md
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+
+## 2026-05-14T02:11:30+00:00 | Make manager rules durable in agent contract
+- Tags: handoff, scope
+- Summary: Moved the manager-presence rules into the Switchboard node manifest project principles so generated `AGENTS.md` files continue to point agents at the canonical shared contract instead of losing hand-edited manager notes on snapshot.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants systems that keep agents following build instructions exactly and reporting through Agent Ops/Switchboard.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, runtime behavior, release package, private data, or service manifests changed.
+- Notes:
+  - `AGENTS.md` files are generated by Switchboard and should remain small pointers to `switchboard/core/agent-contract.md`.
+  - Durable manager rules belong in the shared contract/project principles.
+  - Agents must check Source Status before cross-project/source-data work and report back through Pratik to Codex manager.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+
+## 2026-05-14T02:20:00+00:00 | Record CEO/PM Agent Ops sync model
+- Tags: decision, handoff, scope
+- Summary: Added the operating rule that Pratik is CEO, Codex manager is project manager, implementation agents receive scoped delegated work, and local/future `.47` Codex manager states sync through Switchboard/Palimpsest projections.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/decisions/0003-ceo-pm-single-agent-ops-sync.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants one Agent Ops management layer, with local and future `.47` manager versions syncing through the tools being built.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, service manifests, runtime behavior, release package, or private data changed.
+- Notes:
+  - Switchboard remains the control plane for tasks/nodes/runtime/freshness.
+  - Palimpsest remains the personal/source/evidence reservoir.
+  - Agent Ops is the management hub and sync coordinator.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/decisions/0003-ceo-pm-single-agent-ops-sync.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+
+## 2026-05-14T02:21:21Z | Ship 1.12.6 freshness and collect release
+- Tags: task, handoff, scope
+- Summary: Made Collect the primary company refresh path by syncing node-managed locations first, fixed the stale workspace/latest handoff into service detail, standardized new Switchboard node defaults on port 8020, disabled old `.47:870x` node-health flows locally, and regenerated packaged static UI for the 1.12.6 release.
+- Changed Paths: src/App.tsx, src/api/client.ts, src/components/ConfirmationModal.tsx, src/components/ProjectOnboardingPanel.tsx, src/components/RunStatus.tsx, src/components/StatusBadge.tsx, src/pages/ServiceDetailPage.tsx, src/pages/WorkspacePage.tsx, src/types/switchboard.ts, switchboard/collectors.py, switchboard/defaults.py, switchboard/models.py, switchboard/node.py, switchboard/node_api.py, switchboard/node_runtime.py, switchboard/cli.py, switchboard/core/runtime-update-prompt.md, switchboard/manifests/api-flows.json, switchboard/manifests/project-environments.json, switchboard/manifests/services.json, tests/collect-refresh-contract.test.ts, tests_backend/test_backend_regressions.py, tests_backend/test_node_mode.py, tests_backend/test_runtime_and_node_sync.py, scripts/check_release_static.py, GOALS.md, README.md, CHANGELOG.md, package.json, package-lock.json, pyproject.toml, switchboard/__init__.py, switchboard/static/app, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Implemented the approved 1.12.6 release lane only: Collect freshness, primary health-check removal, 8020 defaults, local `.47` stale metadata cleanup, release gate, docs, snapshot, and verify.
+- Scope Check: Project shape changed because a release static-check script, a collect refresh frontend contract test, and `GOALS.md` are now canonical project files. Pull scope should include source, tests, release scripts, docs, and packaged static UI; it should continue to exclude generated build/release/cache/runtime/private data.
+- Version: 1.12.6
+- Current Truth:
+  - Collect now bulk-runs Sync From Node for eligible node-managed service locations before inventory and returns `node_sync_results`.
+  - `local_bundle_only` servers are skipped by Collect node sync and are not treated as node-managed.
+  - Workspace Collect results are pushed back into `App.latestResults`, so service detail reads the fresh run data without manual back/refresh/reopen.
+  - The visible company-level `Run All Health Checks` path is removed; the backend diagnostic endpoint remains.
+  - New node and manager runtime defaults use port `8020`; product app ports are separate.
+  - Old `.47:870x` node-health API flows are disabled locally, not deleted, and project-environment runtime notes no longer make those ports the active verification surface.
+  - `.47` remote bootstrap is still not done; the next `.47` action must be read-only preflight first.
+- Ports and Services:
+  - Switchboard Control Center API remains `127.0.0.1:8009`.
+  - Vite dev UI remains `127.0.0.1:5173`.
+  - New Switchboard node/manager default is `8020`.
+  - Old `.47` `8701-8710` per-project node-health ports are legacy metadata and not the release authority.
+- Pull/Backup Include:
+  - `src/`
+  - `switchboard/` source and canonical docs, excluding runtime/private/generated areas
+  - `tests/`
+  - `tests_backend/`
+  - `scripts/check_release_static.py`
+  - `GOALS.md`, `README.md`, `CHANGELOG.md`, `pyproject.toml`, `package.json`, `package-lock.json`, `MANIFEST.in`, TypeScript config
+  - `switchboard/static/app/` because the packaged node UI must match source for release
+- Pull/Backup Exclude:
+  - `.git`, `.venv`, `node_modules`, `dist`, `build`, `release`, `downloads`, `logs`, `state`, `switchboard/manager/runtime`, `switchboard/manager/archives`, `switchboard.egg-info`, caches, secrets, `.env`, `.npmrc`, generated wheels, and runtime logs.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/GOALS.md
+  - code | file | /Users/p/Desktop/dashboard/scripts/check_release_static.py
+  - code | file | /Users/p/Desktop/dashboard/tests/collect-refresh-contract.test.ts
+  - code | dir | /Users/p/Desktop/dashboard/src
+  - code | dir | /Users/p/Desktop/dashboard/switchboard
+  - code | dir | /Users/p/Desktop/dashboard/tests
+  - code | dir | /Users/p/Desktop/dashboard/tests_backend
+  - doc | file | /Users/p/Desktop/dashboard/README.md
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-16T09:39:23Z | Record read-only cross-dependency drift audit
+- Tags: handoff, scope
+- Summary: Recorded the Cross-Dependency Drift Enforcer pass as read-only evidence so the Switchboard manager state does not leave an invisible audit side-state.
+- Changed Paths: switchboard/local/tasks-completed.md, switchboard/node.manifest.json, switchboard/evidence/completed-tasks.json, switchboard/evidence/scope.snapshot.json, switchboard/evidence/doc-index.json, switchboard/evidence/update-gate.json, switchboard/local/control-center-handoff.md, switchboard/local/approach-history.md, switchboard/local/doc-index.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Pratik required any Switchboard audit/report work to be recorded in Switchboard's own task ledger and snapshot, with read-only work labeled as read-only evidence only.
+- Scope Check: The drift audit itself was read-only across `/Users/p/Desktop/agent-ops`, `/Users/p/Desktop/dashboard`, and `/Users/p/Desktop/palimpsest`; no product code, docs, source manifests, service configs, runtime state, server state, credentials, raw private data, formatters, service starts, or browser/UI tools were changed during the audit.
+- Notes:
+  - Produced a chat-only Cross-Dependency Index, Instruction Drift Index, Date-wise Drift Cluster, and Angry Manager Notes report.
+  - Classified Agent Ops as manager truth, Switchboard as the `git/networking` plus `agentic control` control plane, and Palimpsest as adapter/channel -> schema -> storage with views secondary.
+  - Found stale generated/projection drift where older artifacts still point to `/Users/p/Desktop/main/agent-ops` while the current canonical manager root is `/Users/p/Desktop/agent-ops`.
+  - Found generic instruction drift in dashboard and Palimpsest `AGENTS.md` files because they point at the Switchboard contract but do not directly carry the Agent Ops freeze language.
+  - Found parked Gmail/Drive lanes represented in manifests/projections; classified them as parked metadata-only placeholders, not active adapters.
+  - Found meeting-extractor ownership drift: useful secondary Palimpsest adapter, but its delete-after-validation rule conflicts with the root preserve/archive posture unless treated as an explicit exception.
+  - Found GitHub backup still blocked by pull-bundle/scope/freshness gates rather than ready for broad automation.
+  - No standalone report file was written; this ledger row is the durable Switchboard record of the read-only audit.
+- Verification:
+  - Planned after this entry: `./.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - Planned after this entry: `./.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/runbook.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/approach-history.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-14T02:24:33Z | Read-only .47 1.12.6 bootstrap preflight
+- Tags: task, handoff, scope
+- Summary: Used Switchboard saved credentials over VPN to inspect `.47` without remote writes and confirmed the server is ready for an approved 1.12.6 bootstrap plan but is not yet normalized.
+- Changed Paths: GOALS.md, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Pratik approved read-only `.47` testing only; no normalize, upgrade, restart, stop ports, archive, delete, sync-to-node, or remote file edit was allowed.
+- Scope Check: Documentation/ledger truth update only. No project pull scope changed except preserving the requirement that `.47` bootstrap remains a gated next task.
+- Current Truth:
+  - SSH through `pesu_dev_47` saved credentials works with VPN on.
+  - Manager health is OK on `127.0.0.1:8720` with Switchboard `1.12.5`, manager root `/home/pesu/sys_docs`, and 10 managed roots.
+  - Port `8020` is currently free on `.47`.
+  - No old `8701-8710` listeners were found running; only the manager listener on `8720` was present.
+  - Root manifests still carry old per-project runtime ports `8701-8710`; that is manifest drift, not active listener truth.
+  - Bootstrap versions are mostly `1.12.1`; `excelcare` has no bootstrap version recorded.
+  - Scope snapshots exist for all 10 roots and are generated on 2026-05-10, except `aichat` which is generated on 2026-05-12.
+- Root Snapshot Summary:
+  - `sys_docs`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8701`, scope entries `39`, scope generated `2026-05-10T06:20:35+00:00`.
+  - `aichat`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8702`, scope entries `41`, scope generated `2026-05-12T06:08:06+00:00`.
+  - `compareanswers`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8703`, scope entries `27`, scope generated `2026-05-10T06:20:35+00:00`.
+  - `emailagent`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8704`, scope entries `34`, scope generated `2026-05-10T06:20:35+00:00`.
+  - `process_documents`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8705`, scope entries `35`, scope generated `2026-05-10T06:37:32+00:00`.
+  - `adminchat`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8706`, scope entries `22`, scope generated `2026-05-10T06:20:35+00:00`.
+  - `rag`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8707`, scope entries `25`, scope generated `2026-05-10T06:20:35+00:00`.
+  - `aichat_test`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8708`, scope entries `21`, scope generated `2026-05-10T06:33:31+00:00`.
+  - `aichat_ingestion`: installed `1.12.5`, bootstrap `1.12.1`, manifest port `8709`, scope entries `35`, scope generated `2026-05-10T06:33:32+00:00`.
+  - `excelcare`: installed `1.12.5`, bootstrap blank, manifest port `8710`, scope entries `28`, scope generated `2026-05-10T06:20:35+00:00`.
+- Next:
+  - Proposed next task is a separate approval-gated `.47` 1.12.6 bootstrap on `8020`.
+  - Do not stop old `8720` until `8020` manager is installed, started, verified, and Pratik approves cutover cleanup.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/GOALS.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+- Tests:
+  - `./.venv/bin/python -m unittest discover tests_backend`
+  - `npm test`
+  - `npm run build`
+  - `switchboard release build --wheel-out release`
+  - `npm run check:release-static`
+- Next:
+  - Run read-only `.47` 1.12.6 bootstrap preflight only: manager health/version, active manager port, whether `8020` is free, old `8701-8710` listeners, managed roots, bootstrap versions, and scope timestamps.
+  - Do not normalize, upgrade, restart, stop ports, archive, delete, or edit remote `.47` until Pratik approves after the preflight report.
+
+## 2026-05-14T02:20:14+00:00 | Record CEO prompt factory and Notes intake
+- Tags: decision, handoff, scope
+- Summary: Added the durable manager rule that Codex manager converts Pratik's direction and approved Apple Notes context into scoped implementation-agent prompts, asking questions before delegation when unclear.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/decisions/0004-ceo-prompt-factory-notes-intake.md, /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md, /Users/p/Desktop/main/agent-ops/bridges/notes-intake.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants prompt generation and task cleanup to be Codex manager's core CEO-support job, with Notes.app available as a private intake source.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, service manifests, runtime behavior, release package, Notes.app content, or private data changed.
+- Notes:
+  - Notes.app is an intake surface, not a public artifact source.
+  - Manager output should be clear prompt packets and questions before implementation delegation.
+  - Raw note text is not copied unless explicitly approved for a specific destination.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/decisions/0004-ceo-prompt-factory-notes-intake.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/bridges/notes-intake.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+
+## 2026-05-15T05:45:53+00:00 | Record Pratik-language source-of-truth rule
+- Tags: decision, handoff, scope
+- Summary: Added the durable manager rule that Pratik's exact language is the primary truth and must be preserved before cleaned prompts or agent interpretation.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/decisions/0005-pratik-language-source-of-truth.md, /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md, /Users/p/Desktop/main/agent-ops/bridges/ceo-conversation-record.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik clarified that what he says and how he says it is the only main truth, and agents must record it in his language first.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, service manifests, runtime behavior, release package, Notes.app content, or private data changed.
+- Notes:
+  - Prompt packets now start with `Pratik's Words / Source Language`.
+  - Cleaned prompts cannot override raw CEO language.
+  - Ambiguity must be reported back instead of guessed through implementation.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/decisions/0005-pratik-language-source-of-truth.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md
+  - doc | file | /Users/p/Desktop/main/agent-ops/bridges/ceo-conversation-record.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+
+## 2026-05-14T02:22:59Z | Finalize 1.12.6 release verification
+- Tags: task, handoff, scope
+- Summary: Re-ran the Switchboard snapshot/verify path for the 1.12.6 freshness release so the latest canonical handoff points at the completed Collect, UI freshness, 8020 default, static packaging, and local `.47` metadata cleanup work.
+- Changed Paths: switchboard/local/tasks-completed.md, switchboard/node.manifest.json, switchboard/evidence/completed-tasks.json, switchboard/evidence/scope.snapshot.json, switchboard/evidence/doc-index.json, switchboard/local/control-center-handoff.md, switchboard/local/runbook.md, switchboard/local/approach-history.md, switchboard/local/doc-index.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Confirmed this is the verification close-out for local 1.12.6 only; remote `.47` remains read-only preflight next.
+- Scope Check: Latest scope includes the new release script, collect refresh contract test, `GOALS.md`, source, tests, docs, and packaged static UI; excludes still cover caches, venvs, build output, release output, runtime logs, private state, and old manager archives.
+- Version: 1.12.6
+- Notes:
+  - Backend tests, frontend tests, frontend build, release wheel build, and packaged-static stale-label gate passed before this verification entry.
+  - `switchboard/static/app` was regenerated from current source and no longer contains `Projects & Environments`, `Add Project Group`, or `Run All Health Checks`.
+  - The next `.47` task is read-only bootstrap preflight for manager health/version, active port, `8020` availability, old `8701-8710` listeners, managed roots, bootstrap versions, and scope timestamps.
+  - Do not normalize, upgrade, restart, stop ports, archive, delete, or edit remote `.47` until Pratik approves after the preflight report.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/GOALS.md
+  - code | file | /Users/p/Desktop/dashboard/scripts/check_release_static.py
+  - code | file | /Users/p/Desktop/dashboard/tests/collect-refresh-contract.test.ts
+  - code | dir | /Users/p/Desktop/dashboard/src
+  - code | dir | /Users/p/Desktop/dashboard/switchboard
+  - code | dir | /Users/p/Desktop/dashboard/tests
+  - code | dir | /Users/p/Desktop/dashboard/tests_backend
+  - doc | file | /Users/p/Desktop/dashboard/README.md
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-14T02:25:17Z | Close 1.12.6 local release and .47 preflight
+- Tags: task, handoff, scope
+- Summary: Closed the local 1.12.6 freshness release after tests, build, packaged-static gate, snapshot, verify, and read-only `.47` bootstrap preflight.
+- Changed Paths: GOALS.md, switchboard/local/tasks-completed.md, switchboard/node.manifest.json, switchboard/evidence/completed-tasks.json, switchboard/evidence/scope.snapshot.json, switchboard/evidence/doc-index.json, switchboard/local/control-center-handoff.md, switchboard/local/runbook.md, switchboard/local/approach-history.md, switchboard/local/doc-index.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Finished only the approved local 1.12.6 release lane plus read-only `.47` preflight; no remote `.47` mutation was performed.
+- Scope Check: Scope includes the 1.12.6 source/test/doc/static changes and keeps generated build output, release wheels, private state, runtime logs, caches, venvs, and old manager archives excluded.
+- Version: 1.12.6
+- Notes:
+  - Local release gates passed: backend unittest suite, `npm test`, `npm run build`, `switchboard release build --wheel-out release`, `npm run check:release-static`, `switchboard node snapshot`, and `switchboard node verify-update`.
+  - `.47` read-only preflight found manager `1.12.5` on `8720`, `8020` free, no running old `8701-8710` listeners, 10 managed roots, root manifests still carrying old `870x` runtime ports, and mostly bootstrap `1.12.1`.
+  - Next task is approval-gated `.47` 1.12.6 bootstrap on `8020`; do not stop `8720` or mutate remote files until that is explicitly approved.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/GOALS.md
+  - code | file | /Users/p/Desktop/dashboard/scripts/check_release_static.py
+  - code | file | /Users/p/Desktop/dashboard/tests/collect-refresh-contract.test.ts
+  - code | dir | /Users/p/Desktop/dashboard/src
+  - code | dir | /Users/p/Desktop/dashboard/switchboard
+  - code | dir | /Users/p/Desktop/dashboard/tests
+  - code | dir | /Users/p/Desktop/dashboard/tests_backend
+  - doc | file | /Users/p/Desktop/dashboard/README.md
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-16T15:09:30+05:30 | Record read-only Switchboard manual_consolidation verification
+- Tags: handoff, scope
+- Summary: Recorded the read-only verification report for the local `manual_consolidation` scope-source fix and nearby Switchboard bug clusters. No product code, tests, manifests, runtime services, commits, pushes, restarts, or cleanup were performed during the audit.
+- Changed Paths: switchboard/local/tasks-completed.md, switchboard/node.manifest.json, switchboard/evidence/completed-tasks.json, switchboard/evidence/scope.snapshot.json, switchboard/evidence/doc-index.json, switchboard/evidence/update-gate.json, switchboard/local/control-center-handoff.md, switchboard/local/approach-history.md, switchboard/local/doc-index.md
+- Agent: Codex manager
+- Tool: codex-cli
+- Read Back: Pratik asked for the Switchboard audit/fix/report state not to remain invisible; because the work was read-only, this entry records evidence only and leaves implementation to a separate explicit assignment.
+- Scope Check: This update is manager/ledger state only. It does not change Switchboard product code, frontend behavior, backend behavior, service manifests, services, server state, Git history, or dirty worktree contents beyond this ledger and derived snapshot/verify files.
+- Notes:
+  - Backend `ScopeSource` includes `manual_consolidation` in `switchboard/models.py`; frontend `ScopeEntry.source` includes the same value in `src/types/switchboard.ts`; the local Agent Ops service scope entries use `manual_consolidation` in `switchboard/manifests/services.json`.
+  - Regression evidence exists at `tests_backend/test_backend_regressions.py::BackendRegressionTests.test_manual_consolidation_scope_source_loads_agent_ops_manifest`.
+  - Direct local API-path evidence loaded `get_workspace("1")`, returned workspace `1`, returned `6` services, and included `agent-ops=True`; this verifies the local workspace/API 500 path is not failing on the `manual_consolidation` enum.
+  - Frontend type evidence passed with `npx tsc --noEmit --pretty false`.
+  - Contract evidence passed for Collect/node sync, freshness/pull authority, project grouping, and Sync From Node refresh tests.
+  - Packaged static release evidence passed with `npm run check:release-static`.
+  - Backend project grouping regression passed separately.
+  - `pytest` was not available in `.venv`, so the targeted backend regression was run through `unittest` instead.
+  - Dirty worktree risk remains high and was not cleaned: at recording time there were `47` modified tracked files, `9` untracked files, and `10147 insertions / 2097 deletions` in the dashboard diff.
+  - Visible local bug/fix clusters from evidence: `manual_consolidation` API/workspace 500 repair, Collect freshness/node sync, pull-bundle preflight authority, project grouping, static release checks, and dirty-worktree release risk.
+- Verification:
+  - `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_manual_consolidation_scope_source_loads_agent_ops_manifest`
+  - `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python - <<'PY' ... get_workspace('1') ... PY`
+  - `npx tsc --noEmit --pretty false`
+  - `npm test -- tests/collect-refresh-contract.test.ts tests/freshness-contract.test.ts tests/projects-panel-contract.test.ts`
+  - `npm test -- tests/sync-refresh-contract.test.ts`
+  - `npm run check:release-static`
+  - `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_project_service_assignment_moves_ownership_and_renames_cleanly`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/runbook.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/approach-history.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-16T15:12:25+05:30 | Record read-only backend/API drift index
+- Tags: task, handoff
+- Summary: Produced the Switchboard Backend/API Drift Enforcer report as a read-only audit of backend, API, CLI, script, manifest, node, storage, and runtime surfaces against the freeze rule that only `git/networking` and `agentic control` are approved cores.
+- Changed Paths: switchboard/local/tasks-completed.md, switchboard/node.manifest.json, switchboard/evidence/completed-tasks.json, switchboard/evidence/scope.snapshot.json, switchboard/evidence/doc-index.json, switchboard/evidence/update-gate.json, switchboard/local/control-center-handoff.md, switchboard/local/doc-index.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Pratik asked for a strict read-only drift index, not code changes, classifying every backend/API/CLI/script/manifest surface into the two approved Switchboard buckets or `UNMAPPED_DRIFT`.
+- Scope Check: Read-only inspection only; no Switchboard product code, UI code, manifests, runtime services, remote servers, SSH/SFTP sessions, API calls, tests, formatters, deploys, restarts, or cleanup actions were run during the audit. This ledger/snapshot close-out is the only follow-up write.
+- Notes:
+  - Audit covered `switchboard/api.py`, `switchboard/node_api.py`, `switchboard/cli.py`, `switchboard/collectors.py`, `switchboard/node.py`, `switchboard/node_runtime.py`, `switchboard/manifests.py`, `switchboard/models.py`, `switchboard/storage.py`, root scripts, package scripts, and JSON manifests.
+  - The report counted 65 control-center FastAPI routes and 22 node/manager-node routes, and flagged duplicate `GET /api/servers` registration, API Lab/API flows, Palimpsest export, dependency/model composition, deploy scripts, delete-style actions, and archived scaffolding as drift or cleanup-risk surfaces.
+  - Core surfaces classified as `keep` or `simplify` were Git status/safety/pull/push, GitHub backup, pull bundles, server/runtime connectivity truth, Collect, node sync/inspect, task ledger, one-manager node authority, and company -> project -> services grouping.
+  - No secrets or private raw data were included in the report.
+  - No Scope Entries are included in this entry because the audit did not change approved pull scope; existing pull-bundle scope should remain authoritative.
+- Verification:
+  - `./.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - `./.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+
+## 2026-05-16T09:43:19Z | Finalize read-only cross-dependency drift audit ledger update
+- Tags: handoff, scope
+- Summary: Finalized Switchboard bookkeeping for the Cross-Dependency Drift Enforcer report and removed duplicate/misplaced close-out rows from this same bookkeeping pass so the ledger stops pretending stale rows are current.
+- Changed Paths: switchboard/local/tasks-completed.md, switchboard/node.manifest.json, switchboard/evidence/completed-tasks.json, switchboard/evidence/scope.snapshot.json, switchboard/evidence/doc-index.json, switchboard/evidence/update-gate.json, switchboard/local/control-center-handoff.md, switchboard/local/approach-history.md, switchboard/local/doc-index.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Pratik required the read-only Switchboard audit/report work to be recorded in Switchboard's own task ledger and snapshot with evidence, changed paths, and verification. No product code was assigned.
+- Scope Check: This is Switchboard bookkeeping only. The underlying audit was read-only across `/Users/p/Desktop/agent-ops`, `/Users/p/Desktop/dashboard`, and `/Users/p/Desktop/palimpsest`; no product code, source docs, manifests, runtime services, server state, credentials, private raw data, commits, pushes, formatters, browser/UI tools, or service starts were changed by the audit.
+- Notes:
+  - The durable audit evidence row remains at `2026-05-16T09:39:23Z`.
+  - Cleaned only duplicate/misplaced close-out rows from this same bookkeeping pass at `2026-05-16T09:40:40Z` and `2026-05-16T09:41:46Z`; unrelated concurrent/pre-existing rows were preserved.
+  - Audit output was chat-only: Cross-Dependency Index, Instruction Drift Index, Date-wise Drift Cluster, and Angry Manager Notes.
+  - Dependency conclusion: Agent Ops is manager truth; Switchboard owns `git/networking` and `agentic control`; Palimpsest owns adapter/channel -> schema -> storage, with views secondary.
+  - Drift evidence included stale generated/projection paths to `/Users/p/Desktop/main/agent-ops`, generic dashboard/Palimpsest `AGENTS.md` freeze gaps, parked Gmail/Drive placeholder lanes, meeting-extractor adapter identity drift, and GitHub backup still blocked by pull-bundle/scope/freshness gates.
+  - Earlier snapshot/verify returned `status: ok` but selected an older or later neighboring row when this audit close-out was not actually last. This final row exists to stop that invisible side-state nonsense.
+- Verification:
+  - `./.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - `./.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/runbook.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/approach-history.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-16T15:25:09+05:30 | Implement no-stale-truth dashboard freshness gate
+- Tags: task, handoff, scope
+- Summary: Implemented the approved no-stale-truth slice so Switchboard does not present archived/runtime-cache state as current manager truth. Backend responses now carry freshness metadata, current manifests win over stale archive/runtime cache rows, `8020` manager unreachability is explicit, visible checklist UI is removed, and Port Health is collapsed by default.
+- Changed Paths: switchboard/freshness.py, switchboard/api.py, switchboard/collectors.py, switchboard/storage.py, switchboard/models.py, src/api/client.ts, src/types/switchboard.ts, src/pages/ServiceDetailPage.tsx, src/components/ServiceCard.tsx, src/pages/ControlCenterPage.tsx, src/components/PullBundlePanel.tsx, tests/service-detail-checklist-contract.test.ts, tests/stale-truth-contract.test.ts, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Switchboard stale-truth implementation worker
+- Tool: codex-cli
+- Read Back: Pratik required stale dashboard state to stop lying. `8009` proves only Control Center API health; manager/node runtime truth requires `8020`; if `8020` is down, the UI must say stale/unverified or manager unreachable instead of rendering old node/version chips. Visible checklist UI is not wanted; Port Health belongs in a collapsed accordion.
+- Scope Check: No remote `.47` mutation, no SSH/SFTP, no automatic `8020` startup, no service restart, no commits, and no cleanup/archive/delete work were performed. Product-code edits were limited to the stale-truth backend/UI/test slice plus this Switchboard ledger entry.
+- Notes:
+  - Added a freshness envelope with `data_as_of`, `truth_as_of`, `freshness_state`, `stale_reason`, `refresh_action`, and `freshness_source`.
+  - `/latest` now overlays current workspace/service manifests over archived snapshots so stale archive services do not silently return as active company truth.
+  - Node viewer rows now prefer current root/manager manifests over stale `runtime-cache.json`, mark `8020` manager unreachability, and label old `8010` as `legacy cached`.
+  - `sync_from_node` invalidates cached node-viewer rows after import, and service delete clears related runtime-cache namespaces.
+  - Service cards and company cards now shade stale/manager-unreachable state and show the corrective CTA instead of current-looking version/bootstrap pills.
+  - Service Detail no longer has `Visible Checklist`; `Port Health` is an `AccordionSection` and is closed by default.
+  - Live process note: the running `8009` server still needs a normal backend restart/reload before the browser sees this code path. Source import verification showed `P -> switch` as `1.12.6`, target manager `8020`, `legacy cached :8010`, `Manager unreachable`, `Check 8020`.
+  - Relevant active agents were told to update Switchboard ledger/snapshot for their own work if they touched `/Users/p/Desktop/dashboard`: Plato, Jason, Boole, Helmholtz, and Epicurus. Dewey was not reachable from this Codex session.
+- Verification:
+  - `npm test -- --run tests/service-detail-checklist-contract.test.ts tests/stale-truth-contract.test.ts tests/freshness-contract.test.ts`
+  - `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_node_viewer_prefers_current_manifest_over_stale_runtime_cache tests_backend.test_backend_regressions.BackendRegressionTests.test_freshness_envelope_marks_archive_older_than_truth_stale tests_backend.test_backend_regressions.BackendRegressionTests.test_delete_service_clears_active_service_data`
+  - `npm test`
+  - `.venv/bin/python -m unittest tests_backend.test_backend_regressions`
+  - `npm run build`
+  - `git diff --check -- switchboard/freshness.py switchboard/api.py switchboard/collectors.py switchboard/storage.py switchboard/models.py src/api/client.ts src/types/switchboard.ts src/pages/ServiceDetailPage.tsx src/components/ServiceCard.tsx src/pages/ControlCenterPage.tsx src/components/PullBundlePanel.tsx tests/service-detail-checklist-contract.test.ts tests/stale-truth-contract.test.ts tests_backend/test_backend_regressions.py`
+  - `curl -sS http://127.0.0.1:8009/api/health`
+  - `.venv/bin/python - <<'PY' ... get_workspace_latest('1') / get_workspace('1') freshness proof ... PY`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/freshness.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/api.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/storage.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/models.py
+  - code | file | /Users/p/Desktop/dashboard/src/api/client.ts
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/ServiceCard.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/tests/service-detail-checklist-contract.test.ts
+  - code | file | /Users/p/Desktop/dashboard/tests/stale-truth-contract.test.ts
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/approach-history.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-18T13:55:55+05:30 | Fix project grouping parent and rename basics
+- Tags: task, handoff, scope
+- Summary: Fixed a basic project-grouping issue where clearing a parent project back to company root could not persist, and made project ID rename visible in the main Edit Project form instead of hiding it behind an advanced identity drawer.
+- Changed Paths: src/components/ProjectsPanel.tsx, src/types/switchboard.ts, switchboard/manifests.py, tests/projects-panel-contract.test.ts, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Switchboard project-grouping implementation worker
+- Tool: codex-desktop
+- Read Back: Pratik said pull bundles seem better for now and asked to take up a more basic Switchboard issue because many basics are still off. The chosen slice is company -> project -> services grouping: editing project identity, assigning multiple services, and clearing parent grouping must behave like normal project management, not hidden/raw-ID machinery.
+- Scope Check: Product-code edits were limited to the grouping UI, project request types, backend project patch semantics, and targeted tests. No pull-bundle generation, remote server access, service restart, Git commit, Git push, cleanup, delete, or unrelated dirty-worktree cleanup was performed.
+- Notes:
+  - `ProjectsPanel` now sends `parent_project_id: null` when the user selects `Company root`, so clearing a parent is an explicit saved edit.
+  - The Edit Project form now shows editable `Project ID` directly and explains that renaming updates child projects and environments.
+  - The parent selector is labeled `Parent Project`, not `Parent Project ID`.
+  - `ProjectCreateRequest` and `ProjectPatchRequest` now allow `parent_project_id` to be `null`.
+  - `ManifestStore.patch_project` now preserves an explicitly provided `parent_project_id=None` instead of dropping it through `exclude_none`.
+  - Targeted backend coverage now proves a child project can be moved back to company root.
+  - Browser-level smoke via Playwright was not run because Playwright is not installed in the Node REPL environment; Vite UI `5173` and API `8009` were both reachable.
+- Verification:
+  - `npm test -- --run tests/projects-panel-contract.test.ts`
+  - `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_project_service_assignment_moves_ownership_and_renames_cleanly`
+  - `npm run build`
+  - `curl -sS -I http://127.0.0.1:5173`
+  - `curl -fsS http://127.0.0.1:8009/api/health`
+  - `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/src/components/ProjectsPanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/switchboard/manifests.py
+  - code | file | /Users/p/Desktop/dashboard/tests/projects-panel-contract.test.ts
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/approach-history.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-18T16:30:18+05:30 | Finalize Switchboard local release metadata cleanup
+- Tags: task, handoff, scope
+- Summary: Finalized the safe local Switchboard cleanup by preserving agent-owned product changes, correcting product-code ledger attribution, marking stale `.47` node-health saved state as disabled/unverified, making parked personal project lanes explicit, and moving `GOALS.md` out of canonical root without deleting it.
+- Changed Paths: .gitignore, switchboard/manifests/api-flows.json, switchboard/manifests/services.json, switchboard/manifests/projects.json, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md, switchboard/manager/archives/2026-05-18T16-28-00+05-30--side-artifacts/GOALS.md
+- Agent: Switchboard finalization worker
+- Tool: codex-desktop
+- Read Back: Pratik asked for dashboard-only finalization: preserve verified code/test changes, split saved state from release metadata and side artifacts, avoid remote servers, correct ledger ownership, and leave parked or unverified lanes visibly parked/unverified instead of current-looking.
+- Scope Check: Dashboard-only cleanup. No Agent Ops, Palimpsest, Notes, sibling project, commit, push, SSH, SFTP, rsync, remote `.47` contact, service restart, delete, or cleanup outside `/Users/p/Desktop/dashboard` was performed.
+- Decisions:
+  - Product implementation ledger rows now attribute the no-stale-truth slice and project-grouping slice to implementation workers, while manager-only decision/record rows remain `Codex manager`.
+  - `aichat-node-health` now uses the saved legacy `.47` port `8702`, not `8706`; all old `.47:870x` node-health flows are disabled, tagged `legacy-node-health` and `unverified`, and say no live `.47` truth was checked in this pass.
+  - `.47` service runtime records no longer list old `8701-8710` node-health ports as current expected service ports or healthcheck commands; product ports stay visible where they were already modeled.
+  - Gmail/Drive, UnionBank, and 080 project lanes now say whether their service ids are parked placeholders or missing service refs; no OAuth, raw data, account data, message bodies, attachments, or Drive contents were invented.
+  - The 1.12.6 release shape remains version/static-gate/runtime-default work; manager-contract corrections stay in the separate `Unreleased - Manager Corrections` changelog lane.
+  - Root `uv.lock` is ignored because this checkout uses setuptools/pip in `pyproject.toml` and README, not uv lockfile management. The existing file was not deleted.
+  - Root `GOALS.md` was moved into the existing ignored manager archive tree as a side artifact, so it is preserved but no longer presented as canonical Switchboard source.
+- Verification:
+  - `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_legacy_47_node_health_api_flows_are_disabled tests_backend.test_backend_regressions.BackendRegressionTests.test_legacy_47_node_health_ports_are_not_current_service_ports tests_backend.test_backend_regressions.BackendRegressionTests.test_node_viewer_prefers_current_manifest_over_stale_runtime_cache tests_backend.test_backend_regressions.BackendRegressionTests.test_freshness_envelope_marks_archive_older_than_truth_stale tests_backend.test_backend_regressions.BackendRegressionTests.test_delete_service_clears_active_service_data tests_backend.test_backend_regressions.BackendRegressionTests.test_project_service_assignment_moves_ownership_and_renames_cleanly`
+  - `npm test -- --run tests/service-detail-checklist-contract.test.ts tests/stale-truth-contract.test.ts tests/freshness-contract.test.ts tests/projects-panel-contract.test.ts tests/collect-refresh-contract.test.ts tests/sync-refresh-contract.test.ts`
+  - `npm run check:release-static`
+  - `npm test`
+  - `.venv/bin/python -m unittest tests_backend.test_backend_regressions`
+  - `npm run build`
+  - `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/.gitignore
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/manifests/api-flows.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/manifests/services.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/manifests/projects.json
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - archive | file | /Users/p/Desktop/dashboard/switchboard/manager/archives/2026-05-18T16-28-00+05-30--side-artifacts/GOALS.md
+  - exclude | file | /Users/p/Desktop/dashboard/uv.lock
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build

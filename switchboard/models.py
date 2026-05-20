@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from .defaults import DEFAULT_NODE_PORT
+
 
 FavoriteTier = Literal["primary", "secondary", "none"]
 OwnershipTier = Literal["owned", "shared", "infra"]
@@ -13,7 +15,7 @@ ConnectionType = Literal["local", "ssh"]
 DeploymentMode = Literal["native_agent", "local_bundle_only"]
 ScopeKind = Literal["repo", "code", "doc", "log", "exclude"]
 ScopePathType = Literal["file", "dir", "glob"]
-ScopeSource = Literal["seeded", "user_added", "node_manifest", "tasks_completed"]
+ScopeSource = Literal["seeded", "user_added", "node_manifest", "tasks_completed", "manual_consolidation"]
 PushMode = Literal["allowed", "blocked"]
 SafetyProfile = Literal["generic_python", "secret_heavy"]
 MonitoringMode = Literal["manual", "detect", "node_managed"]
@@ -424,6 +426,7 @@ class WorkspacePatchRequest(BaseModel):
 class CollectRequest(BaseModel):
     runtime_passwords: dict[str, str] = Field(default_factory=dict)
     service_ids: list[str] = Field(default_factory=list)
+    include_node_sync: bool = True
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):  # type: ignore[override]
@@ -432,6 +435,10 @@ class CollectRequest(BaseModel):
                 **obj,
                 "runtime_passwords": obj.get("runtime_passwords", obj.get("password_overrides", {})),
                 "service_ids": obj.get("service_ids", obj.get("service_filter", [])),
+                "include_node_sync": obj.get(
+                    "include_node_sync",
+                    obj.get("sync_from_nodes", obj.get("bulk_sync_nodes", True)),
+                ),
             }
         return super().model_validate(obj, *args, **kwargs)
 
@@ -631,7 +638,7 @@ class NodeInspectResult(BaseModel):
     manifest_updated_at: str = ""
     runtime_status: Literal["running", "stopped", "running_unmanaged", "missing", "manager_running"] = "missing"
     runtime_pid: int | None = None
-    runtime_port: int = 8010
+    runtime_port: int = DEFAULT_NODE_PORT
     needs_install: bool = False
     needs_upgrade: bool = False
     needs_bootstrap: bool = False
@@ -650,6 +657,15 @@ class NodeInspectResult(BaseModel):
     manager_root_id: str = ""
     manager_root: str = ""
     manager_version: str = ""
+    data_as_of: str = ""
+    truth_as_of: str = ""
+    freshness_state: str = ""
+    stale_reason: str = ""
+    refresh_action: str = ""
+    freshness_source: str = ""
+    target_manager_port: int = DEFAULT_NODE_PORT
+    legacy_runtime_port: int | None = None
+    legacy_runtime_port_label: str = ""
 
 
 class ProjectCreateRequest(BaseModel):

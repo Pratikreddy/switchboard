@@ -503,18 +503,63 @@ class ManifestStore:
             if environment.project_id in project_ids
         ]
 
+    def _validated_project_service_ids(self, workspace_id: str, service_ids: list[str]) -> list[str]:
+        workspace_service_ids = {
+            service.service_id
+            for service in self.load_services()
+            if service.workspace_id == workspace_id
+        }
+        deduped: list[str] = []
+        seen: set[str] = set()
+        invalid: list[str] = []
+        for raw_service_id in service_ids:
+            service_id = raw_service_id.strip()
+            if not service_id or service_id in seen:
+                continue
+            if service_id not in workspace_service_ids:
+                invalid.append(service_id)
+                continue
+            seen.add(service_id)
+            deduped.append(service_id)
+        if invalid:
+            raise ValueError(f"Service does not belong to workspace {workspace_id}: {', '.join(invalid)}")
+        return deduped
+
+    def _move_project_services(
+        self,
+        projects: list[dict[str, Any]],
+        workspace_id: str,
+        owner_project_id: str,
+        service_ids: list[str],
+    ) -> list[dict[str, Any]]:
+        selected = set(service_ids)
+        for item in projects:
+            if item.get("workspace_id") != workspace_id or item.get("project_id") == owner_project_id:
+                continue
+            item["service_ids"] = [
+                service_id
+                for service_id in item.get("service_ids", [])
+                if service_id not in selected
+            ]
+        return projects
+
     def create_project(self, workspace_id: str, payload: ProjectCreateRequest) -> ProjectManifest:
         self.get_workspace(workspace_id)
         existing = self.load_projects()
         if any(project.project_id == payload.project_id for project in existing):
             raise ValueError(f"Project already exists: {payload.project_id}")
+        service_ids = self._validated_project_service_ids(workspace_id, payload.service_ids)
         project = ProjectManifest.model_validate(
             {
                 "workspace_id": workspace_id,
-                **payload.model_dump(mode="json"),
+                **payload.model_dump(mode="json", exclude={"service_ids"}),
+                "service_ids": service_ids,
             }
         )
-        save_json(self._projects_path, [*load_json(self._projects_path), project.model_dump(mode="json")])
+        projects = [item.model_dump(mode="json") for item in existing]
+        projects.append(project.model_dump(mode="json"))
+        projects = self._move_project_services(projects, workspace_id, project.project_id, service_ids)
+        save_json(self._projects_path, projects)
         return project
 
     def patch_project(self, project_id: str, payload: ProjectPatchRequest) -> ProjectManifest:
@@ -526,12 +571,19 @@ class ManifestStore:
         for index, item in enumerate(projects):
             if item["project_id"] != project_id:
                 continue
-            merged = {**item, **payload.model_dump(exclude_none=True, mode="json")}
+            payload_json = payload.model_dump(exclude_none=True, mode="json")
+            if "parent_project_id" in payload.model_fields_set and payload.parent_project_id is None:
+                payload_json["parent_project_id"] = None
+            if payload.service_ids is not None:
+                payload_json["service_ids"] = self._validated_project_service_ids(item["workspace_id"], payload.service_ids)
+            merged = {**item, **payload_json}
             updated = ProjectManifest.model_validate(merged)
             projects[index] = updated.model_dump(mode="json")
             break
         if updated is None:
             raise KeyError(f"Unknown project: {project_id}")
+        if payload.service_ids is not None:
+            projects = self._move_project_services(projects, updated.workspace_id, next_project_id, updated.service_ids)
         if next_project_id != project_id:
             for item in projects:
                 if item.get("parent_project_id") == project_id:

@@ -8,9 +8,10 @@ import {
   RefreshCw,
   Search,
 } from 'lucide-react'
-import { addService, browseTree, listServers } from '../api/client'
+import { addService, browseTree, getWorkspace, listProjects, listServers, updateProject } from '../api/client'
 import type {
   CreateServiceRequest,
+  ProjectManifest,
   RepoPolicy,
   RuntimeConfig,
   ScopeEntry,
@@ -194,6 +195,10 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
   const [monitoringMode, setMonitoringMode] = useState<RuntimeConfig['monitoring_mode']>('manual')
   const [runtimeNotes, setRuntimeNotes] = useState('')
   const [executionMode, setExecutionMode] = useState<CreateServiceRequest['execution_mode']>('networked')
+  const [projects, setProjects] = useState<ProjectManifest[]>([])
+  const [workspaceServices, setWorkspaceServices] = useState<Service[]>([])
+  const [workspaceServicesLoaded, setWorkspaceServicesLoaded] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState('')
 
   useEffect(() => {
     if (disabled) return
@@ -207,6 +212,39 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
     })
   }, [disabled, serverId, serverIds])
 
+  useEffect(() => {
+    if (disabled || !open) return
+    let cancelled = false
+    Promise.all([listProjects(workspaceId), getWorkspace(workspaceId)]).then(([projectResult, workspaceResult]) => {
+      if (cancelled) return
+      const messages: string[] = []
+      if (isApiError(projectResult)) {
+        setProjects([])
+        messages.push(projectResult.message)
+      } else {
+        setProjects(projectResult.projects)
+      }
+      if (isApiError(workspaceResult)) {
+        setWorkspaceServices([])
+        setWorkspaceServicesLoaded(false)
+        messages.push(workspaceResult.message)
+      } else {
+        setWorkspaceServices(workspaceResult.services)
+        setWorkspaceServicesLoaded(true)
+      }
+      if (messages.length > 0) setMessage(messages.join(' '))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [disabled, open, workspaceId])
+
+  useEffect(() => {
+    if (selectedProjectId && !projects.some((project) => project.project_id === selectedProjectId)) {
+      setSelectedProjectId('')
+    }
+  }, [projects, selectedProjectId])
+
   const availableServers = useMemo(() => {
     if (serverIds.length === 0) return servers
     const filtered = servers.filter((server) => serverIds.includes(server.server_id))
@@ -214,6 +252,10 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
   }, [serverIds, servers])
 
   const rootNode = rootPathLoaded ? nodesByPath[rootPathLoaded] ?? null : null
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.project_id === selectedProjectId) ?? null,
+    [projects, selectedProjectId],
+  )
 
   function resetTreeState() {
     setNodesByPath({})
@@ -476,13 +518,38 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
 
     setSaving(true)
     const result = await addService(workspaceId, payload)
-    setSaving(false)
     if (isApiError(result)) {
+      setSaving(false)
       setMessage(result.message)
       return
     }
+    let completionMessage = `Created ${result.display_name}.`
+    if (selectedProject) {
+      const knownServiceIds = new Set(workspaceServices.map((service) => service.service_id))
+      knownServiceIds.add(result.service_id)
+      const missingExistingRefs = workspaceServicesLoaded
+        ? (selectedProject.service_ids ?? []).filter((serviceId) => !knownServiceIds.has(serviceId))
+        : []
+      if (missingExistingRefs.length > 0) {
+        completionMessage = `Created ${result.display_name}, but project assignment is blocked by missing service references: ${missingExistingRefs.join(', ')}.`
+      } else {
+        const nextServiceIds = Array.from(new Set([...(selectedProject.service_ids ?? []), result.service_id]))
+        const assignResult = await updateProject(selectedProject.project_id, { service_ids: nextServiceIds })
+        if (isApiError(assignResult)) {
+          completionMessage = `Created ${result.display_name}, but project assignment failed: ${assignResult.message}`
+        } else {
+          setProjects((current) =>
+            current.map((project) =>
+              project.project_id === assignResult.project.project_id ? assignResult.project : project,
+            ),
+          )
+          completionMessage = `Created and assigned ${result.display_name} to ${assignResult.project.display_name}.`
+        }
+      }
+    }
+    setSaving(false)
     onCreated(result)
-    setMessage(`Created ${result.display_name}.`)
+    setMessage(completionMessage)
     setOpen(false)
     setDisplayName('')
     setServiceId('')
@@ -493,6 +560,7 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
     setMonitoringMode('manual')
     setRuntimeNotes('')
     setExecutionMode('networked')
+    setSelectedProjectId('')
     resetTreeState()
   }
 
@@ -519,9 +587,7 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
       {open && (
         <div className="border-t border-gray-800 px-4 py-4">
           <div className="mb-4 rounded-xl border border-cyan-900/30 bg-cyan-950/20 px-4 py-3 text-sm text-cyan-100">
-            This creates one tracked service from a filesystem root. Group it under a business project later in the
-            <span className="font-medium text-white"> Projects &amp; Environments </span>
-            section below.
+            This creates one tracked service from a filesystem root. Assign it to a project now or leave it at company root.
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[1.3fr,1fr,1.2fr,auto]">
@@ -589,6 +655,26 @@ export function ProjectOnboardingPanel({ workspaceId, serverIds, disabled, onCre
               placeholder="/home/pesu/aichat"
               disabled={disabled}
             />
+          </label>
+
+          <label className="mt-3 block text-sm text-gray-300">
+            <div className="mb-1">Assign to Project</div>
+            <select
+              value={selectedProjectId}
+              onChange={(event) => setSelectedProjectId(event.target.value)}
+              className="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+              disabled={disabled || projects.length === 0}
+            >
+              <option value="">Company root / unassigned service</option>
+              {projects.map((project) => (
+                <option key={project.project_id} value={project.project_id}>
+                  {project.display_name} ({project.project_id})
+                </option>
+              ))}
+            </select>
+            {projects.length === 0 && (
+              <div className="mt-1 text-xs text-gray-500">No projects available yet.</div>
+            )}
           </label>
 
           <div className="mt-4 rounded-xl border border-gray-800 bg-gray-950 p-4">

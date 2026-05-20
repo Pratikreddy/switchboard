@@ -15,7 +15,7 @@ from switchboard import __version__
 from switchboard.collectors import CollectionCoordinator
 from switchboard.config import Settings
 from switchboard.manifests import ManifestStore, save_json
-from switchboard.models import CollectRequest, NodeActionRequest, NodeSyncRequest, RuntimeActionRequest, RuntimeConfig
+from switchboard.models import CollectRequest, NodeActionRequest, NodeSyncRequest, PullBundleRequest, RuntimeActionRequest, RuntimeConfig
 from switchboard.node import init_manager_node, install_node, node_paths, register_manager_root
 from switchboard.node_runtime import manager_runtime_paths, manager_status, node_status, start_manager_runtime, stop_manager_runtime
 from switchboard.storage import SnapshotStore
@@ -116,6 +116,90 @@ def _write_local_fixture(root: Path, project_root: Path, runtime: dict, scope_en
     return manifests, snapshots, coordinator
 
 
+def _write_remote_fixture(root: Path, *, vpn_required: bool = False) -> tuple[ManifestStore, SnapshotStore, CollectionCoordinator]:
+    settings = _settings(root)
+    save_json(
+        settings.manifest_dir / "servers.json",
+        [
+            {
+                "server_id": "remote_box",
+                "name": "Remote Box",
+                "connection_type": "ssh",
+                "host": "203.0.113.47",
+                "username": "pesu",
+                "port": 22,
+                "vpn_required": vpn_required,
+                "tags": [],
+            }
+        ],
+    )
+    save_json(
+        settings.manifest_dir / "workspaces.json",
+        [
+            {
+                "workspace_id": "pesu",
+                "name": "PESU",
+                "tags": [],
+                "favorite_tier": "primary",
+                "servers": ["remote_box"],
+                "services": ["svc"],
+                "notes": "",
+            }
+        ],
+    )
+    save_json(
+        settings.manifest_dir / "services.json",
+        [
+            {
+                "service_id": "svc",
+                "workspace_id": "pesu",
+                "display_name": "Svc",
+                "kind": "service",
+                "ownership_tier": "owned",
+                "tags": [],
+                "favorite_tier": "primary",
+                "locations": [
+                    {
+                        "location_id": "svc-remote",
+                        "server_id": "remote_box",
+                        "access_mode": "ssh",
+                        "root": "/srv/svc",
+                        "role": "primary",
+                        "is_primary": True,
+                        "path_aliases": [],
+                        "runtime": {
+                            "expected_ports": [8720],
+                            "healthcheck_command": "",
+                            "run_command_hint": "",
+                            "monitoring_mode": "detect",
+                            "notes": "",
+                        },
+                    }
+                ],
+                "scope_entries": [
+                    {
+                        "entry_id": "code-1",
+                        "kind": "code",
+                        "path": "/srv/svc/app.py",
+                        "path_type": "file",
+                        "source": "user_added",
+                        "enabled": True,
+                    }
+                ],
+            }
+        ],
+    )
+    manifests = ManifestStore(settings)
+    snapshots = SnapshotStore(settings, manifests)
+    coordinator = CollectionCoordinator(settings, manifests, snapshots)
+    return manifests, snapshots, coordinator
+
+
+@contextmanager
+def _closed_ssh_connection():
+    yield None
+
+
 def _write_complete_update(project_root: Path) -> None:
     node_paths(project_root)["tasks_completed"].write_text(
         "# Tasks Completed\n\n"
@@ -139,6 +223,182 @@ class RuntimeAndNodeSyncTests(unittest.TestCase):
         self.assertEqual(runtime.expected_ports, [8000, 8500])
         with self.assertRaises(ValidationError):
             RuntimeConfig(expected_ports=[0])
+
+    def test_vpn_required_ssh_failures_are_classified_as_vpn_blocked(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, snapshots, coordinator = _write_remote_fixture(root, vpn_required=True)
+            snapshots.persist_node_sync(
+                "svc",
+                "svc-remote",
+                {
+                    "service_id": "svc",
+                    "location_id": "svc-remote",
+                    "direction": "from_node",
+                    "timestamp": "2099-01-01T00:00:00+00:00",
+                    "status": "ok",
+                },
+            )
+
+            with mock.patch.object(coordinator, "_open_ssh", side_effect=lambda _server: _closed_ssh_connection()):
+                sync_from = coordinator.sync_from_node("svc", NodeSyncRequest(location_id="svc-remote"))
+                sync_to = coordinator.sync_to_node("svc", NodeSyncRequest(location_id="svc-remote"))
+                pull_bundle = coordinator.pull_bundle(
+                    "svc",
+                    PullBundleRequest(location_id="svc-remote", extra_includes=[], extra_excludes=[]),
+                )
+                runtime = coordinator.runtime_check("svc", RuntimeActionRequest(location_id="svc-remote"))
+                inspect = coordinator.node_inspect("svc", NodeActionRequest(location_id="svc-remote"))
+
+            self.assertEqual(sync_from["status"], "vpn_or_network_blocked")
+            self.assertEqual(sync_to["status"], "vpn_or_network_blocked")
+            self.assertEqual(runtime["status"], "vpn_or_network_blocked")
+            self.assertEqual(inspect["status"], "vpn_or_network_blocked")
+            self.assertEqual(pull_bundle["status"], "vpn_or_network_blocked")
+            self.assertIn("VPN is off or network blocked", sync_from["message"])
+            self.assertIn("VPN is off or network blocked", runtime["notes"])
+            self.assertEqual(inspect["node"]["connection_status"], "vpn_or_network_blocked")
+            self.assertEqual(inspect["node"]["freshness_state"], "VPN/network blocked")
+
+    def test_non_vpn_ssh_failures_remain_unreachable(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, _, coordinator = _write_remote_fixture(root, vpn_required=False)
+
+            with mock.patch.object(coordinator, "_open_ssh", side_effect=lambda _server: _closed_ssh_connection()):
+                sync_from = coordinator.sync_from_node("svc", NodeSyncRequest(location_id="svc-remote"))
+                runtime = coordinator.runtime_check("svc", RuntimeActionRequest(location_id="svc-remote"))
+
+            self.assertEqual(sync_from["status"], "unreachable")
+            self.assertEqual(runtime["status"], "unreachable")
+            self.assertEqual(sync_from["message"], "SSH connection failed.")
+
+    def test_pull_bundle_preflight_blocks_stale_remote_authority(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, snapshots, coordinator = _write_remote_fixture(root, vpn_required=True)
+            snapshots.persist_node_sync(
+                "svc",
+                "svc-remote",
+                {
+                    "service_id": "svc",
+                    "location_id": "svc-remote",
+                    "direction": "from_node",
+                    "timestamp": "2026-04-25T01:39:59+00:00",
+                    "status": "ok",
+                },
+            )
+            snapshots.persist_runtime_check(
+                "svc",
+                "svc-remote",
+                {
+                    "service_id": "svc",
+                    "location_id": "svc-remote",
+                    "checked_at": "2026-05-13T11:10:23+00:00",
+                    "status": "ok",
+                },
+            )
+
+            result = coordinator.pull_bundle_preflight(
+                "svc",
+                PullBundleRequest(location_id="svc-remote", extra_includes=[], extra_excludes=[]),
+            )
+
+            self.assertEqual(result["status"], "partial")
+            self.assertTrue(result["authority_stale"])
+            self.assertEqual(result["node_local_scope_timestamp"], "2026-04-25T01:39:59+00:00")
+            self.assertTrue(result["control_center_scope_timestamp"])
+            self.assertIn("Node-local pull authority is older", result["message"])
+            self.assertIn("Run Sync From Node with VPN on", result["message"])
+            self.assertNotIn("VPN is off or network blocked", result["message"])
+
+    def test_pull_bundle_preflight_blocks_missing_remote_sync_authority(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, _, coordinator = _write_remote_fixture(root, vpn_required=False)
+
+            result = coordinator.pull_bundle_preflight(
+                "svc",
+                PullBundleRequest(location_id="svc-remote", extra_includes=[], extra_excludes=[]),
+            )
+
+            self.assertEqual(result["status"], "partial")
+            self.assertTrue(result["authority_stale"])
+            self.assertTrue(result["missing_remote_sync"])
+            self.assertIn("Remote bundles require node-local authority", result["message"])
+
+    def test_sync_from_node_normalizes_legacy_scope_kinds(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, _, coordinator = _write_remote_fixture(root)
+
+            normalized = coordinator._normalize_imported_scope_entries(
+                [
+                    {"kind": "source", "path": "/srv/svc/app.py", "path_type": "file", "source": "node_manifest"},
+                    {"kind": "ui", "path": "/srv/svc/ui.py", "path_type": "file", "source": "node_manifest"},
+                    {"kind": "asset", "path": "/srv/svc/static", "path_type": "dir", "source": "node_manifest"},
+                    {"kind": "config", "path": "/srv/svc/requirements.txt", "path_type": "file", "source": "node_manifest"},
+                    {"kind": "meta", "path": "/srv/svc/switchboard/node.manifest.json", "path_type": "file", "source": "manual_codex_handoff"},
+                    {"kind": "exclude", "path": "/srv/svc/**/*.log", "path_type": "pattern", "source": "node_manifest"},
+                ]
+            )
+
+            self.assertEqual([entry["kind"] for entry in normalized], ["code", "code", "code", "code", "doc", "exclude"])
+            self.assertEqual(normalized[4]["source"], "tasks_completed")
+            self.assertEqual(normalized[-1]["path_type"], "glob")
+
+    def test_sync_from_node_normalizes_legacy_managed_doc_ids(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, _, coordinator = _write_remote_fixture(root)
+
+            normalized = coordinator._normalize_imported_managed_docs(
+                [
+                    {"doc_id": "readme", "path": "README.md", "enabled": True},
+                    {"doc_id": "streamlit_changelog", "path": "streamlit/docs/CHANGELOG.md", "enabled": False},
+                    {"doc_id": "unknown_doc", "path": "docs/UNKNOWN.md", "enabled": True},
+                ]
+            )
+
+            self.assertEqual([entry["doc_id"] for entry in normalized], ["readme", "changelog"])
+
+    def test_pull_bundle_preflight_uses_per_location_import_timestamp_after_node_sync(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _, snapshots, coordinator = _write_remote_fixture(root, vpn_required=True)
+            snapshots.persist_node_sync(
+                "svc",
+                "svc-remote",
+                {
+                    "service_id": "svc",
+                    "location_id": "svc-remote",
+                    "direction": "from_node",
+                    "timestamp": "2026-05-14T09:00:00+00:00",
+                    "scope_snapshot_generated_at": "2026-05-12T13:00:00+00:00",
+                    "status": "ok",
+                },
+            )
+            snapshots.persist_runtime_check(
+                "other",
+                "other-remote",
+                {
+                    "service_id": "other",
+                    "location_id": "other-remote",
+                    "checked_at": "2026-05-14T09:05:00+00:00",
+                    "status": "ok",
+                },
+            )
+
+            result = coordinator.pull_bundle_preflight(
+                "svc",
+                PullBundleRequest(location_id="svc-remote", extra_includes=[], extra_excludes=[]),
+            )
+
+            self.assertEqual(result["status"], "ok")
+            self.assertFalse(result["authority_stale"])
+            self.assertEqual(result["node_local_scope_timestamp"], "2026-05-14T09:00:00+00:00")
+            self.assertEqual(result["node_scope_generated_at"], "2026-05-12T13:00:00+00:00")
+            self.assertEqual(result["control_center_scope_timestamp"], "2026-05-14T09:00:00+00:00")
 
     def test_runtime_check_local_uses_runtime_config_and_preserves_manual_hint(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -636,6 +896,150 @@ class RuntimeAndNodeSyncTests(unittest.TestCase):
             result = coordinator.collect_workspace("zapp", CollectRequest(service_ids=["svc"]))
 
             self.assertEqual([entry["server_id"] for entry in result["servers"]], ["local_mac"])
+
+    def test_collect_bulk_syncs_node_managed_local_service_before_inventory(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "project"
+            project_root.mkdir(parents=True)
+            app_file = project_root / "app.py"
+            app_file.write_text("print('ok')\n", encoding="utf-8")
+            install_node(project_root, service_id="svc", display_name="Svc")
+            save_json(
+                node_paths(project_root)["scope_snapshot"],
+                {
+                    "generated": "2026-05-12T00:00:00+00:00",
+                    "scope_entries": [
+                        {
+                            "entry_id": "code-app",
+                            "kind": "code",
+                            "path": str(app_file),
+                            "path_type": "file",
+                            "source": "node_manifest",
+                            "enabled": True,
+                        }
+                    ],
+                },
+            )
+            _, _, coordinator = _write_local_fixture(root, project_root, {"expected_ports": []}, [])
+
+            result = coordinator.collect_workspace("zapp", CollectRequest())
+            stored = coordinator.manifests.get_service("svc")
+
+            self.assertEqual(result["node_sync_results"][0]["status"], "ok")
+            self.assertEqual(result["summary"]["node_sync_count"], 1)
+            self.assertIn(str(app_file), {entry.path for entry in stored.scope_entries})
+
+    def test_collect_skips_local_bundle_only_servers(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "project"
+            project_root.mkdir(parents=True)
+            settings = _settings(root)
+            save_json(
+                settings.manifest_dir / "servers.json",
+                [
+                    {
+                        "server_id": "zapp_prod",
+                        "name": "ZAPP Prod",
+                        "connection_type": "ssh",
+                        "deployment_mode": "local_bundle_only",
+                        "host": "203.0.113.99",
+                        "username": "deploy",
+                        "port": 22,
+                        "tags": [],
+                    }
+                ],
+            )
+            save_json(
+                settings.manifest_dir / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "zapp",
+                        "name": "ZAPP",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": ["zapp_prod"],
+                        "services": ["svc"],
+                        "notes": "",
+                    }
+                ],
+            )
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "zapp",
+                        "display_name": "Svc",
+                        "kind": "service",
+                        "ownership_tier": "owned",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "locations": [
+                            {
+                                "location_id": "svc-prod",
+                                "server_id": "zapp_prod",
+                                "access_mode": "ssh",
+                                "root": "/srv/svc",
+                                "role": "primary",
+                                "is_primary": True,
+                                "path_aliases": [],
+                            }
+                        ],
+                        "scope_entries": [],
+                    }
+                ],
+            )
+            manifests = ManifestStore(settings)
+            coordinator = CollectionCoordinator(settings, manifests, SnapshotStore(settings, manifests))
+
+            with (
+                mock.patch.object(coordinator, "sync_from_node", side_effect=AssertionError("local_bundle_only should not sync")),
+                mock.patch.object(
+                    coordinator,
+                    "_collect_server_summary",
+                    return_value={
+                        "server_id": "zapp_prod",
+                        "name": "ZAPP Prod",
+                        "status": "unverified",
+                        "connection_type": "ssh",
+                        "host": "203.0.113.99",
+                        "username": "deploy",
+                        "hostname": "203.0.113.99",
+                        "ports": [],
+                        "firewall": "unverified",
+                        "services": [],
+                        "docker": [],
+                    },
+                ),
+                mock.patch.object(
+                    coordinator,
+                    "_collect_service",
+                    return_value={
+                        "service": {
+                            "service_id": "svc",
+                            "workspace_id": "zapp",
+                            "display_name": "Svc",
+                            "status": "unverified",
+                            "location_count": 1,
+                            "doc_count": 0,
+                            "log_count": 0,
+                            "secret_path_count": 0,
+                            "path_aliases": [],
+                            "notes": "",
+                        },
+                        "repos": [],
+                        "docs": [],
+                        "logs": [],
+                        "secrets": [],
+                    },
+                ),
+            ):
+                result = coordinator.collect_workspace("zapp", CollectRequest())
+
+            self.assertTrue(result["node_sync_results"][0]["skipped"])
+            self.assertEqual(result["node_sync_results"][0]["server_id"], "zapp_prod")
 
 
 if __name__ == "__main__":

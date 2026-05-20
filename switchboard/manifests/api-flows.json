@@ -8,13 +8,15 @@
     "target_name": "sys_docs",
     "base_url": "http://192.168.3.47:8701",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for sys_docs. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8701. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "sys-docs-node-health",
@@ -42,17 +44,19 @@
     "target_name": "aichat",
     "base_url": "http://192.168.3.47:8702",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for aichat. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8702. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "aichat-node-health",
-        "order": 1,
+        "order": 0,
         "display_name": "Node health",
         "method": "GET",
         "path": "/api/health",
@@ -161,13 +165,15 @@
     "target_name": "aichat_test",
     "base_url": "http://192.168.3.47:8708",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Test node health even when staged UI is down. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8708. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "aichat-test-node-health",
@@ -195,13 +201,15 @@
     "target_name": "compareanswers",
     "base_url": "http://192.168.3.47:8703",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for compareanswers. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8703. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "compareanswers-node-health",
@@ -263,13 +271,15 @@
     "target_name": "ingest_service",
     "base_url": "http://192.168.3.47:8705",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for process documents / ingest service. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8705. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "ingest-service-node-health",
@@ -448,13 +458,15 @@
     "target_name": "emailagent",
     "base_url": "http://192.168.3.47:8704",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for emailagent. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8704. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "emailagent-node-health",
@@ -482,13 +494,15 @@
     "target_name": "adminchat",
     "base_url": "http://192.168.3.47:8706",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for adminchat. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8706. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "adminchat-node-health",
@@ -516,13 +530,15 @@
     "target_name": "rag",
     "base_url": "http://192.168.3.47:8707",
     "execution_mode": "http",
-    "enabled": true,
+    "enabled": false,
     "tags": [
       "pesu",
       ".47",
-      "runtime"
+      "runtime",
+      "legacy-node-health",
+      "unverified"
     ],
-    "notes": "Switchboard node health for RAG. 8080 remains intentionally excluded because it is nginx. Local control-center runs this over VPN against the host address; if the node port remains host-local only, use runtime inspect/SSH for verification.",
+    "notes": "Disabled/unverified saved-state only: this old per-project node-health flow was last recorded on http://192.168.3.47:8707. No live .47 truth was checked in this finalization. Use the manager node on 8020 after approved bootstrap, or read-only inspect during preflight.",
     "steps": [
       {
         "step_id": "rag-node-health",

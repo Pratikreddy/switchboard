@@ -1,6 +1,6 @@
 {
   "name": "switchboard-dashboard",
-  "version": "1.12.5",
+  "version": "1.12.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "check:release-static": "python3 scripts/check_release_static.py",
     "test:watch": "vitest",
     "sync-evidence": "mkdir -p src/data && cp docs/evidence/*.json src/data/ 2>/dev/null || echo 'No evidence files found'"
   },

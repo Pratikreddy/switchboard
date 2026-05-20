@@ -26,7 +26,8 @@ from pathspec import PathSpec
 
 from . import __version__
 from .config import Settings
-from .defaults import DEFAULT_EXCLUDE_GLOBS, DEFAULT_SECRET_PATTERNS, GIT_STATUS_COMMANDS, SAFE_REMOTE_COMMANDS
+from .defaults import DEFAULT_EXCLUDE_GLOBS, DEFAULT_NODE_PORT, DEFAULT_SECRET_PATTERNS, GIT_STATUS_COMMANDS, SAFE_REMOTE_COMMANDS
+from .freshness import freshen_node_viewers, freshness_envelope
 from .manifests import ManifestStore
 from .models import (
     ApiFlowCreateRequest,
@@ -77,6 +78,28 @@ VALID_SCOPE_SOURCES = {"seeded", "user_added", "node_manifest", "tasks_completed
 LEGACY_SCOPE_SOURCE_MAP = {
     "manual_codex_handoff": "tasks_completed",
 }
+LEGACY_SCOPE_KIND_MAP = {
+    "asset": "code",
+    "config": "code",
+    "source": "code",
+    "ui": "code",
+    "meta": "doc",
+}
+VALID_MANAGED_DOC_IDS = {
+    "readme",
+    "api",
+    "changelog",
+    "handoff",
+    "runbook",
+    "approach_history",
+    "doc_index_md",
+    "doc_index_json",
+}
+LEGACY_MANAGED_DOC_ID_MAP = {
+    "streamlit_changelog": "changelog",
+}
+VPN_OR_NETWORK_BLOCKED_MESSAGE = "VPN is off or network blocked. Turn VPN on for live verification."
+SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node with VPN on."
 
 
 class CollectionCoordinator:
@@ -84,6 +107,68 @@ class CollectionCoordinator:
         self.settings = settings
         self.manifests = manifests
         self.snapshots = snapshots
+
+    def _connection_failure_status(self, server: ResolvedServer) -> str:
+        return "vpn_or_network_blocked" if server.vpn_required else "unreachable"
+
+    def _connection_failure_message(self, server: ResolvedServer) -> str:
+        return VPN_OR_NETWORK_BLOCKED_MESSAGE if server.vpn_required else "SSH connection failed."
+
+    def _connection_failure_result(self, server: ResolvedServer, **extra: Any) -> dict[str, Any]:
+        return {
+            "status": self._connection_failure_status(server),
+            "message": self._connection_failure_message(server),
+            **extra,
+        }
+
+    def _parse_timestamp(self, value: Any) -> datetime | None:
+        text = str(value or "").strip()
+        if not text:
+            return None
+        if text.endswith("Z"):
+            text = f"{text[:-1]}+00:00"
+        try:
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    def _timestamp_before(self, left: Any, right: Any) -> bool:
+        left_dt = self._parse_timestamp(left)
+        right_dt = self._parse_timestamp(right)
+        return bool(left_dt and right_dt and left_dt < right_dt)
+
+    def _control_center_scope_timestamp(self) -> str:
+        path = self.settings.manifest_dir / "services.json"
+        try:
+            modified = path.stat().st_mtime
+        except OSError:
+            return ""
+        return datetime.fromtimestamp(modified, timezone.utc).replace(microsecond=0).isoformat()
+
+    def _node_freshness_state(
+        self,
+        *,
+        connection_status: str,
+        node_present: bool,
+        bootstrap_ready: bool,
+        manager_managed: bool,
+        installed_version: str,
+        manager_version: str,
+    ) -> str:
+        if connection_status == "vpn_or_network_blocked":
+            return "VPN/network blocked"
+        if connection_status != "ok":
+            return "Needs inspect"
+        if not node_present:
+            return "Needs inspect"
+        if manager_managed and manager_version and installed_version and manager_version != installed_version:
+            return "Needs manager normalize"
+        if not bootstrap_ready:
+            return "Needs manager normalize"
+        return "Fresh"
 
     @contextmanager
     def _action_guard(self, action_key: str, service_id: str, ttl_seconds: int = 900) -> Iterator[dict[str, Any] | None]:
@@ -109,6 +194,14 @@ class CollectionCoordinator:
         if request.service_ids:
             requested = set(request.service_ids)
             services = [service for service in services if service.service_id in requested]
+
+        node_sync_results: list[dict[str, Any]] = []
+        if request.include_node_sync:
+            node_sync_results = self._sync_workspace_nodes_for_collect(services, request)
+            workspace = self.manifests.get_workspace(workspace_id)
+            services = self.manifests.get_workspace_services(workspace_id)
+            if request.service_ids:
+                services = [service for service in services if service.service_id in requested]
 
         server_ids = {
             location.server_id
@@ -162,14 +255,97 @@ class CollectionCoordinator:
             "docs_index": docs_index,
             "logs_index": logs_index,
             "secret_path_index": secret_paths,
+            "node_sync_results": node_sync_results,
             "summary": {
                 "status": summary_status,
                 "server_count": len(server_results),
                 "service_count": len(service_results),
+                "node_sync_count": len([entry for entry in node_sync_results if entry.get("status") == "ok"]),
+                "node_sync_blocked_count": len(
+                    [
+                        entry for entry in node_sync_results
+                        if entry.get("status") in {"vpn_or_network_blocked", "unreachable", "auth_failed"}
+                    ]
+                ),
             },
         }
         self.snapshots.persist_collect_snapshot(snapshot)
         return snapshot
+
+    def _sync_workspace_nodes_for_collect(self, services: list[ServiceManifest], request: CollectRequest) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        seen: set[tuple[str, str]] = set()
+        for service in services:
+            for location in service.locations:
+                key = (service.service_id, location.location_id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                try:
+                    server = self.manifests.resolve_server(location.server_id, request.runtime_passwords)
+                except Exception as exc:
+                    results.append(
+                        {
+                            "service_id": service.service_id,
+                            "location_id": location.location_id,
+                            "server_id": location.server_id,
+                            "status": "unreachable",
+                            "message": str(exc),
+                            "source": "collect",
+                        }
+                    )
+                    continue
+                if server.deployment_mode == "local_bundle_only":
+                    results.append(
+                        {
+                            "service_id": service.service_id,
+                            "location_id": location.location_id,
+                            "server_id": location.server_id,
+                            "status": "unverified",
+                            "message": "Skipped local-bundle-only location; it is not node-managed.",
+                            "source": "collect",
+                            "skipped": True,
+                        }
+                    )
+                    continue
+                if server.connection_type == "local" and not self._local_node_manifest_path(location.root).exists():
+                    results.append(
+                        {
+                            "service_id": service.service_id,
+                            "location_id": location.location_id,
+                            "server_id": location.server_id,
+                            "status": "unverified",
+                            "message": "Skipped local location with no Switchboard node manifest.",
+                            "source": "collect",
+                            "skipped": True,
+                        }
+                    )
+                    continue
+                if server.connection_type not in {"local", "ssh"}:
+                    continue
+                sync_request = NodeSyncRequest(
+                    location_id=location.location_id,
+                    runtime_password=request.runtime_passwords.get(location.server_id),
+                    include_scope_snapshot=True,
+                    include_runtime_config=True,
+                    include_task_ledger=True,
+                    include_dependency_context=True,
+                )
+                sync_result = self.sync_from_node(service.service_id, sync_request)
+                sync_record = sync_result.get("sync", {}) if isinstance(sync_result.get("sync"), dict) else {}
+                results.append(
+                    {
+                        "service_id": service.service_id,
+                        "location_id": location.location_id,
+                        "server_id": location.server_id,
+                        "status": sync_result.get("status", "unverified"),
+                        "message": sync_result.get("message", ""),
+                        "timestamp": sync_record.get("timestamp", ""),
+                        "scope_snapshot_generated_at": sync_record.get("scope_snapshot_generated_at", ""),
+                        "source": "collect",
+                    }
+                )
+        return results
 
     def scan_root(self, request: ScanRootRequest) -> dict[str, Any]:
         server = self.manifests.resolve_server(
@@ -672,12 +848,14 @@ class CollectionCoordinator:
         else:
             with self._open_ssh(server) as connection:
                 if connection is None:
+                    failure_status = self._connection_failure_status(server)
+                    failure_message = self._connection_failure_message(server)
                     return {
                         "service_id": service.service_id,
                         "location_id": location.location_id,
                         "server_id": location.server_id,
                         "root": location.root,
-                        "status": "unreachable",
+                        "status": failure_status,
                         "checked_at": checked_at,
                         "configured_ports": configured_ports,
                         "listeners": [],
@@ -689,7 +867,7 @@ class CollectionCoordinator:
                         "healthcheck_output": "",
                         "run_command_hint": runtime.run_command_hint,
                         "monitoring_mode": runtime.monitoring_mode,
-                        "notes": runtime.notes,
+                        "notes": failure_message,
                         "node_present": False,
                         "execution_mode": execution_mode,
                         "exposed_ports": [],
@@ -1195,7 +1373,7 @@ class CollectionCoordinator:
             else:
                 with self._open_ssh(server) as connection:
                     if connection is None:
-                        return {"status": "unreachable", "message": "SSH connection failed."}
+                        return self._connection_failure_result(server, service_id=service_id, location_id=location.location_id)
                     _, sftp = connection
                     node_manifest = self._read_remote_json(sftp, self._remote_node_manifest_path(location.root))
                     scope_snapshot = self._read_remote_json(sftp, self._remote_scope_snapshot_path(location.root))
@@ -1208,14 +1386,15 @@ class CollectionCoordinator:
             if request.include_task_ledger and completed_tasks and completed_tasks.get("tasks"):
                 self.snapshots.persist_task_ledger(service_id, location.location_id, completed_tasks["tasks"])
 
+            managed_docs = self._normalize_imported_managed_docs(node_manifest.get("managed_docs", []))
             updated_locations = [item.model_dump(mode="json") for item in service.locations]
             for item in updated_locations:
                 if item["location_id"] == location.location_id and request.include_runtime_config:
                     item["runtime"] = node_manifest.get("runtime", item.get("runtime", {}))
 
             patch_payload: dict[str, Any] = {"locations": updated_locations}
-            if node_manifest.get("managed_docs"):
-                patch_payload["managed_docs"] = node_manifest["managed_docs"]
+            if managed_docs:
+                patch_payload["managed_docs"] = managed_docs
             current_scope_entries = [entry.model_dump(mode="json") for entry in service.scope_entries]
             should_import_scope = (
                 request.include_scope_snapshot
@@ -1231,7 +1410,7 @@ class CollectionCoordinator:
                 scope_entries,
                 location.root,
                 doc_index or node_manifest.get("doc_index", {}),
-                node_manifest.get("managed_docs", []),
+                managed_docs,
             )
             if should_import_scope or scope_entries != current_scope_entries:
                 flattened = self._flatten_scope_entries(scope_entries)
@@ -1249,17 +1428,19 @@ class CollectionCoordinator:
 
             updated_service = self.manifests.patch_service(service_id, ServicePatchRequest(**patch_payload))
             task_ledger_count = len(completed_tasks.get("tasks", [])) if completed_tasks else 0
+            imported_at = utc_now_iso()
             record = {
                 "service_id": service_id,
                 "location_id": location.location_id,
                 "direction": "from_node",
-                "timestamp": utc_now_iso(),
+                "timestamp": imported_at,
                 "status": "ok",
                 "source": "node",
                 "target": "control_center",
+                "scope_snapshot_generated_at": scope_snapshot.get("generated", "") if scope_snapshot else "",
                 "include_scope_snapshot": request.include_scope_snapshot,
                 "include_runtime_config": request.include_runtime_config,
-                "managed_docs": node_manifest.get("managed_docs", []),
+                "managed_docs": managed_docs,
                 "doc_index": doc_index or node_manifest.get("doc_index", {}),
                 "task_ledger_count": task_ledger_count,
                 "bootstrap_version": node_manifest.get("bootstrap_version", ""),
@@ -1268,6 +1449,7 @@ class CollectionCoordinator:
                 "cross_dependencies": node_manifest.get("cross_dependencies", []),
             }
             self.snapshots.persist_node_sync(service_id, location.location_id, record)
+            self.snapshots.invalidate_node_viewer(service_id, location.location_id)
             return {
                 "status": "ok",
                 "service": updated_service.model_dump(mode="json"),
@@ -1320,7 +1502,7 @@ class CollectionCoordinator:
             else:
                 with self._open_ssh(server) as connection:
                     if connection is None:
-                        return {"status": "unreachable", "message": "SSH connection failed."}
+                        return self._connection_failure_result(server, service_id=service_id, location_id=location.location_id)
                     ssh, sftp = connection
                     manifest_path = self._remote_node_manifest_path(location.root)
                     scope_path = self._remote_scope_snapshot_path(location.root)
@@ -1407,7 +1589,12 @@ class CollectionCoordinator:
             else:
                 with self._open_ssh(server) as connection:
                     if connection is None:
-                        return {"status": "unreachable", "message": "SSH connection failed."}
+                        return self._connection_failure_result(
+                            server,
+                            service_id=service_id,
+                            location_id=location.location_id,
+                            preflight=preflight,
+                        )
                     _, sftp = connection
                     copied_files, skipped_entries = self._copy_bundle_remote(service, sftp, location.root, scope_entries, exclude_patterns, mirrored_root)
 
@@ -1507,6 +1694,13 @@ class CollectionCoordinator:
         ]
         latest_sync = node_sync[0] if node_sync else {}
         authority = self._bundle_authority_context(service, location, server)
+        node_local_scope_timestamp = latest_sync.get("timestamp", "") if latest_sync.get("direction") == "from_node" else ""
+        node_scope_generated_at = latest_sync.get("scope_snapshot_generated_at", "")
+        control_center_scope_timestamp = (
+            node_local_scope_timestamp
+            if latest_sync.get("direction") == "from_node" and node_scope_generated_at
+            else self._control_center_scope_timestamp() or runtime_state.get("generated", "") or ""
+        )
         suspicious = [
             {
                 "path": entry.path,
@@ -1517,12 +1711,38 @@ class CollectionCoordinator:
             if self._bundle_scope_path_is_suspicious(entry.path, entry.kind)
         ]
         blocked_reasons: list[str] = []
+        node_viewer_rows = freshen_node_viewers(
+            manager_root=self._local_manager_root() or self.settings.manifest_dir.parent.parent,
+            service_payload=service.model_dump(mode="json"),
+            cached_rows=self.snapshots.get_service_node_viewer(service_id),
+            control_center_version=__version__,
+        )
+        node_viewer = next(
+            (entry for entry in node_viewer_rows if entry.get("location_id") == location.location_id),
+            {},
+        )
         if not saved_scope and not extra_scope:
             blocked_reasons.append("No enabled include scope for this location.")
         if suspicious:
             blocked_reasons.append("Enabled pull scope includes unsafe paths.")
-        if server.connection_type == "ssh" and latest_sync.get("direction") != "from_node":
-            blocked_reasons.append("Remote bundles require a fresh Sync From Node so node-local scope is the authority.")
+        authority_stale = False
+        missing_remote_sync = False
+        missing_authority_timestamp = False
+        if server.connection_type == "ssh":
+            if latest_sync.get("direction") != "from_node":
+                missing_remote_sync = True
+                authority_stale = True
+                blocked_reasons.append(f"Remote bundles require node-local authority. {SYNC_FROM_NODE_FIX_MESSAGE}")
+            elif not node_local_scope_timestamp:
+                missing_authority_timestamp = True
+                authority_stale = True
+                blocked_reasons.append(f"Node-local pull authority timestamp is missing. {SYNC_FROM_NODE_FIX_MESSAGE}")
+            elif self._timestamp_before(node_local_scope_timestamp, control_center_scope_timestamp):
+                authority_stale = True
+                blocked_reasons.append(f"Node-local pull authority is older than the saved Control Center scope. {SYNC_FROM_NODE_FIX_MESSAGE}")
+        if node_viewer.get("freshness_state") == "Manager unreachable":
+            authority_stale = True
+            blocked_reasons.append("Manager node 8020 is not live, so pull authority cannot be treated as fresh.")
         status = "ok" if not blocked_reasons else "partial"
         return {
             "status": status,
@@ -1533,8 +1753,14 @@ class CollectionCoordinator:
             "root": location.root,
             "connection_type": server.connection_type,
             "source_authority": authority,
-            "node_local_scope_timestamp": latest_sync.get("timestamp", "") if latest_sync.get("direction") == "from_node" else "",
-            "control_center_scope_timestamp": runtime_state.get("generated", "") or "",
+            "node_local_scope_timestamp": node_local_scope_timestamp,
+            "node_scope_generated_at": node_scope_generated_at,
+            "control_center_scope_timestamp": control_center_scope_timestamp,
+            "authority_stale": authority_stale,
+            "missing_remote_sync": missing_remote_sync,
+            "missing_authority_timestamp": missing_authority_timestamp,
+            "vpn_required": server.vpn_required,
+            "fix": SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
             "include_count": len(saved_scope) + len(extra_scope),
             "saved_include_count": len(saved_scope),
             "extra_include_count": len(extra_scope),
@@ -1542,10 +1768,159 @@ class CollectionCoordinator:
             "suspicious_entries": suspicious,
             "blocked_reasons": blocked_reasons,
             "locations": [item.model_dump(mode="json") for item in service.locations],
+            "freshness": freshness_envelope(
+                data_as_of=latest_sync.get("timestamp", ""),
+                truth_as_of=node_viewer.get("truth_as_of", control_center_scope_timestamp),
+                source="pull_authority",
+                stale_reason="manager_8020_unreachable" if node_viewer.get("freshness_state") == "Manager unreachable" else "authority_stale" if authority_stale else "",
+                refresh_action="Check 8020" if node_viewer.get("freshness_state") == "Manager unreachable" else SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
+            ),
         }
 
     def get_node_viewer(self, service_id: str) -> dict[str, Any]:
-        return {"service_id": service_id, "locations": self.snapshots.get_service_node_viewer(service_id)}
+        service = self.manifests.get_service(service_id)
+        return {
+            "service_id": service_id,
+            "locations": freshen_node_viewers(
+                manager_root=self._local_manager_root() or self.settings.manifest_dir.parent.parent,
+                service_payload=service.model_dump(mode="json"),
+                cached_rows=self.snapshots.get_service_node_viewer(service_id),
+                control_center_version=__version__,
+            ),
+        }
+
+    def _projection_location(self, location: Any) -> dict[str, Any]:
+        runtime = getattr(location, "runtime", None)
+        return {
+            "location_id": location.location_id,
+            "server_id": location.server_id,
+            "access_mode": location.access_mode,
+            "role": location.role,
+            "is_primary": location.is_primary,
+            "root": location.root,
+            "path_aliases": list(location.path_aliases),
+            "runtime": {
+                "expected_ports": list(runtime.expected_ports) if runtime else [],
+                "healthcheck_command": runtime.healthcheck_command if runtime else "",
+                "monitoring_mode": runtime.monitoring_mode if runtime else "manual",
+                "notes": runtime.notes if runtime else "",
+            },
+        }
+
+    def _projection_scope_summary(self, service: ServiceManifest) -> dict[str, Any]:
+        counts: dict[str, int] = {}
+        enabled_counts: dict[str, int] = {}
+        for entry in service.scope_entries:
+            counts[entry.kind] = counts.get(entry.kind, 0) + 1
+            if entry.enabled:
+                enabled_counts[entry.kind] = enabled_counts.get(entry.kind, 0) + 1
+        return {
+            "total": len(service.scope_entries),
+            "enabled": sum(1 for entry in service.scope_entries if entry.enabled),
+            "by_kind": counts,
+            "enabled_by_kind": enabled_counts,
+            "repo_path_count": len(service.repo_paths),
+            "docs_path_count": len(service.docs_paths),
+            "log_path_count": len(service.log_paths),
+            "exclude_count": len(service.exclude_globs),
+        }
+
+    def _projection_managed_docs(self, service: ServiceManifest) -> list[dict[str, Any]]:
+        return [
+            {
+                "doc_id": doc.doc_id,
+                "path": doc.path,
+                "enabled": doc.enabled,
+                "last_generated_at": doc.last_generated_at,
+            }
+            for doc in service.managed_docs
+        ]
+
+    def _projection_latest_item(self, items: list[dict[str, Any]]) -> dict[str, Any]:
+        if not items:
+            return {}
+
+        def sort_key(item: dict[str, Any]) -> str:
+            for key in ("timestamp", "generated", "generated_at", "created_at", "updated_at", "manifest_updated_at"):
+                value = item.get(key)
+                if isinstance(value, str) and value:
+                    return value
+            return ""
+
+        return max(items, key=sort_key)
+
+    def _projection_runtime_summary(self, service_id: str) -> dict[str, Any]:
+        runtime_state = self.snapshots.get_service_runtime_state(service_id)
+        node_sync = runtime_state.get("node_sync", [])
+        node_viewer = self.snapshots.get_service_node_viewer(service_id)
+        task_ledger = self.snapshots.get_service_task_ledger(service_id)
+        pull_bundles = self.snapshots.list_pull_bundles(service_id)
+        latest_sync = self._projection_latest_item(node_sync if isinstance(node_sync, list) else [])
+        latest_task = self._projection_latest_item(task_ledger.get("tasks", []) if isinstance(task_ledger, dict) else [])
+        latest_bundle = self._projection_latest_item(pull_bundles if isinstance(pull_bundles, list) else [])
+        node_locations = []
+        for item in node_viewer if isinstance(node_viewer, list) else []:
+            node_locations.append(
+                {
+                    "location_id": item.get("location_id", ""),
+                    "server_id": item.get("server_id", ""),
+                    "runtime_status": item.get("runtime_status", ""),
+                    "installed_version": item.get("installed_version", ""),
+                    "manifest_updated_at": item.get("manifest_updated_at", ""),
+                    "manager_managed": bool(item.get("manager_managed", False)),
+                    "attention_reason": item.get("attention_reason", ""),
+                }
+            )
+        return {
+            "node_sync": {
+                "count": len(node_sync) if isinstance(node_sync, list) else 0,
+                "latest": {
+                    "timestamp": latest_sync.get("timestamp", ""),
+                    "direction": latest_sync.get("direction", ""),
+                    "status": latest_sync.get("status", ""),
+                    "message": latest_sync.get("message", ""),
+                } if latest_sync else {},
+            },
+            "node_viewer": node_locations,
+            "task_ledger": {
+                "count": len(task_ledger.get("tasks", [])) if isinstance(task_ledger, dict) else 0,
+                "latest": {
+                    "timestamp": latest_task.get("timestamp", ""),
+                    "title": latest_task.get("title", ""),
+                    "tags": latest_task.get("tags", []),
+                    "agent": latest_task.get("agent", ""),
+                    "tool": latest_task.get("tool", ""),
+                } if latest_task else {},
+            },
+            "pull_bundles": {
+                "count": len(pull_bundles) if isinstance(pull_bundles, list) else 0,
+                "latest": {
+                    "bundle_id": latest_bundle.get("bundle_id", ""),
+                    "created_at": latest_bundle.get("created_at", latest_bundle.get("generated", "")),
+                    "server_id": latest_bundle.get("server_id", ""),
+                    "location_id": latest_bundle.get("location_id", ""),
+                    "status": latest_bundle.get("status", ""),
+                    "diff_summary": latest_bundle.get("diff_summary", {}),
+                } if latest_bundle else {},
+            },
+        }
+
+    def _projection_service(self, service: ServiceManifest) -> dict[str, Any]:
+        return {
+            "service_id": service.service_id,
+            "workspace_id": service.workspace_id,
+            "display_name": service.display_name,
+            "kind": service.kind,
+            "execution_mode": service.execution_mode,
+            "ownership_tier": service.ownership_tier,
+            "tags": list(service.tags),
+            "favorite_tier": service.favorite_tier,
+            "notes": service.notes,
+            "path_aliases": list(service.path_aliases),
+            "locations": [self._projection_location(location) for location in service.locations],
+            "scope_summary": self._projection_scope_summary(service),
+            "managed_docs": self._projection_managed_docs(service),
+        }
 
     def export_palimpsest_state(self) -> dict[str, Any]:
         services = self.manifests.load_services()
@@ -1558,26 +1933,47 @@ class CollectionCoordinator:
                 "passwords": "excluded",
                 "venvs": "excluded",
                 "logs": "excluded",
+                "task_notes": "summarized",
+                "scope_entries": "summarized",
+                "pull_bundle_files": "excluded",
+                "api_flow_steps": "excluded",
             },
             "workspaces": [item.model_dump(mode="json") for item in self.manifests.load_workspaces()],
             "servers": [
                 {
-                    **item.model_dump(mode="json"),
-                    "password": None,
+                    "server_id": item.server_id,
+                    "company_id": item.company_id,
+                    "name": item.name,
+                    "connection_type": item.connection_type,
+                    "deployment_mode": item.deployment_mode,
+                    "vpn_required": item.vpn_required,
+                    "tags": list(item.tags),
+                    "notes": item.notes,
                 }
                 for item in self.manifests.load_servers()
             ],
-            "services": [item.model_dump(mode="json") for item in services],
+            "services": [self._projection_service(item) for item in services],
             "projects": [item.model_dump(mode="json") for item in self.manifests.load_projects()],
             "project_environments": [item.model_dump(mode="json") for item in self.manifests.load_project_environments()],
-            "api_flows": [item.model_dump(mode="json") for item in self.manifests.load_api_flows()],
-            "runtime_state": {
-                service.service_id: {
-                    "node_sync": self.snapshots.get_service_runtime_state(service.service_id).get("node_sync", []),
-                    "node_viewer": self.snapshots.get_service_node_viewer(service.service_id),
-                    "task_ledger": self.snapshots.get_service_task_ledger(service.service_id),
-                    "pull_bundles": self.snapshots.list_pull_bundles(service.service_id),
+            "api_flows": [
+                {
+                    "flow_id": item.flow_id,
+                    "environment_id": item.environment_id,
+                    "service_id": item.service_id,
+                    "display_name": item.display_name,
+                    "target_kind": item.target_kind,
+                    "target_name": item.target_name,
+                    "base_url": item.base_url,
+                    "execution_mode": item.execution_mode,
+                    "enabled": item.enabled,
+                    "tags": list(item.tags),
+                    "notes": item.notes,
+                    "step_count": len(item.steps),
                 }
+                for item in self.manifests.load_api_flows()
+            ],
+            "runtime_state": {
+                service.service_id: self._projection_runtime_summary(service.service_id)
                 for service in services
             },
         }
@@ -1643,8 +2039,18 @@ class CollectionCoordinator:
                 entry for entry in runtime_state.get("runtime_checks", [])
                 if not deployment.location_id or entry.get("location_id") == deployment.location_id
             ]
+            node_viewer_rows = (
+                freshen_node_viewers(
+                    manager_root=self._local_manager_root() or self.settings.manifest_dir.parent.parent,
+                    service_payload=service.model_dump(mode="json"),
+                    cached_rows=self.snapshots.get_service_node_viewer(deployment.service_id),
+                    control_center_version=__version__,
+                )
+                if service
+                else self.snapshots.get_service_node_viewer(deployment.service_id)
+            )
             node_viewer = [
-                entry for entry in self.snapshots.get_service_node_viewer(deployment.service_id)
+                entry for entry in node_viewer_rows
                 if not deployment.location_id or entry.get("location_id") == deployment.location_id
             ]
             latest_runtime_check = runtime_checks[0] if runtime_checks else {}
@@ -1655,6 +2061,9 @@ class CollectionCoordinator:
                 "bootstrap_ready": bool(latest_node_viewer.get("bootstrap_ready")),
                 "runtime_port": latest_node_viewer.get("runtime_port"),
                 "checked_at": latest_node_viewer.get("manifest_updated_at", ""),
+                "freshness_state": latest_node_viewer.get("freshness_state", "Unverified"),
+                "stale_reason": latest_node_viewer.get("stale_reason", ""),
+                "refresh_action": latest_node_viewer.get("refresh_action", ""),
             }
             service_health = {
                 "status": latest_runtime_check.get("status", "unverified"),
@@ -1824,7 +2233,11 @@ class CollectionCoordinator:
         )
         record = self._node_inspect_record(service, location, server)
         self.snapshots.persist_node_viewer(service_id, location.location_id, record)
-        return {"status": "ok", "node": record}
+        status = str(record.get("connection_status") or "ok")
+        result: dict[str, Any] = {"status": status, "node": record}
+        if status != "ok":
+            result["message"] = record.get("last_error") or self._connection_failure_message(server)
+        return result
 
     def node_release_check(self, service_id: str, request: NodeActionRequest) -> dict[str, Any]:
         service = self.manifests.get_service(service_id)
@@ -1974,7 +2387,7 @@ class CollectionCoordinator:
             before = self._node_inspect_record(service, location, server)
             manager_root = self._local_manager_root() if server.connection_type == "local" else None
             if manager_root is not None and self._local_manager_record_for_root(location.root) is not None:
-                status = manager_status(manager_root, port=8010)
+                status = manager_status(manager_root, port=DEFAULT_NODE_PORT)
                 after = self._node_inspect_record(service, location, server)
                 self.snapshots.persist_node_viewer(service_id, location.location_id, after)
                 return {
@@ -2046,9 +2459,31 @@ class CollectionCoordinator:
         normalized: list[dict[str, Any]] = []
         for entry in scope_entries:
             item = dict(entry)
+            kind = str(item.get("kind") or "")
+            if kind and kind not in {"repo", "code", "doc", "log", "exclude"}:
+                item["kind"] = LEGACY_SCOPE_KIND_MAP.get(kind, "doc")
+            if item.get("path_type") == "pattern":
+                item["path_type"] = "glob"
             source = str(item.get("source") or "")
             if source and source not in VALID_SCOPE_SOURCES:
                 item["source"] = LEGACY_SCOPE_SOURCE_MAP.get(source, "tasks_completed")
+            normalized.append(item)
+        return normalized
+
+    def _normalize_imported_managed_docs(self, managed_docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        normalized: list[dict[str, Any]] = []
+        seen: set[tuple[str, str]] = set()
+        for entry in managed_docs:
+            item = dict(entry)
+            doc_id = str(item.get("doc_id") or "")
+            doc_id = LEGACY_MANAGED_DOC_ID_MAP.get(doc_id, doc_id)
+            if doc_id not in VALID_MANAGED_DOC_IDS:
+                continue
+            item["doc_id"] = doc_id
+            key = (doc_id, str(item.get("path") or ""))
+            if key in seen:
+                continue
+            seen.add(key)
             normalized.append(item)
         return normalized
 
@@ -2279,19 +2714,19 @@ class CollectionCoordinator:
     def _collect_ssh_server_summary(self, server_id: str, server: ResolvedServer) -> dict[str, Any]:
         with self._open_ssh(server) as connection:
             if connection is None:
-                return {
-                    "server_id": server_id,
-                    "name": server.name,
-                    "status": "unreachable",
-                    "connection_type": server.connection_type,
-                    "host": server.host,
-                    "username": server.username,
-                    "hostname": server.host,
-                    "ports": [],
-                    "firewall": "unverified",
-                    "services": [],
-                    "docker": [],
-                }
+                return self._connection_failure_result(
+                    server,
+                    server_id=server_id,
+                    name=server.name,
+                    connection_type=server.connection_type,
+                    host=server.host,
+                    username=server.username,
+                    hostname=server.host,
+                    ports=[],
+                    firewall="unverified",
+                    services=[],
+                    docker=[],
+                )
 
             ssh, _ = connection
             hostname = self._run_remote(ssh, SAFE_REMOTE_COMMANDS["hostname"])
@@ -2341,7 +2776,7 @@ class CollectionCoordinator:
     ) -> dict[str, Any]:
         with self._open_ssh(server) as connection:
             if connection is None:
-                return {"status": "unreachable", "repos": [], "docs": [], "logs": [], "secrets": []}
+                return {"status": self._connection_failure_status(server), "repos": [], "docs": [], "logs": [], "secrets": []}
             ssh, sftp = connection
             if not self._remote_exists(sftp, root):
                 return {"status": "path_missing", "repos": [], "docs": [], "logs": [], "secrets": []}
@@ -3583,7 +4018,7 @@ class CollectionCoordinator:
             )
         return deduped[:20]
 
-    def _normalize_port(self, value: Any, default: int = 8010) -> int:
+    def _normalize_port(self, value: Any, default: int = DEFAULT_NODE_PORT) -> int:
         try:
             port = int(value)
         except (TypeError, ValueError):
@@ -3599,7 +4034,7 @@ class CollectionCoordinator:
         return self._normalize_port(match.group(1), default=0) or None
 
     def _manifest_runtime_port(self, manifest: dict[str, Any] | None) -> int:
-        return self._normalize_port((manifest or {}).get("runtime_port"), default=8010)
+        return self._normalize_port((manifest or {}).get("runtime_port"), default=DEFAULT_NODE_PORT)
 
     def _cached_node_runtime_port(self, service_id: str, location_id: str) -> int | None:
         cache = self.snapshots._read_runtime_cache()
@@ -3675,11 +4110,17 @@ class CollectionCoordinator:
                 if manager_record is None:
                     runtime_state = node_status(location.root, port=runtime_port)
             else:
-                runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or 8010
+                runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or DEFAULT_NODE_PORT
         else:
             with self._open_ssh(server) as connection:
                 if connection is None:
-                    return self._node_missing_record(service, location, manifest_path, "SSH connection failed.")
+                    return self._node_missing_record(
+                        service,
+                        location,
+                        manifest_path,
+                        self._connection_failure_message(server),
+                        connection_status=self._connection_failure_status(server),
+                    )
                 ssh, sftp = connection
                 if not self._remote_exists(sftp, location.root):
                     return self._node_missing_record(service, location, manifest_path, "Location root does not exist.")
@@ -3690,7 +4131,7 @@ class CollectionCoordinator:
                     manifest = self._persist_manifest_runtime_port(server, location.root, manifest, runtime_port)
                     runtime_state = self._remote_node_status(ssh, location.root, runtime_port)
                 else:
-                    runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or 8010
+                    runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or DEFAULT_NODE_PORT
 
         node_present = manifest is not None
         bootstrap_ready = bool(tasks and tasks.get("tasks"))
@@ -3701,7 +4142,7 @@ class CollectionCoordinator:
         manager_record = self._local_manager_record_for_root(location.root) if server.connection_type == "local" else None
         manager_root = self._local_manager_root() if manager_record is not None else None
         if manager_root is not None:
-            manager_runtime = manager_status(manager_root, port=8010)
+            manager_runtime = manager_status(manager_root, port=DEFAULT_NODE_PORT)
             if manager_runtime.get("status") == "running":
                 runtime_status = "manager_running"
                 runtime_state = {
@@ -3711,11 +4152,25 @@ class CollectionCoordinator:
                     "runtime_dir": manager_runtime.get("runtime_dir", ""),
                     "log_file": manager_runtime.get("log_file", ""),
                 }
+        connection_status = "ok"
+        manager_managed = manager_record is not None
+        manager_version = __version__ if manager_managed else ""
+        freshness_state = self._node_freshness_state(
+            connection_status=connection_status,
+            node_present=node_present,
+            bootstrap_ready=bootstrap_ready,
+            manager_managed=manager_managed,
+            installed_version=installed_version,
+            manager_version=manager_version,
+        )
         record = {
             "service_id": service.service_id,
             "location_id": location.location_id,
             "server_id": location.server_id,
             "root": location.root,
+            "connection_status": connection_status,
+            "freshness_state": freshness_state,
+            "last_inspected_at": utc_now_iso(),
             "node_present": node_present,
             "bootstrap_ready": bootstrap_ready,
             "runtime_ready": runtime_status in {"running", "manager_running"},
@@ -3740,20 +4195,39 @@ class CollectionCoordinator:
             "installed_release_published_at": str(installed_release.get("published_at", "")),
             "installed_release_url": str(installed_release.get("release_url", "")),
             "installed_release_commitish": str(installed_release.get("target_commitish", "")),
-            "manager_managed": manager_record is not None,
+            "manager_managed": manager_managed,
             "manager_root_id": str((manager_record or {}).get("root_id", "")),
             "manager_root": str(manager_root or ""),
-            "manager_version": __version__ if manager_record is not None else "",
+            "manager_version": manager_version,
         }
         return record
 
-    def _node_missing_record(self, service: ServiceManifest, location: Any, manifest_path: str, reason: str) -> dict[str, Any]:
-        runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or 8010
+    def _node_missing_record(
+        self,
+        service: ServiceManifest,
+        location: Any,
+        manifest_path: str,
+        reason: str,
+        *,
+        connection_status: str = "ok",
+    ) -> dict[str, Any]:
+        runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or DEFAULT_NODE_PORT
+        freshness_state = self._node_freshness_state(
+            connection_status=connection_status,
+            node_present=False,
+            bootstrap_ready=False,
+            manager_managed=False,
+            installed_version="",
+            manager_version="",
+        )
         return {
             "service_id": service.service_id,
             "location_id": location.location_id,
             "server_id": location.server_id,
             "root": location.root,
+            "connection_status": connection_status,
+            "freshness_state": freshness_state,
+            "last_inspected_at": utc_now_iso(),
             "node_present": False,
             "bootstrap_ready": False,
             "runtime_ready": False,

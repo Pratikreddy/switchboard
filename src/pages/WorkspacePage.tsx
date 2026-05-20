@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import type { Workspace, WorkspaceLatest, Service, ServiceRunResult, RuntimeCheckResult } from '../types/switchboard'
+import type { Workspace, WorkspaceLatest, Service, ServiceRunResult } from '../types/switchboard'
 import { getWorkspace, getWorkspaceLatest, triggerCollect } from '../api/client'
 import { isApiError } from '../types/switchboard'
 import { ServiceCard } from '../components/ServiceCard'
@@ -9,7 +9,6 @@ import { ProjectOnboardingPanel } from '../components/ProjectOnboardingPanel'
 import { ProjectsPanel } from '../components/ProjectsPanel'
 import { TaskLedgerPanel } from '../components/TaskLedgerPanel'
 import { InfoDropdown } from '../components/InfoDropdown'
-import { ConfirmationModal, ACTION_EXPLAIN } from '../components/ConfirmationModal'
 import { TECH_STACK_LINES, HOW_TO_USE_LINES } from '../App'
 import type { TaskLedgerEntry } from '../types/switchboard'
 
@@ -18,15 +17,13 @@ interface Props {
   offline: boolean
   onSelectService: (id: string) => void
   onOpenEnvironmentLab: (environmentId: string) => void
+  onLatestUpdated?: (workspaceId: string, latest: WorkspaceLatest) => void
 }
 
-export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnvironmentLab }: Props) {
+export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnvironmentLab, onLatestUpdated }: Props) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [latest, setLatest] = useState<WorkspaceLatest | null>(null)
   const [collecting, setCollecting] = useState(false)
-  const [healthChecking, setHealthChecking] = useState(false)
-  const [healthConfirmOpen, setHealthConfirmOpen] = useState(false)
-  const [healthResults, setHealthResults] = useState<RuntimeCheckResult[] | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,32 +39,32 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
     Promise.all([getWorkspace(workspaceId), getWorkspaceLatest(workspaceId)]).then(
       ([ws, lat]) => {
         if (!isApiError(ws)) setWorkspace(ws)
-        if (!isApiError(lat)) setLatest(lat)
+        if (!isApiError(lat)) {
+          setLatest(lat)
+          onLatestUpdated?.(workspaceId, lat)
+        }
         setLoading(false)
       },
     )
-  }, [workspaceId, offline])
+  }, [workspaceId, offline, onLatestUpdated])
 
   async function handleCollect() {
     setCollecting(true)
-    const result = await triggerCollect(workspaceId)
-    if (!isApiError(result)) setLatest(result)
-    setCollecting(false)
-  }
-
-  async function handleHealthCheck() {
-    setHealthConfirmOpen(false)
-    setHealthChecking(true)
-    // Let's import workspaceHealthCheck
-    const { workspaceHealthCheck } = await import('../api/client')
-    const result = await workspaceHealthCheck(workspaceId)
-    setHealthChecking(false)
+    const result = await triggerCollect(workspaceId, { include_node_sync: true })
     if (!isApiError(result)) {
-      setHealthResults(result.results ?? [])
-      getWorkspaceLatest(workspaceId).then((lat) => {
-        if (!isApiError(lat)) setLatest(lat)
-      })
+      setLatest(result)
+      onLatestUpdated?.(workspaceId, result)
     }
+    const [workspaceResult, latestResult] = await Promise.all([
+      getWorkspace(workspaceId),
+      getWorkspaceLatest(workspaceId),
+    ])
+    if (!isApiError(workspaceResult)) setWorkspace(workspaceResult)
+    if (!isApiError(latestResult)) {
+      setLatest(latestResult)
+      onLatestUpdated?.(workspaceId, latestResult)
+    }
+    setCollecting(false)
   }
 
   function handleCreated(service: Service) {
@@ -128,53 +125,6 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
           onCollect={handleCollect}
           collecting={collecting}
           offline={offline}
-          onHealthCheck={() => setHealthConfirmOpen(true)}
-          healthChecking={healthChecking}
-        />
-      </div>
-
-      {/* Health check results */}
-      {healthResults !== null && (
-        <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-300">Health Check Results</span>
-            <button onClick={() => setHealthResults(null)} className="text-xs text-gray-600 hover:text-gray-400">dismiss</button>
-          </div>
-          {healthResults.length === 0 ? (
-            <p className="text-sm text-gray-500">No services checked.</p>
-          ) : (
-            <div className="space-y-2">
-              {healthResults.map((r, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm">
-                  <span className={`mt-0.5 h-2 w-2 rounded-full flex-shrink-0 ${r.status === 'ok' ? 'bg-green-400' : r.status === 'unreachable' || r.status === 'path_missing' ? 'bg-red-400' : 'bg-yellow-400'}`} />
-                  <div className="min-w-0">
-                    <span className="text-gray-200 font-mono">{r.service_id}</span>
-                    <span className="text-gray-500 ml-2">{r.location_id}</span>
-                    {r.detected_ports.length > 0 && (
-                      <span className="ml-2 text-cyan-400">{r.detected_ports.map(p => `:${p.port}`).join(' ')}</span>
-                    )}
-                    {r.missing_ports.length > 0 && (
-                      <span className="ml-2 text-red-400">missing: {r.missing_ports.join(', ')}</span>
-                    )}
-                    {r.healthcheck_status !== 'skipped' && (
-                      <span className={`ml-2 ${r.healthcheck_status === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
-                        hc:{r.healthcheck_status}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="mb-6">
-        <ProjectOnboardingPanel
-          workspaceId={workspaceId}
-          serverIds={workspace?.server_ids ?? []}
-          disabled={offline}
-          onCreated={handleCreated}
         />
       </div>
 
@@ -189,12 +139,26 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
         />
       </div>
 
+      <details className="mb-6">
+        <summary className="cursor-pointer px-1 py-3 text-sm font-medium text-gray-300">
+          Advanced Service Inventory
+        </summary>
+        <div className="pt-2">
+          <ProjectOnboardingPanel
+            workspaceId={workspaceId}
+            serverIds={workspace?.server_ids ?? []}
+            disabled={offline}
+            onCreated={handleCreated}
+          />
+        </div>
+      </details>
+
       {/* Service grid */}
       {loading ? (
         <div className="text-gray-500 text-sm">Loading…</div>
       ) : services.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-800 bg-gray-900 px-4 py-6 text-gray-500 text-sm italic">
-          No services found. {offline ? 'Backend offline.' : 'Use Add Service to seed this workspace manually.'}
+          No services found. {offline ? 'Backend offline.' : 'Use Advanced Service Inventory to seed this workspace manually.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -213,18 +177,6 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
         <div className="mt-8">
           <TaskLedgerPanel tasks={allTasks} title="Task Ledger (Cross-Node Summary)" showServiceLabel />
         </div>
-      )}
-
-      {healthConfirmOpen && ACTION_EXPLAIN['workspace_health_check'] && (
-        <ConfirmationModal
-          open={healthConfirmOpen}
-          title={ACTION_EXPLAIN['workspace_health_check'].title}
-          willDo={ACTION_EXPLAIN['workspace_health_check'].happens}
-          willNotChange={ACTION_EXPLAIN['workspace_health_check'].untouched}
-          writesTo={ACTION_EXPLAIN['workspace_health_check'].writesTo}
-          onConfirm={handleHealthCheck}
-          onCancel={() => setHealthConfirmOpen(false)}
-        />
       )}
     </div>
   )

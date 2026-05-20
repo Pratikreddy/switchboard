@@ -37,7 +37,7 @@ Entry format:
   - doc | file | /abs/path/to/file.md
   - exclude | glob | venv
 - Runtime:
-  - expected_ports: 8010, 8000
-  - healthcheck_command: curl http://127.0.0.1:8010/api/health
-  - run_command_hint: uvicorn main:app --port 8010
+  - expected_ports: 8020, 8000
+  - healthcheck_command: curl http://127.0.0.1:8020/api/health
+  - run_command_hint: uvicorn main:app --port 8020
   - monitoring_mode: manual

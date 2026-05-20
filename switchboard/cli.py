@@ -12,6 +12,7 @@ import typer
 
 from .collectors import CollectionCoordinator
 from .config import ROOT_DIR, get_settings
+from .defaults import DEFAULT_NODE_PORT
 from .manifests import ManifestStore
 from .models import CollectRequest, GitHubBackupRequest
 from .node import (
@@ -205,7 +206,7 @@ def node_verify_update(
 def node_serve(
     project_root: str = typer.Option(..., "--project-root"),
     host: str = typer.Option("127.0.0.1", "--host"),
-    port: int = typer.Option(8010, "--port"),
+    port: int = typer.Option(DEFAULT_NODE_PORT, "--port"),
 ) -> None:
     import uvicorn
 
@@ -217,7 +218,7 @@ def node_serve(
 def node_manager_init(
     manager_root: str = typer.Option(..., "--manager-root"),
     project_root: list[str] = typer.Option(None, "--project-root"),
-    port: int = typer.Option(8711, "--port"),
+    port: int = typer.Option(DEFAULT_NODE_PORT, "--port"),
     snapshot: bool = typer.Option(False, "--snapshot/--no-snapshot"),
 ) -> None:
     result = init_manager_node(manager_root, project_roots=project_root or [], runtime_port=port, snapshot=snapshot)
@@ -352,7 +353,7 @@ def node_manager_safe_action(
 def node_manager_serve(
     manager_root: str = typer.Option(..., "--manager-root"),
     host: str = typer.Option("127.0.0.1", "--host"),
-    port: int = typer.Option(8711, "--port"),
+    port: int = typer.Option(DEFAULT_NODE_PORT, "--port"),
 ) -> None:
     import uvicorn
 
@@ -364,7 +365,7 @@ def node_manager_serve(
 def node_manager_start(
     manager_root: str = typer.Option(..., "--manager-root"),
     host: str = typer.Option("127.0.0.1", "--host"),
-    port: int = typer.Option(8711, "--port"),
+    port: int = typer.Option(DEFAULT_NODE_PORT, "--port"),
 ) -> None:
     result = start_manager_runtime(manager_root, host=host, port=port)
     typer.echo(json.dumps(result, indent=2))
@@ -392,7 +393,7 @@ def node_manager_status(
 def node_start(
     project_root: str = typer.Option(..., "--project-root"),
     host: str = typer.Option("127.0.0.1", "--host"),
-    port: int = typer.Option(8010, "--port"),
+    port: int = typer.Option(DEFAULT_NODE_PORT, "--port"),
 ) -> None:
     result = start_node_runtime(project_root, host=host, port=port)
     typer.echo(json.dumps(result, indent=2))
@@ -401,7 +402,7 @@ def node_start(
 @node_app.command("stop")
 def node_stop(
     project_root: str = typer.Option(..., "--project-root"),
-    port: int = typer.Option(8010, "--port"),
+    port: int = typer.Option(DEFAULT_NODE_PORT, "--port"),
 ) -> None:
     result = stop_node_runtime(project_root, port=port)
     typer.echo(json.dumps(result, indent=2))

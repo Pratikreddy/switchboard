@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Workspace, ServiceRunResult, WorkspaceLatest } from './types/switchboard'
 import { getHealth, listWorkspaces, getWorkspaceLatest } from './api/client'
 import { isApiError } from './types/switchboard'
@@ -20,11 +20,11 @@ export const TECH_STACK_LINES = [
 ]
 
 export const HOW_TO_USE_LINES = [
-  'Pick a company, then run Collect to refresh ports, repo state, docs, and logs.',
-  'Use Add Service to open one root path, expand the tree, and uncheck dump paths you do not want.',
+  'Pick a company, then run Collect to sync node truth first, then refresh saved scope, pull authority, ports, repo state, docs, and logs.',
+  'Use Advanced Service Inventory to add one root path, expand the tree, and uncheck dump paths you do not want.',
   'Category rules are simple: repo, doc, log, or exclude. You can override the auto-suggestion.',
   'Create service saves the chosen scope and per-location runtime config into the manifest.',
-  'Use Projects & Environments to group tracked services into business projects and attach dev/test/staging/prod views.',
+  'Use Projects to group tracked services into business projects; environment details stay in advanced views.',
   'Servers belong to a company and can be marked VPN-required plus either native-agent or local-bundle-only.',
   'Pull Bundles create a new timestamped local copy while preserving the source tree.',
   'Service detail pages now handle runtime snapshots plus Sync From Node, Sync To Node, and dedicated environment API Lab entry points.',
@@ -94,6 +94,10 @@ export default function App() {
 
   const currentLatest = activeWorkspace ? latestResults[activeWorkspace] : undefined
 
+  const handleLatestUpdated = useCallback((workspaceId: string, latest: WorkspaceLatest) => {
+    setLatestResults((prev) => ({ ...prev, [workspaceId]: latest }))
+  }, [])
+
   function handleServiceDeleted(serviceId: string, workspaceId: string) {
     setSelectedService(null)
     setWorkspaces((current) =>
@@ -129,7 +133,7 @@ export default function App() {
     <div className="min-h-screen bg-gray-950">
       {/* Top bar */}
       <header className="border-b border-gray-800 bg-gray-950 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="mx-auto flex w-full max-w-[1800px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <button
             onClick={() => {
               setSelectedService(null)
@@ -171,7 +175,7 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className="mx-auto w-full max-w-[1800px] px-4 py-6 sm:px-6 lg:px-8">
         {selectedService && activeWorkspace ? (
           <ServiceDetailPage
             serviceId={selectedService}
@@ -197,6 +201,7 @@ export default function App() {
             offline={offline}
             onSelectService={setSelectedService}
             onOpenEnvironmentLab={(environmentId) => setSelectedEnvironmentLab(environmentId)}
+            onLatestUpdated={handleLatestUpdated}
           />
         ) : (
           <ControlCenterPage

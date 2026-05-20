@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased - Manager Corrections
+
+- Recorded that the 2026-05-14 Palimpsest projection/export code change was made from the manager lane and must be reviewed by a separate Switchboard code agent before release.
+- Reclassified Agent Ops as a coordination/control-plane root: manager work may track state, docs, decisions, ledgers, freshness, and handoffs, but sibling code changes must be delegated.
+- Added a handoff requirement for the Palimpsest export redaction work so the current local exporter/test edits are not silently treated as accepted release work.
+- Added Agent Ops manager-presence instructions: Source Status is the first bridge surface, project agents report through Pratik back to Codex manager, and Switchboard remains the control plane while Palimpsest owns personal/source/evidence data.
+- Made those manager-presence rules durable in the shared Switchboard agent contract instead of relying on hand-edited generated `AGENTS.md` files.
+- Recorded the CEO/project-manager operating model: Pratik talks to Codex manager, Codex manager routes implementation agents, and local/future `.47` manager states sync through Switchboard/Palimpsest projections.
+- Added the CEO prompt-factory and Apple Notes intake rule: Codex manager turns rough notes into scoped prompts, asks questions when unclear, and keeps raw Notes private unless explicitly approved.
+- Added the source-language rule: Pratik's wording is the primary truth, must be preserved first in prompt packets, and overrides cleaned prompts or agent interpretation until clarified.
+
+## 1.12.6
+
+- Made Collect the primary company refresh action: node-managed locations sync from node first, local-bundle-only servers are skipped, and the response includes node sync results plus refreshed workspace/latest data.
+- Removed the primary Run All Health Checks UI path while keeping the backend endpoint as a legacy diagnostic.
+- Fixed workspace freshness propagation so Collect updates the app-level latest cache that service detail pages read.
+- Standardized new Switchboard node and manager runtime defaults on port `8020`.
+- Disabled old `.47:870x` per-project node-health API flows locally and removed those old node-health ports from project-environment runtime notes.
+- Added release/static checks for stale packaged UI labels before treating a build as shippable.
+
 ## 1.12.5
 
 - Made manager-owned roots inherit common agent rules from the manager and require only enabled agent entrypoints.

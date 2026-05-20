@@ -23,7 +23,8 @@
     "Do not invent future features.",
     "Keep output short and avoid ceremony.",
     "Never delete for cleanup; move or zip instead.",
-    "Verify with observable checks."
+    "Verify with observable checks.",
+    "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
   ],
   "principle_layers": {
     "global": [
@@ -36,7 +37,9 @@
       "Never delete for cleanup; move or zip instead.",
       "Verify with observable checks."
     ],
-    "project": [],
+    "project": [
+      "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+    ],
     "effective": [
       "Read back Pratik's request before acting.",
       "Ask in simple English when intent is unclear.",
@@ -45,7 +48,8 @@
       "Do not invent future features.",
       "Keep output short and avoid ceremony.",
       "Never delete for cleanup; move or zip instead.",
-      "Verify with observable checks."
+      "Verify with observable checks.",
+      "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
     ]
   },
   "canonical_update_gate": [

@@ -1,4 +1,4 @@
-import { Clock, Play, Activity } from 'lucide-react'
+import { Clock, Play } from 'lucide-react'
 import type { CollectSummary, CollectStatus } from '../types/switchboard'
 import { StatusBadge } from './StatusBadge'
 
@@ -7,13 +7,11 @@ interface Props {
   onCollect?: () => void
   collecting?: boolean
   offline?: boolean
-  onHealthCheck?: () => void
-  healthChecking?: boolean
 }
 
-export function RunStatus({ summary, onCollect, collecting, offline, onHealthCheck, healthChecking }: Props) {
+export function RunStatus({ summary, onCollect, collecting, offline }: Props) {
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
       {summary ? (
         <>
           <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -26,16 +24,11 @@ export function RunStatus({ summary, onCollect, collecting, offline, onHealthChe
         <span className="text-sm text-gray-600">No runs yet</span>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
-        {!offline && onHealthCheck && (
-          <button
-            onClick={onHealthCheck}
-            disabled={healthChecking}
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-200 border border-gray-700 text-sm px-4 py-1.5 rounded-lg transition-colors"
-          >
-            <Activity className={`w-3.5 h-3.5 ${healthChecking ? 'animate-pulse' : ''}`} />
-            {healthChecking ? 'Checking…' : 'Run All Health Checks'}
-          </button>
+      <div className="md:ml-auto flex flex-col gap-2 md:flex-row md:items-center">
+        {!offline && (
+          <span className="text-xs text-gray-500">
+            Collect refreshes node truth, saved scope, ports, docs, repo state, and pull authority.
+          </span>
         )}
 
         {!offline && onCollect && (

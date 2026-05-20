@@ -6,6 +6,7 @@ from unittest import mock
 
 from fastapi.testclient import TestClient
 
+from switchboard.defaults import DEFAULT_NODE_PORT
 from switchboard.node import (
     init_manager_node,
     install_node,
@@ -263,6 +264,15 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(roots.json()["roots"][0]["project_root"], str(project_root.resolve()))
             self.assertEqual(root_health.json()["service_id"], "sample-service")
             self.assertEqual(root_manifest.json()["manifest"]["service_id"], "sample-service")
+
+    def test_manager_node_default_port_is_standard_node_port(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            manager_root = Path(tmpdir) / "manager"
+            init_result = init_manager_node(manager_root)
+            client = TestClient(create_manager_node_app(manager_root))
+
+            self.assertEqual(init_result["manifest"]["runtime_port"], DEFAULT_NODE_PORT)
+            self.assertEqual(client.get("/api/health").json()["runtime_port"], DEFAULT_NODE_PORT)
 
     def test_manager_safe_action_archives_only_old_scaffolding(self) -> None:
         with TemporaryDirectory() as tmpdir:

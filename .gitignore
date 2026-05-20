@@ -18,6 +18,7 @@ docs/dashboard-agent-handoff.md
 AGENT_SYNC.md
 AGENT_PLAYBOOK.md
 release/
+uv.lock
 *.pyc
 switchboard/static/app/
 switchboard/manager/runtime/

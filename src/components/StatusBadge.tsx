@@ -11,7 +11,9 @@ const STATUS_STYLES: Record<CollectStatus, string> = {
   not_git_repo: 'bg-gray-800 text-gray-400 border border-gray-600',
   dirty_repo: 'bg-yellow-900 text-yellow-300 border border-yellow-700',
   permission_limited: 'bg-orange-900 text-orange-300 border border-orange-700',
+  skipped_by_exclude: 'bg-gray-800 text-gray-400 border border-gray-600',
   unverified: 'bg-gray-800 text-gray-400 border border-gray-600',
+  action_in_progress: 'bg-blue-900 text-blue-300 border border-blue-700',
 }
 
 const STATUS_LABELS: Record<CollectStatus, string> = {
@@ -25,7 +27,9 @@ const STATUS_LABELS: Record<CollectStatus, string> = {
   not_git_repo: 'Not Git',
   dirty_repo: 'Dirty',
   permission_limited: 'Limited',
+  skipped_by_exclude: 'Skipped',
   unverified: 'Unverified',
+  action_in_progress: 'In Progress',
 }
 
 interface Props {

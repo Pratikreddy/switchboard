@@ -110,11 +110,18 @@ export function ControlCenterPage({
           const serverCount = workspace.server_count ?? workspace.server_ids.length
           const serviceCount = workspace.service_count ?? workspace.services.length
           const status = serviceCount === 0 ? 'unverified' : latest?.summary.status ?? 'unverified'
+          const freshnessState = latest?.summary.freshness_state || latest?.freshness?.freshness_state || ''
+          const stale = serviceCount > 0 && Boolean(freshnessState && freshnessState !== 'Fresh')
+          const refreshAction = latest?.summary.refresh_action || latest?.freshness?.refresh_action || (stale ? 'Collect' : '')
           return (
             <button
               key={workspace.workspace_id}
               onClick={() => onOpenWorkspace(workspace.workspace_id)}
-              className="group rounded-2xl border border-gray-800 bg-gray-900 p-5 text-left transition-colors hover:border-cyan-500/60 hover:bg-gray-900/80"
+              className={`group rounded-2xl border p-5 text-left transition-colors ${
+                stale
+                  ? 'border-amber-800/50 bg-gray-900/70 hover:border-amber-500/70'
+                  : 'border-gray-800 bg-gray-900 hover:border-cyan-500/60 hover:bg-gray-900/80'
+              }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -147,6 +154,11 @@ export function ControlCenterPage({
                     State
                   </div>
                   <div className="mt-2 text-sm font-medium capitalize text-white">{status}</div>
+                  {stale && (
+                    <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-amber-300">
+                      {freshnessState}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -160,8 +172,8 @@ export function ControlCenterPage({
                       : 'No live run captured yet'
                   })()}
                 </span>
-                <span className="flex items-center gap-2 text-cyan-400 transition-transform group-hover:translate-x-0.5">
-                  Open company
+                <span className={`flex items-center gap-2 transition-transform group-hover:translate-x-0.5 ${stale ? 'text-amber-300' : 'text-cyan-400'}`}>
+                  {stale ? refreshAction || 'Needs Collect' : 'Open company'}
                   <ArrowRight className="h-4 w-4" />
                 </span>
               </div>

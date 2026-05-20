@@ -284,6 +284,20 @@ class SnapshotStore:
         self._write_runtime_cache(cache)
         return record
 
+    def invalidate_node_viewer(self, service_id: str, location_id: str | None = None) -> None:
+        cache = self._read_runtime_cache()
+        viewer = cache.setdefault("node_viewer", {})
+        if location_id is None:
+            viewer.pop(service_id, None)
+        else:
+            service_viewer = viewer.get(service_id, {})
+            if isinstance(service_viewer, dict):
+                service_viewer.pop(location_id, None)
+                if not service_viewer:
+                    viewer.pop(service_id, None)
+        cache["generated"] = utc_now_iso()
+        self._write_runtime_cache(cache)
+
     def get_service_node_viewer(self, service_id: str) -> list[dict[str, Any]]:
         cache = self._read_runtime_cache()
         service_viewer = cache.get("node_viewer", {}).get(service_id, {})
@@ -431,11 +445,6 @@ class SnapshotStore:
         snapshot = read_json(archive_path, None)
         if snapshot is None:
             return None
-        current_services = self.manifests.get_workspace_services(workspace_id)
-        current_ids = sorted(service.service_id for service in current_services)
-        snapshot_ids = sorted(entry.get("service_id", "") for entry in snapshot.get("services", []))
-        if current_ids != snapshot_ids:
-            return None
         return snapshot
 
     def get_service_secret_paths(self, service_id: str) -> dict[str, Any]:
@@ -519,6 +528,21 @@ class SnapshotStore:
         runtime_cache = self._read_runtime_cache()
         runtime_cache.get("runtime_checks", {}).pop(service_id, None)
         runtime_cache.get("node_sync", {}).pop(service_id, None)
+        runtime_cache.get("node_viewer", {}).pop(service_id, None)
+        runtime_cache.get("task_ledger", {}).pop(service_id, None)
+        for snapshot in runtime_cache.get("environment_runtime_snapshots", {}).values():
+            if not isinstance(snapshot, dict):
+                continue
+            snapshot["locations"] = [
+                entry for entry in snapshot.get("locations", [])
+                if not isinstance(entry, dict) or entry.get("service_id") != service_id
+            ]
+            for key in ("open_ports", "expected_ports", "unexpected_ports", "exposed_ports", "process_findings", "node_findings"):
+                if key in snapshot and isinstance(snapshot[key], list):
+                    snapshot[key] = [
+                        entry for entry in snapshot[key]
+                        if not isinstance(entry, dict) or entry.get("service_id") != service_id
+                    ]
         runtime_cache["generated"] = generated
         self._write_runtime_cache(runtime_cache)
 

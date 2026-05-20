@@ -12,6 +12,7 @@ from typing import Any
 
 from . import __version__
 from .config import ROOT_DIR
+from .defaults import DEFAULT_NODE_PORT
 
 
 NODE_DIR_NAME = "switchboard"
@@ -362,9 +363,9 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "  - doc | file | /abs/path/to/file.md\n"
             "  - exclude | glob | venv\n"
             "- Runtime:\n"
-            "  - expected_ports: 8010, 8000\n"
-            "  - healthcheck_command: curl http://127.0.0.1:8010/api/health\n"
-            "  - run_command_hint: uvicorn main:app --port 8010\n"
+            f"  - expected_ports: {DEFAULT_NODE_PORT}, 8000\n"
+            f"  - healthcheck_command: curl http://127.0.0.1:{DEFAULT_NODE_PORT}/api/health\n"
+            f"  - run_command_hint: uvicorn main:app --port {DEFAULT_NODE_PORT}\n"
             "  - monitoring_mode: manual\n"
         ),
     }
@@ -679,8 +680,8 @@ def _tasks_completed_template() -> str:
         "    - Notes:\n"
         "      - Added the first standard handoff.\n"
         "    - Runtime:\n"
-        "      - expected_ports: 8010\n"
-        "      - healthcheck_command: curl http://127.0.0.1:8010/api/health\n"
+        f"      - expected_ports: {DEFAULT_NODE_PORT}\n"
+        f"      - healthcheck_command: curl http://127.0.0.1:{DEFAULT_NODE_PORT}/api/health\n"
         "```\n"
     )
 
@@ -696,7 +697,7 @@ import json
 from pathlib import Path
 
 manifest_path = Path(r"{project_root}") / "switchboard" / "node.manifest.json"
-default_port = 8010
+default_port = {DEFAULT_NODE_PORT}
 try:
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     value = payload.get("runtime_port", default_port)
@@ -772,7 +773,7 @@ def _manager_id(manager_root: Path) -> str:
     return f"manager-{digest}"
 
 
-def _manager_base_manifest(manager_root: Path, existing: dict[str, Any] | None = None, runtime_port: int = 8711) -> dict[str, Any]:
+def _manager_base_manifest(manager_root: Path, existing: dict[str, Any] | None = None, runtime_port: int = DEFAULT_NODE_PORT) -> dict[str, Any]:
     existing = existing or {}
     return {
         "mode": "manager",
@@ -823,7 +824,7 @@ def _unique_root_id(existing_roots: list[dict[str, Any]], requested_root_id: str
     return f"{requested_root_id}-{digest}"
 
 
-def init_manager_node(manager_root: str | Path, project_roots: list[str | Path] | None = None, runtime_port: int = 8711, snapshot: bool = False) -> dict[str, Any]:
+def init_manager_node(manager_root: str | Path, project_roots: list[str | Path] | None = None, runtime_port: int = DEFAULT_NODE_PORT, snapshot: bool = False) -> dict[str, Any]:
     manager_root = Path(manager_root).resolve()
     manager_root.mkdir(parents=True, exist_ok=True)
     paths = node_paths(manager_root)
@@ -1186,7 +1187,7 @@ def _manifest_payload(
         "project_root": str(project_root),
         "mode": "node",
         "installed_version": __version__,
-        "runtime_port": int(existing.get("runtime_port", 8010) or 8010),
+        "runtime_port": int(existing.get("runtime_port", DEFAULT_NODE_PORT) or DEFAULT_NODE_PORT),
         "repo_paths": existing.get("repo_paths", [str(project_root)]),
         "docs_paths": docs_paths,
         "log_paths": existing.get("log_paths", []),

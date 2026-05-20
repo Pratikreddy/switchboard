@@ -9,7 +9,9 @@ export type CollectStatus =
   | 'not_git_repo'
   | 'dirty_repo'
   | 'permission_limited'
+  | 'skipped_by_exclude'
   | 'unverified'
+  | 'action_in_progress'
 
 export interface PortInfo {
   port: number
@@ -29,6 +31,15 @@ export interface RuntimeConfig {
 }
 
 export type ExecutionMode = 'networked' | 'batch' | 'lambda' | 'docs_only'
+
+export interface FreshnessMeta {
+  data_as_of?: string
+  truth_as_of?: string
+  freshness_state?: 'Fresh' | 'Stale' | 'Unverified' | 'Manager unreachable' | string
+  stale_reason?: string
+  refresh_action?: string
+  freshness_source?: string
+}
 
 export interface RepoSummary {
   path: string
@@ -71,7 +82,7 @@ export interface ScopeEntry {
   kind: 'repo' | 'code' | 'doc' | 'log' | 'exclude'
   path: string
   path_type: 'file' | 'dir' | 'glob'
-  source: 'seeded' | 'user_added' | 'node_manifest' | 'tasks_completed'
+  source: 'seeded' | 'user_added' | 'node_manifest' | 'tasks_completed' | 'manual_consolidation'
   enabled: boolean
 }
 
@@ -162,6 +173,12 @@ export interface TaskLedgerEntry {
   changelog?: string
   node_id?: string
   service_name?: string
+  data_as_of?: string
+  truth_as_of?: string
+  freshness_state?: string
+  stale_reason?: string
+  refresh_action?: string
+  freshness_source?: string
 }
 
 export interface ActionLock {
@@ -177,7 +194,7 @@ export interface ProjectManifest {
   project_id: string
   workspace_id: string
   display_name: string
-  parent_project_id?: string
+  parent_project_id?: string | null
   service_ids: string[]
   tags: string[]
   notes: string
@@ -264,6 +281,9 @@ export interface ProjectEnvironmentServiceSummary {
     bootstrap_ready: boolean
     runtime_port?: number
     checked_at?: string
+    freshness_state?: string
+    stale_reason?: string
+    refresh_action?: string
   }
   service_health?: {
     status: string
@@ -479,7 +499,7 @@ export interface ServerPatchRequest {
 export interface ProjectCreateRequest {
   project_id: string
   display_name: string
-  parent_project_id?: string
+  parent_project_id?: string | null
   service_ids?: string[]
   tags?: string[]
   notes?: string
@@ -488,7 +508,7 @@ export interface ProjectCreateRequest {
 export interface ProjectPatchRequest {
   project_id?: string
   display_name?: string
-  parent_project_id?: string
+  parent_project_id?: string | null
   service_ids?: string[]
   tags?: string[]
   notes?: string
@@ -558,7 +578,7 @@ export interface ActionExplainConfig {
   writesTo: string[]
 }
 
-export interface Service {
+export interface Service extends FreshnessMeta {
   service_id: string
   workspace_id: string
   display_name: string
@@ -581,9 +601,11 @@ export interface Service {
   node_sync?: NodeSyncResult[]
   task_ledger?: TaskLedgerEntry[]
   node_viewer?: NodeViewerEntry[]
+  saved_scope_generated_at?: string
+  freshness?: FreshnessMeta
 }
 
-export interface ServiceRunResult {
+export interface ServiceRunResult extends FreshnessMeta {
   service_id: string
   status: CollectStatus
   ports: PortInfo[]
@@ -622,12 +644,17 @@ export interface Workspace {
 
 export interface WorkspaceLatest {
   workspace: Workspace
+  company?: Workspace
   servers: ServerInfo[]
   services: ServiceRunResult[]
   summary: CollectSummary
   repo_inventory: RepoSummary[]
   docs_index: FileEntry[]
   logs_index: FileEntry[]
+  node_sync_results?: NodeSyncResult[]
+  freshness?: FreshnessMeta
+  archived_service_ids?: string[]
+  current_service_ids?: string[]
 }
 
 export interface ServerInfo {
@@ -653,12 +680,16 @@ export interface ServerRecord {
   notes?: string
 }
 
-export interface CollectSummary {
+export interface CollectSummary extends FreshnessMeta {
   run_id: string
   workspace_id: string
   timestamp: string
   status: CollectStatus
   triggered_by?: string
+  server_count?: number
+  service_count?: number
+  node_sync_count?: number
+  node_sync_blocked_count?: number
 }
 
 export interface RunRecord {
@@ -692,6 +723,7 @@ export function isApiError(v: unknown): v is ApiError {
 export interface CollectOptions {
   service_filter?: string[]
   password_overrides?: Record<string, string>
+  include_node_sync?: boolean
 }
 
 export interface DownloadRequest {
@@ -852,7 +884,7 @@ export interface SafetyCheckResult {
   repo_state: RepoSummary
 }
 
-export interface RuntimeCheckResult {
+export interface RuntimeCheckResult extends FreshnessMeta {
   service_id: string
   location_id: string
   server_id: string
@@ -879,10 +911,10 @@ export interface RuntimeCheckResult {
   operator_commands?: OperatorCommand[]
 }
 
-export interface NodeSyncResult {
+export interface NodeSyncResult extends FreshnessMeta {
   service_id: string
   location_id: string
-  direction: 'from_node' | 'to_node'
+  direction?: 'from_node' | 'to_node'
   timestamp: string
   status: CollectStatus
   source: string
@@ -891,6 +923,10 @@ export interface NodeSyncResult {
   include_runtime_config: boolean
   managed_docs?: ManagedDocConfig[]
   doc_index?: DocIndexState
+  server_id?: string
+  message?: string
+  scope_snapshot_generated_at?: string
+  skipped?: boolean
 }
 
 export interface PullBundleRequest {
@@ -912,13 +948,20 @@ export interface PullBundlePreflight {
   connection_type?: 'local' | 'ssh'
   source_authority?: PullBundleAuthority
   node_local_scope_timestamp?: string
+  node_scope_generated_at?: string
   control_center_scope_timestamp?: string
+  authority_stale?: boolean
+  missing_remote_sync?: boolean
+  missing_authority_timestamp?: boolean
+  vpn_required?: boolean
+  fix?: string
   include_count?: number
   saved_include_count?: number
   extra_include_count?: number
   exclude_count?: number
   suspicious_entries?: Array<{ path: string; kind: string; reason: string }>
   blocked_reasons?: string[]
+  freshness?: FreshnessMeta
   location_required?: boolean
   locations?: Array<{
     location_id: string
@@ -975,6 +1018,8 @@ export interface NodeViewerEntry {
   location_id: string
   server_id: string
   root: string
+  connection_status?: CollectStatus
+  last_inspected_at?: string
   node_present: boolean
   bootstrap_ready: boolean
   runtime_ready: boolean
@@ -1002,9 +1047,19 @@ export interface NodeViewerEntry {
   manager_root_id?: string
   manager_root?: string
   manager_version?: string
+  data_as_of?: string
+  truth_as_of?: string
+  freshness_state?: 'Fresh' | 'Stale' | 'Unverified' | 'Manager unreachable' | string
+  stale_reason?: string
+  refresh_action?: string
+  freshness_source?: string
+  target_manager_port?: number
+  legacy_runtime_port?: number
+  legacy_runtime_port_label?: string
 }
 
 export interface NodeActionResult {
+  status?: CollectStatus
   node: NodeViewerEntry
   before?: NodeViewerEntry
   after?: NodeViewerEntry

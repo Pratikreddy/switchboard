@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .defaults import DEFAULT_NODE_PORT
 from .node import NODE_DIR_NAME, load_manager_manifest, load_node_manifest
 
 
@@ -242,7 +243,7 @@ def manager_status(manager_root: str | Path, port: int | None = None) -> dict[st
     }
 
 
-def start_node_runtime(project_root: str | Path, host: str = "127.0.0.1", port: int = 8010) -> dict[str, Any]:
+def start_node_runtime(project_root: str | Path, host: str = "127.0.0.1", port: int = DEFAULT_NODE_PORT) -> dict[str, Any]:
     project_root = Path(project_root).resolve()
     paths = runtime_paths(project_root)
     paths["runtime"].mkdir(parents=True, exist_ok=True)
@@ -283,7 +284,7 @@ def start_node_runtime(project_root: str | Path, host: str = "127.0.0.1", port: 
     }
 
 
-def start_manager_runtime(manager_root: str | Path, host: str = "127.0.0.1", port: int = 8711) -> dict[str, Any]:
+def start_manager_runtime(manager_root: str | Path, host: str = "127.0.0.1", port: int = DEFAULT_NODE_PORT) -> dict[str, Any]:
     manager_root = Path(manager_root).resolve()
     paths = manager_runtime_paths(manager_root)
     paths["runtime"].mkdir(parents=True, exist_ok=True)

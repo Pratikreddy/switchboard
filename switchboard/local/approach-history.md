@@ -1,3 +1,119 @@
 # Approach History
 
-No decision-tagged entries yet. Add entries to `tasks-completed.md` with the `decision` tag and rerun snapshot.
+## 2026-05-14T01:34:00+00:00 | Model Palimpsest projection and personal source lanes
+- Tags: task, handoff, decision, scope
+- Summary: Added Agent Ops, Palimpsest, X collector, 080, Union Bank, Gmail metadata, and Drive metadata lanes to the personal workspace and tightened Palimpsest export to a summarized projection.
+- Changed Paths: switchboard/manifests/services.json, switchboard/manifests/projects.json, switchboard/manifests/workspaces.json, switchboard/manager.manifest.json, switchboard/collectors.py, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Confirmed the implementation should make Switchboard and Palimpsest siblings with projection sync, while keeping personal data local-private.
+- Scope Check: Control-center scope still stays inside Switchboard source, manifests, tests, and canonical task state; new personal-system lanes are manifest entries, not raw data imports.
+- Notes:
+  - - Agent Ops is registered as a manager-inherited root at `/Users/p/Desktop/main/agent-ops`.
+  - - Palimpsest owns source/evidence data while Switchboard owns project, task, runtime, freshness, and sync state.
+  - - 080 is modeled as a mixed clothing/media/machine project instead of a normal backend service.
+  - - Gmail and Drive are parked as metadata-only future sources; no OAuth, bodies, attachments, or Drive contents were connected.
+  - - `export-palimpsest` now summarizes task ledgers, scope entries, and pull bundles instead of exporting detailed notes or pull-bundle file paths.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py | true
+  - doc | dir | /Users/p/Desktop/dashboard/switchboard/manifests | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+
+## 2026-05-14T01:44:45+00:00 | Record manager boundary correction for Palimpsest export
+- Tags: handoff, decision, scope
+- Summary: Documented that the Palimpsest export redaction code/test edits were made from the manager lane and now require separate Switchboard code-agent review before release.
+- Changed Paths: CHANGELOG.md, switchboard/local/tasks-completed.md, switchboard/local/control-center-handoff.md, /Users/p/Desktop/main/agent-ops/README.md, /Users/p/Desktop/main/agent-ops/AGENTS.md, /Users/p/Desktop/main/agent-ops/tasks/current.md, /Users/p/Desktop/main/agent-ops/decisions/0002-agent-manager-code-boundary.md, /Users/p/Desktop/main/agent-ops/handoffs/2026-05-14-switchboard-export-redaction-review.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants Codex to operate as the Switchboard manager: make nodes, pull/bootstrap state, track gaps, and delegate code changes to separate agents.
+- Scope Check: This correction is documentation and ledger-only; it does not change Switchboard source, tests, manifests, runtime behavior, or Palimpsest data.
+- Changelog:
+  - Marked the manager-made Palimpsest exporter/test edits as needing Switchboard code-agent review.
+  - Added the Agent Ops rule that manager work tracks state and handoffs but does not patch sibling code.
+  - Added a dedicated handoff for reviewing the Palimpsest export redaction work.
+- Notes:
+  - - The prior `Model Palimpsest projection and personal source lanes` entry remains as historical record, but its exporter/test portion is not accepted release work until reviewed.
+  - - Future unsafe-code findings from the manager lane should stop at `needs-review` and become handoffs.
+  - - Live Switchboard/project state must be inspected before declaring project lanes complete.
+  - - No code files were edited in this correction pass.
+  - - No tests were run because this was documentation and manager-ledger work only.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md | true
+  - doc | dir | /Users/p/Desktop/main/agent-ops | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+
+## 2026-05-14T02:20:00+00:00 | Record CEO/PM Agent Ops sync model
+- Tags: decision, handoff, scope
+- Summary: Added the operating rule that Pratik is CEO, Codex manager is project manager, implementation agents receive scoped delegated work, and local/future `.47` Codex manager states sync through Switchboard/Palimpsest projections.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/decisions/0003-ceo-pm-single-agent-ops-sync.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants one Agent Ops management layer, with local and future `.47` manager versions syncing through the tools being built.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, service manifests, runtime behavior, release package, or private data changed.
+- Notes:
+  - - Switchboard remains the control plane for tasks/nodes/runtime/freshness.
+  - - Palimpsest remains the personal/source/evidence reservoir.
+  - - Agent Ops is the management hub and sync coordinator.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/decisions/0003-ceo-pm-single-agent-ops-sync.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+
+## 2026-05-14T02:20:14+00:00 | Record CEO prompt factory and Notes intake
+- Tags: decision, handoff, scope
+- Summary: Added the durable manager rule that Codex manager converts Pratik's direction and approved Apple Notes context into scoped implementation-agent prompts, asking questions before delegation when unclear.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/decisions/0004-ceo-prompt-factory-notes-intake.md, /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md, /Users/p/Desktop/main/agent-ops/bridges/notes-intake.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik wants prompt generation and task cleanup to be Codex manager's core CEO-support job, with Notes.app available as a private intake source.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, service manifests, runtime behavior, release package, Notes.app content, or private data changed.
+- Notes:
+  - - Notes.app is an intake surface, not a public artifact source.
+  - - Manager output should be clear prompt packets and questions before implementation delegation.
+  - - Raw note text is not copied unless explicitly approved for a specific destination.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/decisions/0004-ceo-prompt-factory-notes-intake.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/bridges/notes-intake.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+
+## 2026-05-15T05:45:53+00:00 | Record Pratik-language source-of-truth rule
+- Tags: decision, handoff, scope
+- Summary: Added the durable manager rule that Pratik's exact language is the primary truth and must be preserved before cleaned prompts or agent interpretation.
+- Changed Paths: CHANGELOG.md, switchboard/node.manifest.json, switchboard/local/tasks-completed.md, /Users/p/Desktop/main/agent-ops/decisions/0005-pratik-language-source-of-truth.md, /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md, /Users/p/Desktop/main/agent-ops/bridges/ceo-conversation-record.md
+- Agent: Codex manager
+- Tool: codex-desktop
+- Read Back: Pratik clarified that what he says and how he says it is the only main truth, and agents must record it in his language first.
+- Scope Check: Switchboard instruction metadata and ledger update only; no source code, tests, service manifests, runtime behavior, release package, Notes.app content, or private data changed.
+- Notes:
+  - - Prompt packets now start with `Pratik's Words / Source Language`.
+  - - Cleaned prompts cannot override raw CEO language.
+  - - Ambiguity must be reported back instead of guessed through implementation.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/CHANGELOG.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/decisions/0005-pratik-language-source-of-truth.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/templates/agent-task-prompt.md | true
+  - doc | file | /Users/p/Desktop/main/agent-ops/bridges/ceo-conversation-record.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true

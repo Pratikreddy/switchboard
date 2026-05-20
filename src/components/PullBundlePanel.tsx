@@ -10,6 +10,7 @@ import { AccordionSection } from './AccordionSection'
 interface Props {
   service: Service
   disabled?: boolean
+  refreshKey?: number
 }
 
 function uniqueByPath(entries: ScopeEntry[]) {
@@ -21,7 +22,13 @@ function uniqueByPath(entries: ScopeEntry[]) {
   })
 }
 
-export function PullBundlePanel({ service, disabled }: Props) {
+function formatTimestampLabel(value?: string) {
+  if (!value) return 'missing'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+}
+
+export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   const actionKey = 'pull_bundle'
   const sessionKey = `pending:${actionKey}:${service.service_id}`
   const [history, setHistory] = useState<PullBundleRecord[]>([])
@@ -52,7 +59,8 @@ export function PullBundlePanel({ service, disabled }: Props) {
   useEffect(() => {
     setLocationId(defaultLocationId)
     setPreflight(null)
-  }, [defaultLocationId, service.service_id])
+    setMessage('')
+  }, [defaultLocationId, service.service_id, refreshKey])
 
   useEffect(() => {
     let cancelled = false
@@ -102,7 +110,12 @@ export function PullBundlePanel({ service, disabled }: Props) {
     listPullBundles(service.service_id).then((result) => {
       if (!isApiError(result)) setHistory(result)
     })
-  }, [disabled, service.service_id])
+  }, [disabled, refreshKey, service.service_id])
+
+  useEffect(() => {
+    setPreflight(null)
+    setMessage('')
+  }, [refreshKey, service.scope_entries])
 
   const savedScope = useMemo(
     () => service.scope_entries.filter((entry) => entry.enabled && entry.kind !== 'exclude'),
@@ -299,6 +312,31 @@ export function PullBundlePanel({ service, disabled }: Props) {
                   <div className="mt-1 text-gray-500">
                     Authority {preflight.source_authority?.source ?? 'unknown'} · includes {preflight.include_count ?? 0} · excludes {preflight.exclude_count ?? 0}
                   </div>
+                  <div className="mt-2 grid gap-1 text-[11px] text-gray-500 md:grid-cols-2">
+                    <div>Node-local authority: {formatTimestampLabel(preflight.node_local_scope_timestamp)}</div>
+                    <div>Control Center scope: {formatTimestampLabel(preflight.control_center_scope_timestamp)}</div>
+                    <div>Authority updated: {formatTimestampLabel(preflight.source_authority?.updated_at)}</div>
+                    <div>{preflight.vpn_required ? 'VPN required for live verification' : 'No VPN required for this source'}</div>
+                  </div>
+                  {preflight.freshness?.freshness_state && preflight.freshness.freshness_state !== 'Fresh' && (
+                    <div className="mt-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100">
+                      Freshness: {preflight.freshness.freshness_state}
+                      {preflight.freshness.refresh_action ? ` · ${preflight.freshness.refresh_action}` : ''}
+                      {preflight.freshness.stale_reason ? ` · ${preflight.freshness.stale_reason}` : ''}
+                    </div>
+                  )}
+                  {preflight.authority_stale && (
+                    <div className="mt-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100">
+                      Stale authority. Run Sync From Node with VPN on.
+                    </div>
+                  )}
+                  {preflight.status !== 'ok' && preflight.blocked_reasons && preflight.blocked_reasons.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-[11px] text-amber-100">
+                      {preflight.blocked_reasons.map((reason) => (
+                        <li key={reason}>- {reason}</li>
+                      ))}
+                    </ul>
+                  )}
                   {preflight.root && <div className="mt-1 font-mono text-[11px] text-gray-500 break-all">{preflight.root}</div>}
                 </>
               ) : (

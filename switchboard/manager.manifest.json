@@ -12,7 +12,7 @@
       "role": "minion",
       "enabled": true,
       "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:06:04+00:00",
+      "manifest_updated_at": "2026-05-14T02:10:50+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -25,7 +25,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -34,10 +36,49 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
+    },
+    {
+      "root_id": "agent-ops",
+      "project_root": "/Users/p/Desktop/agent-ops",
+      "service_id": "agent-ops",
+      "display_name": "Agent Ops",
+      "role": "minion",
+      "enabled": true,
+      "last_seen_version": "1.12.6",
+      "manifest_updated_at": "2026-05-15T06:03:27+00:00",
+      "verify_status": "ok",
+      "design_principles": {
+        "global": [
+          "Read back Pratik's request before acting.",
+          "Ask in simple English when intent is unclear.",
+          "Make the smallest useful change.",
+          "Touch only files required by the request.",
+          "Do not invent future features.",
+          "Keep output short and avoid ceremony.",
+          "Never delete for cleanup; move or zip instead.",
+          "Verify with observable checks."
+        ],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
+        "effective": [
+          "Read back Pratik's request before acting.",
+          "Ask in simple English when intent is unclear.",
+          "Make the smallest useful change.",
+          "Touch only files required by the request.",
+          "Do not invent future features.",
+          "Keep output short and avoid ceremony.",
+          "Never delete for cleanup; move or zip instead.",
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ]
+      },
+      "registered_at": "2026-05-15T06:03:27+00:00"
     },
     {
       "root_id": "dashboard_core",
@@ -46,8 +87,8 @@
       "display_name": "switchboard",
       "role": "core",
       "enabled": true,
-      "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:16:10+00:00",
+      "last_seen_version": "1.12.6",
+      "manifest_updated_at": "2026-05-15T05:47:25+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -60,7 +101,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -69,10 +112,11 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
     },
     {
       "root_id": "finance",
@@ -82,7 +126,7 @@
       "role": "minion",
       "enabled": true,
       "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:06:04+00:00",
+      "manifest_updated_at": "2026-05-14T02:10:50+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -95,7 +139,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -104,10 +150,11 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
     },
     {
       "root_id": "lambdalogger",
@@ -117,7 +164,7 @@
       "role": "minion",
       "enabled": true,
       "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:14:00+00:00",
+      "manifest_updated_at": "2026-05-14T02:10:50+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -130,7 +177,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -139,10 +188,11 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
     },
     {
       "root_id": "lambdascripts",
@@ -152,7 +202,7 @@
       "role": "minion",
       "enabled": true,
       "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:06:04+00:00",
+      "manifest_updated_at": "2026-05-14T08:58:58+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -165,7 +215,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -174,10 +226,49 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
+    },
+    {
+      "root_id": "palimpsest",
+      "project_root": "/Users/p/Desktop/palimpsest",
+      "service_id": "palimpsest",
+      "display_name": "Palimpsest",
+      "role": "minion",
+      "enabled": true,
+      "last_seen_version": "1.12.6",
+      "manifest_updated_at": "2026-05-14T08:50:09+00:00",
+      "verify_status": "ok",
+      "design_principles": {
+        "global": [
+          "Read back Pratik's request before acting.",
+          "Ask in simple English when intent is unclear.",
+          "Make the smallest useful change.",
+          "Touch only files required by the request.",
+          "Do not invent future features.",
+          "Keep output short and avoid ceremony.",
+          "Never delete for cleanup; move or zip instead.",
+          "Verify with observable checks."
+        ],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
+        "effective": [
+          "Read back Pratik's request before acting.",
+          "Ask in simple English when intent is unclear.",
+          "Make the smallest useful change.",
+          "Touch only files required by the request.",
+          "Do not invent future features.",
+          "Keep output short and avoid ceremony.",
+          "Never delete for cleanup; move or zip instead.",
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ]
+      },
+      "registered_at": "2026-05-15T05:47:30+00:00"
     },
     {
       "root_id": "syspriv",
@@ -187,7 +278,7 @@
       "role": "minion",
       "enabled": true,
       "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:06:04+00:00",
+      "manifest_updated_at": "2026-05-14T02:10:50+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -200,7 +291,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -209,10 +302,11 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
     },
     {
       "root_id": "unionbank_service",
@@ -221,8 +315,8 @@
       "display_name": "Union Bank Service",
       "role": "minion",
       "enabled": true,
-      "last_seen_version": "1.12.5",
-      "manifest_updated_at": "2026-05-10T05:06:04+00:00",
+      "last_seen_version": "1.12.6",
+      "manifest_updated_at": "2026-05-14T02:35:16+00:00",
       "verify_status": "ok",
       "design_principles": {
         "global": [
@@ -235,7 +329,9 @@
           "Never delete for cleanup; move or zip instead.",
           "Verify with observable checks."
         ],
-        "project": [],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
         "effective": [
           "Read back Pratik's request before acting.",
           "Ask in simple English when intent is unclear.",
@@ -244,10 +340,49 @@
           "Do not invent future features.",
           "Keep output short and avoid ceremony.",
           "Never delete for cleanup; move or zip instead.",
-          "Verify with observable checks."
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
         ]
       },
-      "registered_at": "2026-05-10T05:16:11+00:00"
+      "registered_at": "2026-05-15T05:47:30+00:00"
+    },
+    {
+      "root_id": "x-collector",
+      "project_root": "/Users/p/Desktop/main/xscrapin",
+      "service_id": "x-collector",
+      "display_name": "X Collector",
+      "role": "minion",
+      "enabled": true,
+      "last_seen_version": "1.12.5",
+      "manifest_updated_at": "2026-05-14T02:10:51+00:00",
+      "verify_status": "ok",
+      "design_principles": {
+        "global": [
+          "Read back Pratik's request before acting.",
+          "Ask in simple English when intent is unclear.",
+          "Make the smallest useful change.",
+          "Touch only files required by the request.",
+          "Do not invent future features.",
+          "Keep output short and avoid ceremony.",
+          "Never delete for cleanup; move or zip instead.",
+          "Verify with observable checks."
+        ],
+        "project": [
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ],
+        "effective": [
+          "Read back Pratik's request before acting.",
+          "Ask in simple English when intent is unclear.",
+          "Make the smallest useful change.",
+          "Touch only files required by the request.",
+          "Do not invent future features.",
+          "Keep output short and avoid ceremony.",
+          "Never delete for cleanup; move or zip instead.",
+          "Verify with observable checks.",
+          "Read /Users/p/Desktop/agent-ops/AGENT_OPS.md for Agent Ops manager rules, source-language policy, prompt factory, tool boundaries, and current tasks."
+        ]
+      },
+      "registered_at": "2026-05-15T05:47:30+00:00"
     }
   ],
   "design_principles": {
@@ -273,5 +408,5 @@
       "Verify with observable checks."
     ]
   },
-  "updated_at": "2026-05-10T05:16:11+00:00"
+  "updated_at": "2026-05-15T06:03:27+00:00"
 }

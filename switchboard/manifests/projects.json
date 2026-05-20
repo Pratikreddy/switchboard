@@ -147,5 +147,76 @@
       "ingestion"
     ],
     "notes": "Separate ingestion subtree rooted at /home/pesu/aichat_test/project on .47. It owns ingestion scripts, extracted assets, mappings, and Milvus content shared with aichat and aichat_test."
+  },
+  {
+    "project_id": "agent_ops_project",
+    "workspace_id": "1",
+    "display_name": "Agent Ops",
+    "parent_project_id": null,
+    "service_ids": [
+      "agent-ops"
+    ],
+    "tags": [
+      "agent-management",
+      "projection-sync"
+    ],
+    "notes": "Coordination project for planning, decisions, handoffs, and cross-project task tracking. This is where agents track the build itself before Palimpsest has a mature UI."
+  },
+  {
+    "project_id": "palimpsest_reservoir_project",
+    "workspace_id": "1",
+    "display_name": "Palimpsest Reservoir",
+    "parent_project_id": null,
+    "service_ids": [
+      "palimpsest",
+      "x-collector",
+      "gmail-day-to-day",
+      "gmail-finance",
+      "google-drive-metadata"
+    ],
+    "tags": [
+      "palimpsest",
+      "source-lanes",
+      "private-data",
+      "parked-placeholders",
+      "missing-service-refs"
+    ],
+    "notes": "Personal data/evidence reservoir. Current active lanes are Palimpsest and X collector only; Gmail/Drive service ids are parked metadata-only placeholders with no service manifests, OAuth, message bodies, attachments, or Drive contents connected."
+  },
+  {
+    "project_id": "unionbank_finance_project",
+    "workspace_id": "1",
+    "display_name": "Union Bank Finance",
+    "parent_project_id": null,
+    "service_ids": [
+      "unionbank-service",
+      "finance"
+    ],
+    "tags": [
+      "finance",
+      "sensitive_candidate",
+      "palimpsest-source",
+      "parked-placeholder",
+      "missing-service-ref"
+    ],
+    "notes": "Sensitive finance project. `finance` is the tracked local service; `unionbank-service` is a parked/missing service ref until its service manifest is restored. Raw rows, account details, and statement screenshots never go public."
+  },
+  {
+    "project_id": "080_clothing_project",
+    "workspace_id": "1",
+    "display_name": "080 Clothing",
+    "parent_project_id": null,
+    "service_ids": [
+      "080-clothing"
+    ],
+    "tags": [
+      "080",
+      "clothing",
+      "mixed-project",
+      "machines",
+      "parked-placeholder",
+      "missing-service-ref"
+    ],
+    "notes": "Mixed non-tech/tech Palimpsest project for clothing, media, embroidery/vinyl tooling, machine dependencies, and evidence. `080-clothing` is a parked/missing service ref, not a live Switchboard service manifest."
   }
 ]

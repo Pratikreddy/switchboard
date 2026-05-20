@@ -11,7 +11,6 @@ export const ACTION_EXPLAIN: Record<string, ActionExplainConfig> = {
   sync_from_node: { title: 'Sync from node', happens: ['Imports node scope, runtime config, and task ledger.', 'Updates control center configurations.'], untouched: ['Does not touch sibling locations.', 'Does not alter unselected services.'], writesTo: ['switchboard/manifests/services.json'] },
   runtime_check: { title: 'Refresh runtime snapshot', happens: ['Connects to the server.', 'Reads ports, processes, node state, and health hints.', 'Generates operator follow-up commands.'], untouched: ['Does not restart the application.', 'Does not alter firewall or port bindings.'], writesTo: ['switchboard/state/run/'] },
   pull_bundle: { title: 'Create bundle', happens: ['Copies files specified in scope.', 'Creates a zip or directory payload.'], untouched: ['Does not delete original files.', 'Does not deploy anything.'], writesTo: ['downloads/'] },
-  workspace_health_check: { title: 'Run all health checks', happens: ['Iterates all services in workspace.', 'Calls runtime_check for each location.', 'Aggregates and returns per-service per-location results.'], untouched: ['Does not restart the applications.', 'Does not alter application code.'], writesTo: ['switchboard/state/run/'] },
 }
 
 export interface ConfirmationModalProps {

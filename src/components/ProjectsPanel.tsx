@@ -6,13 +6,11 @@ import {
   Pencil,
   Plus,
   Save,
-  Trash2,
+  X,
 } from 'lucide-react'
 import {
   createProject,
   createProjectEnvironment,
-  deleteProject,
-  deleteProjectEnvironment,
   listProjects,
   updateProject,
   updateProjectEnvironment,
@@ -86,6 +84,11 @@ function parseCsv(value: string): string[] {
   return value.split(',').map((entry) => entry.trim()).filter(Boolean)
 }
 
+function normalizeParentProjectId(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed ? trimmed : null
+}
+
 export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNotes, services, onOpenEnvironmentLab }: Props) {
   const [projects, setProjects] = useState<ProjectManifest[]>([])
   const [environments, setEnvironments] = useState<ProjectEnvironmentView[]>([])
@@ -93,6 +96,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openProjects, setOpenProjects] = useState<Record<string, boolean>>({})
+  const [openProjectAdvanced, setOpenProjectAdvanced] = useState<Record<string, boolean>>({})
   const [openEnvironments, setOpenEnvironments] = useState<Record<string, boolean>>({})
 
   const [addingProject, setAddingProject] = useState(false)
@@ -151,6 +155,20 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
     }
     return map
   }, [projects])
+  const projectNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const project of projects) {
+      map.set(project.project_id, project.display_name)
+    }
+    return map
+  }, [projects])
+  const servicesById = useMemo(() => {
+    const map = new Map<string, Service>()
+    for (const service of services) {
+      map.set(service.service_id, service)
+    }
+    return map
+  }, [services])
   const unassignedServiceCount = useMemo(
     () => services.filter((service) => !serviceOwnerById.has(service.service_id)).length,
     [serviceOwnerById, services],
@@ -161,18 +179,15 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
     [editingProjectId, projects],
   )
   const selectableServices = useMemo(
-    () =>
-      services.filter((service) => {
-        const owner = serviceOwnerById.get(service.service_id)
-        return !owner || owner === editingProjectId
-      }),
-    [editingProjectId, serviceOwnerById, services],
+    () => services,
+    [services],
   )
 
   function resetProjectForm() {
     setAddingProject(false)
     setEditingProjectId(null)
     setProjectForm(EMPTY_PROJECT_FORM)
+    setServiceFilter('')
   }
 
   function resetEnvironmentForm() {
@@ -223,6 +238,15 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
     })
   }
 
+  function dropProjectServiceSelection(serviceId: string) {
+    setProjectForm((current) => ({
+      ...current,
+      service_ids: parseCsv(current.service_ids)
+        .filter((candidate) => candidate !== serviceId)
+        .join(', '),
+    }))
+  }
+
   const availableProjectServices = useMemo(
     () => selectableServices.filter((service) => !projectServiceIds.includes(service.service_id)),
     [projectServiceIds, selectableServices],
@@ -235,6 +259,19 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
     )
   }, [selectableServices, serviceFilter])
 
+  function projectOwnerLabel(serviceId: string, selected: boolean) {
+    if (selected) return 'Selected for this project'
+    const ownerId = serviceOwnerById.get(serviceId)
+    if (!ownerId) return 'Unassigned'
+    return `Owned by ${projectNameById.get(ownerId) ?? ownerId}`
+  }
+
+  function projectMoveHint(serviceId: string, selected: boolean) {
+    const ownerId = serviceOwnerById.get(serviceId)
+    if (!selected || !ownerId || ownerId === editingProjectId) return ''
+    return `Will move from ${projectNameById.get(ownerId) ?? ownerId}`
+  }
+
   function beginAddEnvironment(projectId: string) {
     resetProjectForm()
     setAddingEnvironmentFor(projectId)
@@ -245,6 +282,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
       deployments: [blankDeployment()],
     })
     setOpenProjects((current) => ({ ...current, [projectId]: true }))
+    setOpenProjectAdvanced((current) => ({ ...current, [projectId]: true }))
     setError(null)
   }
 
@@ -269,6 +307,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
         })) ?? [],
     })
     setOpenProjects((current) => ({ ...current, [environment.project_id]: true }))
+    setOpenProjectAdvanced((current) => ({ ...current, [environment.project_id]: true }))
     setOpenEnvironments((current) => ({ ...current, [environment.environment_id]: true }))
     setError(null)
   }
@@ -281,7 +320,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
     const payload = {
       project_id: projectForm.project_id.trim(),
       display_name: projectForm.display_name.trim(),
-      parent_project_id: projectForm.parent_project_id.trim() || undefined,
+      parent_project_id: normalizeParentProjectId(projectForm.parent_project_id),
       service_ids: parseCsv(projectForm.service_ids),
       tags: projectForm.tags.split(',').map((value) => value.trim()).filter(Boolean),
       notes: projectForm.notes.trim(),
@@ -328,26 +367,6 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
       return
     }
     resetEnvironmentForm()
-    await load()
-  }
-
-  async function removeProject(projectId: string) {
-    if (!confirm('Delete this project and all linked environments?')) return
-    const result = await deleteProject(projectId)
-    if (isApiError(result)) {
-      setError(result.message)
-      return
-    }
-    await load()
-  }
-
-  async function removeEnvironment(environmentId: string) {
-    if (!confirm('Delete this environment?')) return
-    const result = await deleteProjectEnvironment(environmentId)
-    if (isApiError(result)) {
-      setError(result.message)
-      return
-    }
     await load()
   }
 
@@ -646,14 +665,9 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
             </div>
             <div className="mt-3 flex justify-end gap-2">
               {!offline && (
-                <>
-                  <button onClick={() => beginEditEnvironment(environment)} className="p-1 text-gray-500 hover:text-cyan-300">
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => void removeEnvironment(environment.environment_id)} className="p-1 text-gray-500 hover:text-red-400">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </>
+                <button onClick={() => beginEditEnvironment(environment)} className="p-1 text-gray-500 hover:text-cyan-300">
+                  <Pencil className="h-4 w-4" />
+                </button>
               )}
             </div>
           </div>
@@ -664,8 +678,18 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
 
   function renderProject(project: ProjectManifest) {
     const open = Boolean(openProjects[project.project_id])
+    const advancedOpen = Boolean(openProjectAdvanced[project.project_id])
     const children = childProjectsByParent[project.project_id] ?? []
     const projectEnvironments = environmentsByProject[project.project_id] ?? []
+    const projectServiceIds = project.service_ids ?? []
+    const ownedServices = projectServiceIds
+      .map((serviceId) => servicesById.get(serviceId))
+      .filter((service): service is Service => Boolean(service))
+    const missingServiceIds = projectServiceIds.filter((serviceId) => !servicesById.has(serviceId))
+    const serviceCountLabel =
+      missingServiceIds.length > 0
+        ? `${ownedServices.length} current · ${missingServiceIds.length} missing ref${missingServiceIds.length === 1 ? '' : 's'}`
+        : `${ownedServices.length} service${ownedServices.length === 1 ? '' : 's'}`
     return (
       <div key={project.project_id} className="rounded-xl border border-gray-800 bg-gray-950 overflow-hidden">
         <div className="flex items-center justify-between gap-3 p-3">
@@ -682,18 +706,12 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
           </button>
           <div className="flex items-center gap-3">
             <div className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
-              {project.service_ids.length} services · {projectEnvironments.length} envs · {children.length} children
+              {serviceCountLabel}
             </div>
             {!offline && (
               <div className="flex items-center gap-2">
-                <button onClick={() => beginAddEnvironment(project.project_id)} className="rounded-lg border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-cyan-500 hover:text-white">
-                  Env
-                </button>
                 <button onClick={() => beginEditProject(project)} className="p-1 text-gray-500 hover:text-cyan-300">
                   <Pencil className="h-4 w-4" />
-                </button>
-                <button onClick={() => void removeProject(project.project_id)} className="p-1 text-gray-500 hover:text-red-400">
-                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             )}
@@ -708,7 +726,12 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
               </div>
               <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">Services</div>
-                <div className="mt-2 text-sm text-gray-300">{project.service_ids.length}</div>
+                <div className="mt-2 text-sm text-gray-300">{ownedServices.length} current</div>
+                {missingServiceIds.length > 0 && (
+                  <div className="mt-1 text-xs text-amber-200">
+                    {missingServiceIds.length} missing reference{missingServiceIds.length === 1 ? '' : 's'}
+                  </div>
+                )}
               </div>
               <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">Tags</div>
@@ -716,26 +739,70 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
               </div>
             </div>
             <div className="mt-3 text-sm text-gray-400">{project.notes || 'No project notes yet.'}</div>
-            {renderEnvironmentForm(project.project_id)}
-            <div className="mt-3 space-y-3">
-              {projectEnvironments.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-800 px-3 py-4 text-sm text-gray-500">
-                  No environments yet. Add test, prod, staging, or a custom deployment view here.
-                </div>
-              ) : (
-                projectEnvironments.map(renderEnvironment)
-              )}
+            <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/40 p-3">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">Owned Services</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {ownedServices.length === 0 ? (
+                  <span className="text-xs text-gray-500">No current services owned by this project.</span>
+                ) : (
+                  ownedServices.map((service) => (
+                    <span key={service.service_id} className="rounded-full border border-cyan-900/40 bg-cyan-950/20 px-2 py-1 text-[11px] text-cyan-200">
+                      {service.display_name}
+                    </span>
+                  ))
+                )}
+                {missingServiceIds.map((serviceId) => (
+                  <span key={`${project.project_id}:missing:${serviceId}`} className="rounded-full border border-amber-900/40 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-200">
+                    Missing reference: {serviceId}
+                  </span>
+                ))}
+              </div>
             </div>
-            {children.length > 0 && (
-              <div className="mt-4 rounded-lg border border-gray-800 bg-gray-900/40 p-3">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">Child Projects</div>
-                <div className="mt-3 space-y-2">
-                  {children.map((child) => (
-                    <div key={child.project_id} className="rounded border border-gray-800 px-3 py-2 text-sm text-gray-300">
-                      {child.display_name} <span className="ml-2 font-mono text-[10px] text-gray-500">{child.project_id}</span>
-                    </div>
-                  ))}
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-800 bg-gray-900/30 px-3 py-2">
+              <div className="text-xs text-gray-500">
+                Main view stops at company, project, and owned services. Environment metadata is secondary.
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenProjectAdvanced((current) => ({ ...current, [project.project_id]: !current[project.project_id] }))}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:border-cyan-500 hover:text-white"
+              >
+                {advancedOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+                Secondary setup · {projectEnvironments.length} env · {children.length} child
+              </button>
+            </div>
+            {advancedOpen && (
+              <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/40 p-3">
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-gray-500">
+                  Secondary setup
                 </div>
+                  {!offline && (
+                    <button onClick={() => beginAddEnvironment(project.project_id)} className="mb-3 rounded-lg border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-cyan-500 hover:text-white">
+                      Add Environment
+                    </button>
+                  )}
+                  {renderEnvironmentForm(project.project_id)}
+                  <div className="space-y-3">
+                    {projectEnvironments.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-gray-800 px-3 py-4 text-sm text-gray-500">
+                        No environments yet. Add test, prod, staging, or a custom deployment view here.
+                      </div>
+                    ) : (
+                      projectEnvironments.map(renderEnvironment)
+                    )}
+                  </div>
+                  {children.length > 0 && (
+                    <div className="mt-4 rounded-lg border border-gray-800 bg-gray-900/40 p-3">
+                      <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">Child Projects</div>
+                      <div className="mt-3 space-y-2">
+                        {children.map((child) => (
+                          <div key={child.project_id} className="rounded border border-gray-800 px-3 py-2 text-sm text-gray-300">
+                            {child.display_name} <span className="ml-2 font-mono text-[10px] text-gray-500">{child.project_id}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
               </div>
             )}
           </div>
@@ -752,7 +819,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
       >
         <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
           <FolderGit2 className="h-4 w-4 text-cyan-400" />
-          Projects & Environments
+          Projects
         </div>
         {expanded ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
       </button>
@@ -768,7 +835,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                 onClick={beginAddProject}
                 className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 text-xs px-3 py-1.5 rounded-lg transition-colors"
               >
-                <Plus className="h-3 w-3" /> Add Project Group
+                <Plus className="h-3 w-3" /> Add Project
               </button>
             )}
           </div>
@@ -789,6 +856,11 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                     onChange={(event) => setProjectForm((current) => ({ ...current, project_id: event.target.value }))}
                     className="mt-1 w-full bg-gray-900 border border-gray-800 rounded px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500"
                   />
+                  {!addingProject && (
+                    <span className="mt-1 block text-[11px] text-gray-500">
+                      Renaming updates child projects and environments.
+                    </span>
+                  )}
                 </label>
                 <label className="text-xs text-gray-400">
                   Display Name
@@ -799,7 +871,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                   />
                 </label>
                 <label className="text-xs text-gray-400">
-                  Parent Project ID
+                  Parent Project
                   <select
                     value={projectForm.parent_project_id}
                     onChange={(event) => setProjectForm((current) => ({ ...current, parent_project_id: event.target.value }))}
@@ -854,11 +926,11 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                       disabled={availableProjectServices.length === 0}
                     >
                       <option value="">
-                        {availableProjectServices.length === 0 ? 'No unassigned services' : 'Add available service'}
+                        {availableProjectServices.length === 0 ? 'All services selected' : 'Add service'}
                       </option>
                       {availableProjectServices.map((service) => (
                         <option key={service.service_id} value={service.service_id}>
-                          {service.display_name}
+                          {service.display_name} · {projectOwnerLabel(service.service_id, false)}
                         </option>
                       ))}
                     </select>
@@ -875,16 +947,35 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                   {projectServiceIds.length === 0 ? (
                     <div className="text-xs text-gray-500">No services selected yet.</div>
                   ) : (
-                    projectServiceIds.map((serviceId) => (
-                      <span key={serviceId} className="rounded-full border border-cyan-900/40 bg-cyan-950/20 px-2 py-1 text-[11px] text-cyan-200">
-                        {serviceId}
-                      </span>
-                    ))
+                    projectServiceIds.map((serviceId) => {
+                      const missing = !servicesById.has(serviceId)
+                      return (
+                        <span
+                          key={serviceId}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] ${
+                            missing
+                              ? 'border-amber-900/40 bg-amber-950/20 text-amber-200'
+                              : 'border-cyan-900/40 bg-cyan-950/20 text-cyan-200'
+                          }`}
+                        >
+                          {missing ? `Missing ref: ${serviceId}` : serviceId}
+                          <button
+                            type="button"
+                            onClick={() => dropProjectServiceSelection(serviceId)}
+                            aria-label={`Remove ${serviceId}`}
+                            className="rounded-full p-0.5 text-current opacity-70 hover:bg-black/20 hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      )
+                    })
                   )}
                 </div>
                 <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                   {visibleSelectableServices.map((service) => {
                     const selected = projectServiceIds.includes(service.service_id)
+                    const moveHint = projectMoveHint(service.service_id, selected)
                     return (
                       <button
                         key={service.service_id}
@@ -898,9 +989,11 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                       >
                         <div className="text-sm font-medium">{service.display_name}</div>
                         <div className="mt-1 font-mono text-[11px] text-gray-500">{service.service_id}</div>
-                        <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-gray-500">
-                          {service.execution_mode}
+                        <div className={`mt-2 text-[10px] uppercase tracking-[0.16em] ${selected ? 'text-cyan-200' : 'text-gray-500'}`}>
+                          {projectOwnerLabel(service.service_id, selected)}
                         </div>
+                        {moveHint && <div className="mt-1 text-[11px] text-amber-200">{moveHint}</div>}
+                        <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-600">{service.execution_mode}</div>
                       </button>
                     )
                   })}

@@ -6,15 +6,15 @@ Switchboard is a project-first control center for tracking services, servers, pr
 switchboard/local/tasks-completed.md
 ```
 
-Current release: `1.12.5`
+Current release: `1.12.6`
 
-## What 1.12.5 Fixes
+## What 1.12.6 Fixes
 
-- manager-owned agent rules: common contracts live under the manager; minion roots only keep enabled entrypoints and local proof
-- pull-bundle preflight: source location, authority, scope freshness, includes, excludes, and unsafe paths are checked before files are mirrored
-- safer node labels: service pages say register, normalize, and manager status instead of pretending to install per-project release runtimes
-- compact UI defaults: task ledger rows start collapsed, service pages have `Simple` / `Ops` / `Full` view presets, and project grouping is company -> project first
-- Palimpsest export: redacted mainboard state can be exported without secrets, logs, venvs, or raw env files
+- Collect is the primary company refresh action: node-managed locations sync from node first, then inventory refreshes.
+- Workspace/service freshness now flows back to the app-level latest cache after Collect.
+- The primary Run All Health Checks UI path is gone; the endpoint remains as a legacy diagnostic.
+- New Switchboard node and manager defaults use port `8020`.
+- Old `.47:870x` per-project node-health flows are disabled locally while real app ports stay visible.
 
 ## Core Idea
 

@@ -102,6 +102,11 @@ VPN_OR_NETWORK_BLOCKED_MESSAGE = "VPN is off or network blocked. Turn VPN on for
 SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node with VPN on."
 LOCAL_SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node."
 BUNDLE_PROFILE = "backup-clean"
+BUNDLE_READINESS_PROOF_ONLY = "proof_only"
+BUNDLE_READINESS_REVIEW_REQUIRED = "review_required"
+BUNDLE_READINESS_NOT_READY = "not_backup_ready"
+EXPOSURE_REVIEW_UNREVIEWED = "unreviewed"
+EXPOSURE_REVIEW_REVIEWED = "reviewed"
 BACKUP_CLEAN_EXCLUDE_GLOBS = [
     ".npm-cache",
     ".pytest_cache",
@@ -1661,6 +1666,15 @@ class CollectionCoordinator:
                 skipped_entries=skipped_entries,
                 exposure_findings=exposure_findings,
             )
+            readiness_metadata = self._bundle_readiness_metadata(
+                bundle_profile=BUNDLE_PROFILE,
+                backup_clean=True,
+                authority=authority,
+                preflight=preflight,
+                exposure_findings=exposure_findings,
+                skipped_entries=skipped_entries,
+                metadata_summaries=metadata_summaries,
+            )
             manifest = {
                 "bundle_id": bundle_id,
                 "created_at": utc_now_iso(),
@@ -1684,6 +1698,7 @@ class CollectionCoordinator:
                 "repo_metadata": repo_metadata,
                 "files": copied_files,
                 "skipped_entries": skipped_entries,
+                **readiness_metadata,
             }
             manifest_path = bundle_root / "bundle-manifest.json"
             manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -1714,6 +1729,7 @@ class CollectionCoordinator:
                 "skipped_entry_count": len(skipped_entries),
                 "skipped_entries": skipped_entries,
                 "files": copied_files,
+                **readiness_metadata,
             }
             self.snapshots.append_pull_bundle(history_record)
             return {
@@ -1724,6 +1740,16 @@ class CollectionCoordinator:
                 "skipped_entries": skipped_entries,
                 "preflight": preflight,
             }
+
+    def normalize_pull_bundle_record(self, record: dict[str, Any]) -> dict[str, Any]:
+        normalized = dict(record)
+        if "backup_clean" not in normalized:
+            normalized["backup_clean"] = False
+        readiness_metadata = self._bundle_readiness_metadata(existing=normalized)
+        for key, value in readiness_metadata.items():
+            if key not in normalized:
+                normalized[key] = value
+        return normalized
 
     def pull_bundle_preflight(self, service_id: str, request: PullBundleRequest) -> dict[str, Any]:
         service = self.manifests.get_service(service_id)
@@ -3960,6 +3986,115 @@ class CollectionCoordinator:
             value = str(item.get(key, "unknown") or "unknown")
             counts[value] = counts.get(value, 0) + 1
         return counts
+
+    def _bundle_nonempty_count_summary(self, items: list[dict[str, Any]], key: str) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for item in items:
+            value = str(item.get(key, "") or "").strip()
+            if not value:
+                continue
+            counts[value] = counts.get(value, 0) + 1
+        return counts
+
+    def _bundle_readiness_metadata(
+        self,
+        *,
+        bundle_profile: str | None = None,
+        backup_clean: bool | None = None,
+        authority: dict[str, Any] | None = None,
+        preflight: dict[str, Any] | None = None,
+        exposure_findings: list[dict[str, Any]] | None = None,
+        skipped_entries: list[dict[str, Any]] | None = None,
+        metadata_summaries: dict[str, Any] | None = None,
+        existing: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        source = existing or {}
+        profile = bundle_profile if bundle_profile is not None else source.get("bundle_profile")
+        is_backup_clean = bool(backup_clean if backup_clean is not None else source.get("backup_clean"))
+        authority_payload = authority if authority is not None else source.get("authority", {})
+        findings = exposure_findings if exposure_findings is not None else source.get("exposure_findings", [])
+        if not isinstance(findings, list):
+            findings = []
+        skipped = skipped_entries if skipped_entries is not None else source.get("skipped_entries", [])
+        if not isinstance(skipped, list):
+            skipped = []
+        summaries = metadata_summaries if metadata_summaries is not None else source.get("metadata_summaries", {})
+        if not isinstance(summaries, dict):
+            summaries = {}
+
+        exposure_summary = source.get("exposure_summary") if isinstance(source.get("exposure_summary"), dict) else {}
+        if not exposure_summary:
+            exposure_summary = summaries.get("exposure_summary") if isinstance(summaries.get("exposure_summary"), dict) else {}
+        if not exposure_summary:
+            exposure_summary = self._bundle_count_summary(findings, "finding_kind")
+
+        exposure_variable_summary = (
+            source.get("exposure_variable_summary")
+            if isinstance(source.get("exposure_variable_summary"), dict)
+            else self._bundle_nonempty_count_summary(findings, "variable_name")
+        )
+        unresolved_exposure_count = source.get("unresolved_exposure_count")
+        if not isinstance(unresolved_exposure_count, int):
+            unresolved_exposure_count = len(findings) if findings else sum(exposure_summary.values())
+
+        skipped_review_count = source.get("skipped_review_count")
+        if not isinstance(skipped_review_count, int):
+            skipped_review_count = len(skipped) if skipped else int(source.get("skipped_entry_count") or 0)
+        skipped_review_required = source.get("skipped_review_required")
+        if not isinstance(skipped_review_required, bool):
+            skipped_review_required = skipped_review_count > 0
+
+        existing_review_status = str(source.get("exposure_review_status") or "")
+        exposure_review_status = (
+            existing_review_status
+            if existing_review_status in {EXPOSURE_REVIEW_UNREVIEWED, EXPOSURE_REVIEW_REVIEWED}
+            else EXPOSURE_REVIEW_UNREVIEWED if unresolved_exposure_count > 0 else EXPOSURE_REVIEW_REVIEWED
+        )
+
+        authority_fresh = source.get("authority_fresh")
+        if not isinstance(authority_fresh, bool):
+            if preflight is not None:
+                authority_fresh = preflight.get("status") == "ok" and not bool(preflight.get("authority_stale"))
+            else:
+                authority_fresh = bool(is_backup_clean and isinstance(authority_payload, dict) and authority_payload.get("updated_at"))
+
+        proof_only = not is_backup_clean or profile != BUNDLE_PROFILE
+        reasons: list[str] = []
+        if proof_only:
+            reasons.extend(["legacy_proof_bundle", "not_backup_clean"])
+        if not authority_fresh:
+            reasons.append("authority_not_fresh")
+        if unresolved_exposure_count > 0:
+            reasons.append("unresolved_exposures")
+        if skipped_review_required:
+            reasons.append("skipped_entries_need_review")
+        if exposure_review_status == EXPOSURE_REVIEW_UNREVIEWED and unresolved_exposure_count > 0:
+            reasons.append("exposure_review_unreviewed")
+
+        if proof_only:
+            readiness_status = BUNDLE_READINESS_PROOF_ONLY
+            review_required = False
+        elif not authority_fresh:
+            readiness_status = BUNDLE_READINESS_NOT_READY
+            review_required = False
+        else:
+            review_required = unresolved_exposure_count > 0 or skipped_review_required or exposure_review_status == EXPOSURE_REVIEW_UNREVIEWED
+            readiness_status = BUNDLE_READINESS_REVIEW_REQUIRED if review_required else BUNDLE_READINESS_NOT_READY
+
+        return {
+            "backup_readiness_status": readiness_status,
+            "review_required": review_required,
+            "proof_only": proof_only,
+            "not_backup_ready": True,
+            "authority_fresh": authority_fresh,
+            "unresolved_exposure_count": unresolved_exposure_count,
+            "exposure_review_status": exposure_review_status,
+            "exposure_summary": exposure_summary,
+            "exposure_variable_summary": exposure_variable_summary,
+            "skipped_review_required": skipped_review_required,
+            "skipped_review_count": skipped_review_count,
+            "readiness_reasons": sorted(dict.fromkeys(reasons)),
+        }
 
     def _bundle_authority_context(self, service: ServiceManifest, location: Any, server: ResolvedServer) -> dict[str, Any]:
         runtime_state = self.snapshots.get_service_runtime_state(service.service_id)

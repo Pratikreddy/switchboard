@@ -698,7 +698,13 @@ def list_pull_bundles(service_id: str) -> dict[str, object]:
         manifest_store.get_service(service_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"service_id": service_id, "bundles": snapshot_store.list_pull_bundles(service_id)}
+    return {
+        "service_id": service_id,
+        "bundles": [
+            coordinator.normalize_pull_bundle_record(bundle)
+            for bundle in snapshot_store.list_pull_bundles(service_id)
+        ],
+    }
 
 
 @app.post("/api/services/{service_id}/pull-bundles")

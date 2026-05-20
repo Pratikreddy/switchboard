@@ -1120,6 +1120,16 @@ class BackendRegressionTests(unittest.TestCase):
             copied_relative_paths = {item["relative_path"] for item in result["files"]}
             self.assertEqual(result["bundle_profile"], "backup-clean")
             self.assertTrue(result["backup_clean"])
+            self.assertEqual(result["backup_readiness_status"], "review_required")
+            self.assertTrue(result["review_required"])
+            self.assertFalse(result["proof_only"])
+            self.assertTrue(result["not_backup_ready"])
+            self.assertTrue(result["authority_fresh"])
+            self.assertEqual(result["unresolved_exposure_count"], 0)
+            self.assertEqual(result["exposure_review_status"], "reviewed")
+            self.assertTrue(result["skipped_review_required"])
+            self.assertEqual(result["skipped_review_count"], 1)
+            self.assertIn("skipped_entries_need_review", result["readiness_reasons"])
             self.assertIn("app.py", copied_relative_paths)
             self.assertIn("uv.lock", copied_relative_paths)
             self.assertIn("package-lock.json", copied_relative_paths)
@@ -1142,6 +1152,118 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(summaries["doc_index_summary"]["doc_count"], 2)
             self.assertEqual(summaries["skipped_summary"]["metadata_summarized"], 1)
             self.assertEqual(result["preflight"]["bundle_profile"], "backup-clean")
+            manifest = read_json(Path(result["manifest_path"]), {})
+            self.assertEqual(manifest["backup_readiness_status"], "review_required")
+            self.assertEqual(manifest["skipped_review_count"], 1)
+            history = read_json(settings.evidence_dir / "pull-bundle-history.json", {"bundles": []})
+            self.assertEqual(history["bundles"][0]["backup_readiness_status"], "review_required")
+            self.assertEqual(history["bundles"][0]["exposure_summary"], {})
+
+    def test_pull_bundle_legacy_history_normalizes_as_proof_only(self) -> None:
+        settings = Settings()
+        manifests = ManifestStore(settings)
+        snapshots = SnapshotStore(settings, manifests)
+        coordinator = CollectionCoordinator(settings, manifests, snapshots)
+        legacy = {
+            "bundle_id": "legacy-proof",
+            "service_id": "svc",
+            "server_id": "local_mac",
+            "file_count": 2,
+            "skipped_entry_count": 1,
+            "skipped_entries": [
+                {"path": "/tmp/missing", "kind": "doc", "path_type": "file", "reason": "no_files_matched"}
+            ],
+            "exposure_findings": [
+                {
+                    "relative_path": "app.py",
+                    "finding_kind": "generic_token",
+                    "variable_name": "API_TOKEN",
+                    "line_number": 1,
+                    "redacted": True,
+                },
+                {
+                    "relative_path": "app.py",
+                    "finding_kind": "generic_token",
+                    "variable_name": "",
+                    "line_number": 2,
+                    "redacted": True,
+                },
+            ],
+        }
+
+        normalized = coordinator.normalize_pull_bundle_record(legacy)
+
+        self.assertEqual(normalized["backup_readiness_status"], "proof_only")
+        self.assertFalse(normalized["backup_clean"])
+        self.assertNotIn("bundle_profile", normalized)
+        self.assertTrue(normalized["proof_only"])
+        self.assertFalse(normalized["review_required"])
+        self.assertTrue(normalized["not_backup_ready"])
+        self.assertFalse(normalized["authority_fresh"])
+        self.assertEqual(normalized["unresolved_exposure_count"], 2)
+        self.assertEqual(normalized["exposure_review_status"], "unreviewed")
+        self.assertEqual(normalized["exposure_summary"], {"generic_token": 2})
+        self.assertEqual(normalized["exposure_variable_summary"], {"API_TOKEN": 1})
+        self.assertEqual(normalized["skipped_review_count"], 1)
+        self.assertTrue(normalized["skipped_review_required"])
+        self.assertIn("legacy_proof_bundle", normalized["readiness_reasons"])
+        self.assertIn("not_backup_clean", normalized["readiness_reasons"])
+
+    def test_pull_bundle_list_api_normalizes_legacy_readiness(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "ws",
+                        "display_name": "Svc",
+                    }
+                ],
+            )
+            save_json(
+                settings.evidence_dir / "pull-bundle-history.json",
+                {
+                    "generated": "2026-05-20T00:00:00+00:00",
+                    "bundles": [
+                        {
+                            "bundle_id": "legacy-proof",
+                            "created_at": "2026-05-20T00:00:00+00:00",
+                            "workspace_id": "ws",
+                            "service_id": "svc",
+                            "server_id": "local_mac",
+                            "file_count": 1,
+                            "docs_count": 0,
+                            "logs_count": 0,
+                            "manifest_path": "/tmp/missing",
+                            "repo_commits": [],
+                            "exposure_findings": [{"finding_kind": "generic_token"}],
+                        }
+                    ],
+                },
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            with (
+                mock.patch.object(api_module, "manifest_store", manifests),
+                mock.patch.object(api_module, "snapshot_store", snapshots),
+                mock.patch.object(api_module, "coordinator", coordinator),
+            ):
+                body = api_module.list_pull_bundles("svc")
+
+            self.assertEqual(body["bundles"][0]["backup_readiness_status"], "proof_only")
+            self.assertFalse(body["bundles"][0]["backup_clean"])
+            self.assertEqual(body["bundles"][0]["unresolved_exposure_count"], 1)
+            self.assertEqual(body["bundles"][0]["exposure_summary"], {"generic_token": 1})
 
     def test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable(self) -> None:
         with TemporaryDirectory() as tmpdir:

@@ -1115,6 +1115,18 @@ export interface PullBundleRecord {
   server_id: string
   bundle_profile?: string
   backup_clean?: boolean
+  backup_readiness_status?: 'proof_only' | 'review_required' | 'not_backup_ready'
+  review_required?: boolean
+  proof_only?: boolean
+  not_backup_ready?: boolean
+  authority_fresh?: boolean
+  unresolved_exposure_count?: number
+  exposure_review_status?: 'unreviewed' | 'reviewed'
+  exposure_summary?: Record<string, number>
+  exposure_variable_summary?: Record<string, number>
+  skipped_review_required?: boolean
+  skipped_review_count?: number
+  readiness_reasons?: string[]
   file_count: number
   docs_count: number
   logs_count: number

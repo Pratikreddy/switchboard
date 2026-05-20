@@ -1,12 +1,12 @@
 {
-  "generated": "2026-05-20T11:15:18+00:00",
+  "generated": "2026-05-20T12:18:34+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-20T16:33:52+05:30",
-    "title": "Backup-clean pull-bundle scope and stale Ready invalidation",
-    "agent": "Switchboard Brick 3B builder agent",
+    "timestamp": "2026-05-20T17:29:06+05:30",
+    "title": "Persist pull-bundle readiness review labels",
+    "agent": "Switchboard Brick 3C builder agent",
     "tool": "codex-desktop"
   },
   "checks": [

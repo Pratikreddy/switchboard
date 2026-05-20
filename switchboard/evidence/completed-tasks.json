@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-20T11:09:31+00:00",
+  "generated": "2026-05-20T12:18:28+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -5038,6 +5038,264 @@
           "kind": "code",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/build",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/release",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/manager/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/manager/archives",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard.egg-info",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.env",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.env.*",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.npmrc",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "",
+        "run_command_hint": "",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-20T17:29:06+05:30",
+      "title": "Persist pull-bundle readiness review labels",
+      "tags": [
+        "task",
+        "handoff",
+        "scope"
+      ],
+      "version": "",
+      "summary": "Added minimal persisted pull-bundle readiness metadata, legacy proof-bundle normalization, and compact exposure/skipped review summary labels.",
+      "changed_paths": [
+        "switchboard/collectors.py",
+        "switchboard/api.py",
+        "src/components/PullBundlePanel.tsx",
+        "src/types/switchboard.ts",
+        "tests_backend/test_backend_regressions.py",
+        "tests/freshness-contract.test.ts",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Switchboard Brick 3C builder agent",
+      "tool": "codex-desktop",
+      "read_back": "Pratik asked for only Brick 3C: persist minimal bundle readiness labels and exposure review summaries without deleting bundles/evidence, touching remote `.47`, GitHub backup automation, scanner stack, Palimpsest, project grouping repair, broad UI, or runtime restart unless required.",
+      "scope_check": "Dashboard-only pull-bundle readiness metadata and compact UI copy changed; no old bundles, docs, or evidence were deleted or moved.",
+      "bootstrap_version": "",
+      "notes": [
+        "- Newly created bundle manifests and history records now carry `backup_readiness_status`, `review_required`, `proof_only`, `not_backup_ready`, `authority_fresh`, `unresolved_exposure_count`, `exposure_review_status`, `exposure_summary`, `exposure_variable_summary`, `skipped_review_required`, `skipped_review_count`, and `readiness_reasons`.",
+        "- Pull-bundle list API responses normalize legacy entries without mutating old bundle files. Missing `bundle_profile` entries display as legacy proof / proof-only and do not default to `backup-clean`.",
+        "- Pull Bundle history/detail now shows compact readiness copy and counts: backup readiness, unresolved exposures, and skipped review count.",
+        "- Manager review found and fixed a stale-guard UI gap: `Create bundle` now stays disabled until a fresh `ok` preflight exists, and remains disabled after a stale-authority `Check scope`.",
+        "- Verification:",
+        "- `curl -sS http://127.0.0.1:8009/api/health`",
+        "- `curl -sS http://127.0.0.1:8020/api/health`",
+        "- `curl -sS -H 'Content-Type: application/json' -d '{\"location_id\":\"switch-local_mac-primary\"}' http://127.0.0.1:8009/api/services/switch/pull-bundles/preflight`",
+        "- `curl -sS http://127.0.0.1:8009/api/services/switch/pull-bundles`",
+        "- `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_backup_clean_excludes_noise_and_summarizes_evidence tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_legacy_history_normalizes_as_proof_only tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_list_api_normalizes_legacy_readiness`",
+        "- `npm test -- --run tests/freshness-contract.test.ts`",
+        "- `git diff --check`",
+        "- `.venv/bin/python -m unittest discover -s tests_backend`",
+        "- `npm test`",
+        "- `npm run build`",
+        "- `npm run check:release-static`",
+        "- `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`",
+        "- `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
           "enabled": true,
           "source": "tasks_completed"
         },

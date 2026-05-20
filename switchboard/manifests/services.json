@@ -1389,11 +1389,15 @@
       "/Users/p/Desktop/dashboard"
     ],
     "docs_paths": [
-      "/Users/p/Desktop/dashboard/GOALS.md",
-      "/Users/p/Desktop/dashboard/README.md",
-      "/Users/p/Desktop/dashboard/CHANGELOG.md",
       "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
-      "/Users/p/Desktop/dashboard/API.md"
+      "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
+      "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
+      "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
+      "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
+      "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
+      "/Users/p/Desktop/dashboard/README.md",
+      "/Users/p/Desktop/dashboard/API.md",
+      "/Users/p/Desktop/dashboard/CHANGELOG.md"
     ],
     "log_paths": [],
     "allowed_git_pull_paths": [
@@ -1413,6 +1417,7 @@
       "/Users/p/Desktop/dashboard/switchboard/manager/archives",
       "/Users/p/Desktop/dashboard/switchboard.egg-info",
       "/Users/p/Desktop/dashboard/.env",
+      "/Users/p/Desktop/dashboard/.env.*",
       "/Users/p/Desktop/dashboard/.npmrc"
     ],
     "scope_entries": [
@@ -1425,73 +1430,49 @@
         "enabled": true
       },
       {
-        "entry_id": "doc-bca49dadad60",
-        "kind": "doc",
-        "path": "/Users/p/Desktop/dashboard/GOALS.md",
+        "entry_id": "code-f93cb32218de",
+        "kind": "code",
+        "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
         "path_type": "file",
         "source": "tasks_completed",
         "enabled": true
       },
       {
-        "entry_id": "code-5e75248977dd",
+        "entry_id": "code-c845680e28d8",
         "kind": "code",
-        "path": "/Users/p/Desktop/dashboard/scripts/check_release_static.py",
+        "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
         "path_type": "file",
         "source": "tasks_completed",
         "enabled": true
       },
       {
-        "entry_id": "code-94c0c8b90102",
+        "entry_id": "code-698b1d6570f8",
         "kind": "code",
-        "path": "/Users/p/Desktop/dashboard/tests/collect-refresh-contract.test.ts",
+        "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
         "path_type": "file",
         "source": "tasks_completed",
         "enabled": true
       },
       {
-        "entry_id": "code-9bfc8d7517f5",
+        "entry_id": "code-6b12e5dd96e7",
         "kind": "code",
-        "path": "/Users/p/Desktop/dashboard/src",
-        "path_type": "dir",
-        "source": "tasks_completed",
-        "enabled": true
-      },
-      {
-        "entry_id": "code-9ddbfc17dbf6",
-        "kind": "code",
-        "path": "/Users/p/Desktop/dashboard/switchboard",
-        "path_type": "dir",
-        "source": "tasks_completed",
-        "enabled": true
-      },
-      {
-        "entry_id": "code-4c4339d20d01",
-        "kind": "code",
-        "path": "/Users/p/Desktop/dashboard/tests",
-        "path_type": "dir",
-        "source": "tasks_completed",
-        "enabled": true
-      },
-      {
-        "entry_id": "code-a93b65b795f9",
-        "kind": "code",
-        "path": "/Users/p/Desktop/dashboard/tests_backend",
-        "path_type": "dir",
-        "source": "tasks_completed",
-        "enabled": true
-      },
-      {
-        "entry_id": "doc-1f4cfac10e33",
-        "kind": "doc",
-        "path": "/Users/p/Desktop/dashboard/README.md",
+        "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
         "path_type": "file",
         "source": "tasks_completed",
         "enabled": true
       },
       {
-        "entry_id": "doc-27c5a88e7988",
-        "kind": "doc",
-        "path": "/Users/p/Desktop/dashboard/CHANGELOG.md",
+        "entry_id": "code-e83610edcbde",
+        "kind": "code",
+        "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
+        "entry_id": "code-db4c4f516ec9",
+        "kind": "code",
+        "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
         "path_type": "file",
         "source": "tasks_completed",
         "enabled": true
@@ -1500,6 +1481,46 @@
         "entry_id": "doc-0e19b807d576",
         "kind": "doc",
         "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
+        "entry_id": "doc-04c669e4a785",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
+        "entry_id": "doc-f108f26703d3",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
+        "entry_id": "doc-ee3aeff1ac81",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
+        "entry_id": "doc-267ac32aa121",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
+        "entry_id": "doc-b43369c736ca",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
         "path_type": "file",
         "source": "tasks_completed",
         "enabled": true
@@ -1609,6 +1630,14 @@
         "enabled": true
       },
       {
+        "entry_id": "exclude-b136ce3ef494",
+        "kind": "exclude",
+        "path": "/Users/p/Desktop/dashboard/.env.*",
+        "path_type": "file",
+        "source": "tasks_completed",
+        "enabled": true
+      },
+      {
         "entry_id": "exclude-082fa23fdc79",
         "kind": "exclude",
         "path": "/Users/p/Desktop/dashboard/.npmrc",
@@ -1617,9 +1646,25 @@
         "enabled": true
       },
       {
+        "entry_id": "doc-1f4cfac10e33",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/README.md",
+        "path_type": "file",
+        "source": "node_manifest",
+        "enabled": true
+      },
+      {
         "entry_id": "doc-dc2364afa204",
         "kind": "doc",
         "path": "/Users/p/Desktop/dashboard/API.md",
+        "path_type": "file",
+        "source": "node_manifest",
+        "enabled": true
+      },
+      {
+        "entry_id": "doc-27c5a88e7988",
+        "kind": "doc",
+        "path": "/Users/p/Desktop/dashboard/CHANGELOG.md",
         "path_type": "file",
         "source": "node_manifest",
         "enabled": true
@@ -1652,35 +1697,35 @@
         "path": "switchboard/local/control-center-handoff.md",
         "enabled": true,
         "generated_from": "switchboard/local/tasks-completed.md",
-        "last_generated_at": "2026-05-14T02:25:42+00:00"
+        "last_generated_at": "2026-05-20T12:14:24+00:00"
       },
       {
         "doc_id": "runbook",
         "path": "switchboard/local/runbook.md",
         "enabled": true,
         "generated_from": "switchboard/local/tasks-completed.md",
-        "last_generated_at": "2026-05-14T02:25:42+00:00"
+        "last_generated_at": "2026-05-20T12:14:24+00:00"
       },
       {
         "doc_id": "approach_history",
         "path": "switchboard/local/approach-history.md",
         "enabled": true,
         "generated_from": "switchboard/local/tasks-completed.md",
-        "last_generated_at": "2026-05-14T02:25:42+00:00"
+        "last_generated_at": "2026-05-20T12:14:24+00:00"
       },
       {
         "doc_id": "doc_index_md",
         "path": "switchboard/local/doc-index.md",
         "enabled": true,
         "generated_from": "switchboard/local/tasks-completed.md",
-        "last_generated_at": "2026-05-14T02:25:42+00:00"
+        "last_generated_at": "2026-05-20T12:14:24+00:00"
       },
       {
         "doc_id": "doc_index_json",
         "path": "switchboard/evidence/doc-index.json",
         "enabled": true,
         "generated_from": "switchboard/local/tasks-completed.md",
-        "last_generated_at": "2026-05-14T02:25:42+00:00"
+        "last_generated_at": "2026-05-20T12:14:24+00:00"
       }
     ],
     "repo_policies": [

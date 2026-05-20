@@ -51,6 +51,32 @@ function countSummaryLabel(summary?: Record<string, number>) {
   return entries.map(([key, count]) => `${key} ${count}`).join(' · ')
 }
 
+function readinessStatusLabel(bundle: PullBundleRecord) {
+  const status = bundle.backup_readiness_status ?? (bundle.backup_clean ? 'review_required' : 'proof_only')
+  return status.replace(/_/g, ' ')
+}
+
+function bundleProfileLabel(bundle: PullBundleRecord) {
+  if (bundle.backup_clean || bundle.bundle_profile) return `Bundle profile: ${bundle.bundle_profile ?? 'backup-clean'}`
+  return 'Bundle profile: legacy proof'
+}
+
+function exposureSummary(bundle: PullBundleRecord) {
+  return bundle.exposure_summary ?? bundle.metadata_summaries?.exposure_summary
+}
+
+function skippedSummary(bundle: PullBundleRecord) {
+  return bundle.metadata_summaries?.skipped_summary
+}
+
+function unresolvedExposureCount(bundle: PullBundleRecord) {
+  return bundle.unresolved_exposure_count ?? bundle.exposure_findings?.length ?? 0
+}
+
+function skippedReviewCount(bundle: PullBundleRecord) {
+  return bundle.skipped_review_count ?? bundle.skipped_entry_count ?? 0
+}
+
 function authorityBlockerCopy(preflight: PullBundlePreflight) {
   if (preflight.freshness?.stale_reason === 'manager_8020_unreachable' || preflight.freshness?.refresh_action === 'Check 8020') {
     return 'Manager truth is unavailable. Check 8020 before creating a bundle; 8009 only proves the Control Center API is alive.'
@@ -226,6 +252,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     timestampBefore(preflight.source_authority?.updated_at || preflight.freshness?.data_as_of, selectedNodeViewer?.truth_as_of || service.freshness?.truth_as_of || service.truth_as_of),
   )
   const cachedPreflightStale = cachedPreflightChanged || cachedPreflightAuthorityStale
+  const preflightReadyToCreate = Boolean(preflight && preflight.status === 'ok' && !cachedPreflightStale)
   const preflightBlocksCreate = Boolean(preflight && (preflight.status !== 'ok' || cachedPreflightStale))
 
   function addExtraInclude() {
@@ -247,7 +274,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   }
 
   function initiateCreate() {
-    if (preflightBlocksCreate) {
+    if (!preflightReadyToCreate) {
       setMessage('Create is blocked until scope check is Ready and pull authority is fresh.')
       return
     }
@@ -357,7 +384,8 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
               Pull the selected node-defined scope into a versioned local mirror. Remote bundles require Sync From Node first.
               Clean-to-commit / backup eligibility still requires a clean repo, fresh pull authority, reviewed skipped entries, and no unresolved exposure findings.
             </p>
-            <p className="mt-2 text-xs text-cyan-200">Bundle profile: backup-clean · review required</p>
+            <p className="mt-2 text-xs text-cyan-200">Bundle profile: backup-clean</p>
+            <p className="mt-1 text-xs text-amber-200">Backup readiness: review required</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -370,7 +398,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
             </button>
             <button
               onClick={initiateCreate}
-              disabled={disabled || creating || pendingActions[`pending:pull_bundle:${service.service_id}`] || !locationId || preflightBlocksCreate}
+              disabled={disabled || creating || pendingActions[`pending:pull_bundle:${service.service_id}`] || !locationId || !preflightReadyToCreate}
               className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-gray-200 disabled:opacity-50"
             >
               {creating || pendingActions[`pending:pull_bundle:${service.service_id}`] ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
@@ -614,7 +642,13 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
               </div>
             )}
             <div className="mt-3 rounded-lg border border-cyan-900/40 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-100">
-              Bundle profile: {bundleResult.bundle_profile ?? 'backup-clean'} · review required
+              {bundleProfileLabel(bundleResult)}
+            </div>
+            <div className="mt-2 rounded-lg border border-amber-900/40 bg-amber-950/20 px-3 py-2 text-xs text-amber-100">
+              Backup readiness: {readinessStatusLabel(bundleResult)}
+              <div className="mt-1 text-amber-100/80">
+                Unresolved exposures: {unresolvedExposureCount(bundleResult)} · skipped review: {skippedReviewCount(bundleResult)}
+              </div>
             </div>
             {renderComposition(bundleResult.dependency_context?.composition)}
             <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -637,12 +671,12 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                 {(bundleResult.exposure_findings?.length ?? 0) > 0 && (
                   <div className="mb-3 rounded-lg border border-yellow-900/30 bg-yellow-950/20 px-3 py-2 text-xs text-yellow-200">
                     {bundleResult.exposure_findings?.length} exposure finding{bundleResult.exposure_findings?.length === 1 ? '' : 's'} in pulled files.
-                    {countSummaryLabel(bundleResult.metadata_summaries?.exposure_summary) ? ` ${countSummaryLabel(bundleResult.metadata_summaries?.exposure_summary)}` : ''}
+                    {countSummaryLabel(exposureSummary(bundleResult)) ? ` ${countSummaryLabel(exposureSummary(bundleResult))}` : ''}
                   </div>
                 )}
-                {countSummaryLabel(bundleResult.metadata_summaries?.skipped_summary) && (
+                {countSummaryLabel(skippedSummary(bundleResult)) && (
                   <div className="mb-3 rounded-lg border border-yellow-900/30 bg-yellow-950/20 px-3 py-2 text-xs text-yellow-200">
-                    Skipped summary: {countSummaryLabel(bundleResult.metadata_summaries?.skipped_summary)}
+                    Skipped summary: {countSummaryLabel(skippedSummary(bundleResult))}
                   </div>
                 )}
                 <div className="text-xs uppercase tracking-[0.16em] text-yellow-200/80">Missed scope</div>
@@ -720,7 +754,13 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                         <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Bundle Notes</div>
                         {bundle.note && <div className="mt-2 text-sm text-gray-300">{bundle.note}</div>}
                         <div className="mt-2 rounded-lg border border-cyan-900/40 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-100">
-                          Bundle profile: {bundle.bundle_profile ?? 'backup-clean'} · review required
+                          {bundleProfileLabel(bundle)}
+                        </div>
+                        <div className="mt-2 rounded-lg border border-amber-900/40 bg-amber-950/20 px-3 py-2 text-xs text-amber-100">
+                          Backup readiness: {readinessStatusLabel(bundle)}
+                          <div className="mt-1 text-amber-100/80">
+                            Unresolved exposures: {unresolvedExposureCount(bundle)} · skipped review: {skippedReviewCount(bundle)}
+                          </div>
                         </div>
                         {bundle.authority && (
                           <div className="mt-2 rounded-lg border border-cyan-900/40 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-100">
@@ -766,7 +806,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                             <div className="text-[11px] uppercase tracking-[0.16em] text-yellow-300">Exposure Notes</div>
                             <div className="mt-2 rounded border border-yellow-900/30 bg-yellow-950/20 px-2 py-1 text-xs text-yellow-100/90">
                               {bundle.exposure_findings?.length} total
-                              {countSummaryLabel(bundle.metadata_summaries?.exposure_summary) ? ` · ${countSummaryLabel(bundle.metadata_summaries?.exposure_summary)}` : ''}
+                              {countSummaryLabel(exposureSummary(bundle)) ? ` · ${countSummaryLabel(exposureSummary(bundle))}` : ''}
                             </div>
                             <div className="mt-2 space-y-1">
                               {bundle.exposure_findings?.slice(0, 12).map((finding, idx) => (
@@ -816,9 +856,9 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                     </div>
                     <div className="rounded-lg border border-gray-800 bg-gray-950 p-3">
                       <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Missed scope</div>
-                      {countSummaryLabel(bundle.metadata_summaries?.skipped_summary) && (
+                      {countSummaryLabel(skippedSummary(bundle)) && (
                         <div className="mt-2 rounded border border-gray-800 px-2 py-1 text-xs text-gray-300">
-                          Skipped summary: {countSummaryLabel(bundle.metadata_summaries?.skipped_summary)}
+                          Skipped summary: {countSummaryLabel(skippedSummary(bundle))}
                         </div>
                       )}
                       <div className="mt-2 max-h-56 space-y-1 overflow-auto">

@@ -1050,3 +1050,60 @@
   - exclude | file | /Users/p/Desktop/dashboard/.env | true
   - exclude | file | /Users/p/Desktop/dashboard/.env.* | true
   - exclude | file | /Users/p/Desktop/dashboard/.npmrc | true
+
+## 2026-05-20T17:29:06+05:30 | Persist pull-bundle readiness review labels
+- Tags: task, handoff, scope
+- Summary: Added minimal persisted pull-bundle readiness metadata, legacy proof-bundle normalization, and compact exposure/skipped review summary labels.
+- Changed Paths: switchboard/collectors.py, switchboard/api.py, src/components/PullBundlePanel.tsx, src/types/switchboard.ts, tests_backend/test_backend_regressions.py, tests/freshness-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Switchboard Brick 3C builder agent
+- Tool: codex-desktop
+- Read Back: Pratik asked for only Brick 3C: persist minimal bundle readiness labels and exposure review summaries without deleting bundles/evidence, touching remote `.47`, GitHub backup automation, scanner stack, Palimpsest, project grouping repair, broad UI, or runtime restart unless required.
+- Scope Check: Dashboard-only pull-bundle readiness metadata and compact UI copy changed; no old bundles, docs, or evidence were deleted or moved.
+- Notes:
+  - - Newly created bundle manifests and history records now carry `backup_readiness_status`, `review_required`, `proof_only`, `not_backup_ready`, `authority_fresh`, `unresolved_exposure_count`, `exposure_review_status`, `exposure_summary`, `exposure_variable_summary`, `skipped_review_required`, `skipped_review_count`, and `readiness_reasons`.
+  - - Pull-bundle list API responses normalize legacy entries without mutating old bundle files. Missing `bundle_profile` entries display as legacy proof / proof-only and do not default to `backup-clean`.
+  - - Pull Bundle history/detail now shows compact readiness copy and counts: backup readiness, unresolved exposures, and skipped review count.
+  - - Manager review found and fixed a stale-guard UI gap: `Create bundle` now stays disabled until a fresh `ok` preflight exists, and remains disabled after a stale-authority `Check scope`.
+  - - Verification:
+  - - `curl -sS http://127.0.0.1:8009/api/health`
+  - - `curl -sS http://127.0.0.1:8020/api/health`
+  - - `curl -sS -H 'Content-Type: application/json' -d '{"location_id":"switch-local_mac-primary"}' http://127.0.0.1:8009/api/services/switch/pull-bundles/preflight`
+  - - `curl -sS http://127.0.0.1:8009/api/services/switch/pull-bundles`
+  - - `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_backup_clean_excludes_noise_and_summarizes_evidence tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_legacy_history_normalizes_as_proof_only tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_list_api_normalizes_legacy_readiness`
+  - - `npm test -- --run tests/freshness-contract.test.ts`
+  - - `git diff --check`
+  - - `.venv/bin/python -m unittest discover -s tests_backend`
+  - - `npm test`
+  - - `npm run build`
+  - - `npm run check:release-static`
+  - - `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/api.py | true
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/build | true
+  - exclude | dir | /Users/p/Desktop/dashboard/release | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info | true
+  - exclude | file | /Users/p/Desktop/dashboard/.env | true
+  - exclude | file | /Users/p/Desktop/dashboard/.env.* | true
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc | true

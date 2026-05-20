@@ -4,6 +4,8 @@ import { createCompany, deleteCompany, updateCompany } from '../api/client'
 import { isApiError } from '../types/switchboard'
 import type { Workspace } from '../types/switchboard'
 
+const COMPANY_CRUD_ENABLED = false
+
 interface Props {
   companies: Workspace[]
   offline: boolean
@@ -99,14 +101,19 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
         <div className="border-t border-gray-800 p-4">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-xs text-gray-500">Top-level companies you work for. Services and servers group under these.</p>
-            {!offline && !adding && !editingId && (
+            {!offline && COMPANY_CRUD_ENABLED && !adding && !editingId && (
               <button onClick={startAdd} className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-100 transition-colors hover:bg-amber-400/20">
                 <Plus className="h-3 w-3" /> Add Company
               </button>
             )}
           </div>
           {error && <div className="mb-4 rounded bg-red-950/30 p-2 text-xs text-red-400">{error}</div>}
-          {(adding || editingId) && (
+          {!COMPANY_CRUD_ENABLED && (
+            <div className="mb-4 rounded-lg border border-amber-900/40 bg-amber-950/10 px-3 py-2 text-xs text-amber-100/80">
+              Company editing is hidden in this build. Keep the current company list read-only until add/edit/delete is tested end to end.
+            </div>
+          )}
+          {COMPANY_CRUD_ENABLED && (adding || editingId) && (
             <div className="mb-6 rounded-xl border border-gray-800 bg-gray-950 p-4">
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
@@ -138,7 +145,7 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
                     <div className="text-sm font-medium text-white">{company.display_name}</div>
                     <div className="mt-1 font-mono text-[10px] text-gray-500">{company.workspace_id}</div>
                   </div>
-                  {!offline && (
+                  {!offline && COMPANY_CRUD_ENABLED && (
                     <div className="flex gap-2">
                       <button onClick={() => startEdit(company)} className="p-1 text-gray-500 hover:text-cyan-400"><Pencil className="h-3.5 w-3.5" /></button>
                       <button onClick={() => handleDelete(company)} className="p-1 text-gray-500 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>

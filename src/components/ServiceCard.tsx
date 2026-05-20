@@ -8,22 +8,39 @@ interface Props {
   onClick: () => void
 }
 
+function freshnessDisplayLabel(value?: string) {
+  const state = value || 'Unverified'
+  return state === 'Stale' ? 'Stale cache' : state
+}
+
+function freshnessSourceLabel(value?: string) {
+  return value ? value.replace(/_/g, ' ') : 'Unverified'
+}
+
+function formatTimestampLabel(value?: string) {
+  if (!value) return 'never'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+}
+
 export function ServiceCard({ service, result, onClick }: Props) {
   const status = result?.status ?? 'unverified'
   const ports = result?.ports ?? []
   const firewallActive = result?.firewall_active ?? false
   const dirty = result?.repo_summaries?.some((r) => r.dirty) ?? false
   const nodeViewer = service.node_viewer?.[0]
-  const freshnessState = nodeViewer?.freshness_state || result?.freshness_state || service.freshness_state || ''
+  const freshnessState = nodeViewer?.freshness_state || result?.freshness_state || service.freshness_state || 'Unverified'
+  const freshnessLabel = freshnessDisplayLabel(freshnessState)
   const freshnessIsFresh = freshnessState === 'Fresh'
   const managerUnreachable = freshnessState === 'Manager unreachable'
-  const stale = Boolean(freshnessState && !freshnessIsFresh)
+  const stale = !freshnessIsFresh
   const refreshAction = nodeViewer?.refresh_action || result?.refresh_action || service.refresh_action || (managerUnreachable ? 'Check 8020' : stale ? 'Inspect Node' : '')
+  const truthSource = freshnessSourceLabel(nodeViewer?.freshness_source || result?.freshness_source || service.freshness_source)
+  const lastVerifiedAt = nodeViewer?.data_as_of || nodeViewer?.last_inspected_at || result?.data_as_of || result?.collected_at || service.data_as_of || ''
   const rootManifestVersion = nodeViewer?.installed_version || ''
   const managerVersion = nodeViewer?.manager_version || ''
   const managerManaged = Boolean(nodeViewer?.manager_managed)
   const rootManifestStale = Boolean(freshnessIsFresh && managerManaged && managerVersion && rootManifestVersion && managerVersion !== rootManifestVersion)
-  const stateLabel = managerUnreachable ? 'Manager unreachable' : stale ? freshnessState || 'Stale cache' : ''
 
   return (
     <button
@@ -63,12 +80,12 @@ export function ServiceCard({ service, result, onClick }: Props) {
         </div>
       )}
 
-      {nodeViewer && (
+      {(nodeViewer || stale) && (
         <div className="mb-3 flex flex-wrap gap-1">
           <span className="text-xs px-2 py-0.5 rounded border border-cyan-900/40 bg-cyan-950/20 text-cyan-200">
             {service.execution_mode}
           </span>
-          {freshnessIsFresh ? (
+          {nodeViewer && freshnessIsFresh ? (
             <span className={`text-xs px-2 py-0.5 rounded border ${
               rootManifestStale || nodeViewer.needs_install || nodeViewer.needs_upgrade
                 ? 'border-amber-700 bg-amber-950/30 text-amber-200'
@@ -79,8 +96,11 @@ export function ServiceCard({ service, result, onClick }: Props) {
               {managerManaged ? `manager ${managerVersion || 'active'}` : `node ${rootManifestVersion || 'missing'}`}
             </span>
           ) : (
-            <span className="text-xs px-2 py-0.5 rounded border border-amber-700 bg-amber-950/30 text-amber-200">
-              {stateLabel || 'Stale cache'}
+            <span
+              className="text-xs px-2 py-0.5 rounded border border-amber-700 bg-amber-950/30 text-amber-200"
+              title={`Truth source: ${truthSource}; Last verified: ${formatTimestampLabel(lastVerifiedAt)}`}
+            >
+              {freshnessLabel}
             </span>
           )}
           {rootManifestStale && (
@@ -88,12 +108,12 @@ export function ServiceCard({ service, result, onClick }: Props) {
               root manifest {rootManifestVersion}
             </span>
           )}
-          {freshnessIsFresh && (nodeViewer.bootstrap_version || nodeViewer.needs_bootstrap) && (
+          {freshnessIsFresh && nodeViewer && (nodeViewer.bootstrap_version || nodeViewer.needs_bootstrap) && (
             <span className="text-xs px-2 py-0.5 rounded border border-gray-800 bg-gray-900 text-gray-400">
               bootstrap {nodeViewer.bootstrap_version || (nodeViewer.needs_bootstrap ? 'needed' : '')}
             </span>
           )}
-          {nodeViewer.legacy_runtime_port_label && (
+          {nodeViewer?.legacy_runtime_port_label && (
             <span className="text-xs px-2 py-0.5 rounded border border-amber-700/50 bg-amber-950/20 text-amber-200">
               {nodeViewer.legacy_runtime_port_label}
             </span>

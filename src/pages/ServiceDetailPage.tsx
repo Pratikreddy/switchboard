@@ -65,7 +65,7 @@ function parsePorts(value: string): number[] {
 
 const SERVICE_PANEL_KEYS = ['port_health', 'project', 'runtime', 'managed_docs', 'task_ledger', 'repositories', 'scope', 'pull_bundles', 'secret_paths', 'run_history'] as const
 type ServicePanelKey = (typeof SERVICE_PANEL_KEYS)[number]
-const DEFAULT_OPEN_PANELS: ServicePanelKey[] = ['project', 'runtime', 'task_ledger', 'pull_bundles']
+const DEFAULT_OPEN_PANELS: ServicePanelKey[] = ['runtime']
 const CONTROL_CENTER_PORT = 8009
 const DEFAULT_MANAGER_PORT = 8020
 const DEV_UI_PORT = 5173
@@ -161,6 +161,15 @@ function serverShellCommand(server?: ServerRecord, command?: string) {
     return `${shellPrefix(server.host, server.username, server.port)} ${quoteShell(command)}`
   }
   return command
+}
+
+function freshnessDisplayLabel(value?: string) {
+  const state = value || 'Unverified'
+  return state === 'Stale' ? 'Stale cache' : state
+}
+
+function freshnessSourceLabel(value?: string) {
+  return value ? value.replace(/_/g, ' ') : 'Unverified'
 }
 
 function formatTimestampLabel(value?: string) {
@@ -1187,7 +1196,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                 Port Health
               </div>
               <div className="mt-1 text-sm text-gray-300">
-                Control Center <span className="font-mono text-cyan-200">:{CONTROL_CENTER_PORT}</span> pulls from the machine manager node <span className="font-mono text-cyan-200">:{DEFAULT_MANAGER_PORT}</span>. Product runtime ports stay separate.
+                Control Center <span className="font-mono text-cyan-200">:{CONTROL_CENTER_PORT}</span> pulls from the machine manager node <span className="font-mono text-cyan-200">:{DEFAULT_MANAGER_PORT}</span>. 8009 only proves the Control Center API; manager truth needs 8020. Product runtime ports stay separate.
               </div>
             </div>
             <div className="rounded-full border border-gray-800 bg-gray-950 px-3 py-1 text-xs text-gray-300">
@@ -1212,7 +1221,10 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               const serverMeta = servers.find((server) => server.server_id === location.server_id)
               const managerPort = nodeViewer?.target_manager_port || DEFAULT_MANAGER_PORT
               const managerFreshness = nodeViewer?.freshness_state || 'Unverified'
+              const managerFreshnessLabel = freshnessDisplayLabel(managerFreshness)
               const managerUnreachable = managerFreshness === 'Manager unreachable'
+              const managerTruthSource = freshnessSourceLabel(nodeViewer?.freshness_source)
+              const managerDataAsOf = nodeViewer?.data_as_of || nodeViewer?.last_inspected_at || latestRuntime?.checked_at || ''
               const managerPortLabel =
                 managerPort === DEFAULT_MANAGER_PORT
                   ? `:${DEFAULT_MANAGER_PORT}`
@@ -1275,7 +1287,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                               ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
                               : 'border-gray-800 bg-gray-900 text-gray-300'
                         }`}>
-                          {managerFreshness || 'Unverified'}
+                          {managerFreshnessLabel}
                         </span>
                         {nodeViewer?.legacy_runtime_port_label && (
                           <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
@@ -1287,6 +1299,12 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                             {nodeViewer.refresh_action || 'Inspect Node'}{nodeViewer.stale_reason ? ` · ${nodeViewer.stale_reason}` : ''}
                           </span>
                         )}
+                        <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-gray-400">
+                          Truth source: {managerTruthSource}
+                        </span>
+                        <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-gray-400">
+                          Last verified: {formatTimestampLabel(managerDataAsOf)}
+                        </span>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {configuredPorts.length === 0 ? (
@@ -1623,8 +1641,15 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                 connectionStatus === 'vpn_or_network_blocked'
                   ? 'VPN/network blocked'
                   : nodeNeedsSync
-                    ? 'Needs sync'
+                    ? 'Stale cache'
                     : nodeViewer?.freshness_state || 'Needs inspect'
+              const freshnessLabel = freshnessDisplayLabel(freshnessState)
+              const freshnessAction = nodeNeedsSync
+                ? 'Sync From Node'
+                : nodeViewer?.refresh_action || (freshnessState === 'Manager unreachable' ? 'Check 8020' : 'Inspect Node')
+              const nodeTruthSource = freshnessSourceLabel(nodeViewer?.freshness_source)
+              const nodeDataAsOf = nodeViewer?.data_as_of || lastInspectedAt || latestRuntime?.checked_at || ''
+              const nodeTruthAsOf = nodeViewer?.truth_as_of || ''
               const nodeTruthFresh = freshnessState === 'Fresh' && connectionStatus === 'ok'
               const rootManifestStale = Boolean(nodeTruthFresh && managerManaged && managerVersion && rootManifestVersion && managerVersion !== rootManifestVersion)
               const managerRoot = nodeViewer?.manager_root || '/Users/p/Desktop/dashboard'
@@ -1831,7 +1856,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                                 ? 'border-orange-500/30 bg-orange-500/10 text-orange-200'
                                 : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
                           }`}>
-                            {freshnessState}
+                            {freshnessLabel}
                           </span>
                           {nodeTruthFresh ? (
                             <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
@@ -1839,9 +1864,15 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                             </span>
                           ) : (
                             <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
-                              {nodeViewer?.refresh_action || (freshnessState === 'Manager unreachable' ? 'Check 8020' : 'Inspect Node')}
+                              {freshnessAction}
                             </span>
                           )}
+                          <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
+                            Truth source: {nodeTruthSource}
+                          </span>
+                          <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
+                            Last verified: {formatTimestampLabel(nodeDataAsOf)}
+                          </span>
                           {rootManifestStale && (
                             <span className="rounded-full border border-amber-700 bg-amber-950/30 px-2 py-1 text-amber-200">
                               root manifest {rootManifestVersion}
@@ -1858,7 +1889,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                             </span>
                           )}
                           <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
-                            runtime {nodeViewer?.runtime_status || 'missing'}
+                            {nodeTruthFresh ? 'runtime' : 'cached runtime'} {nodeViewer?.runtime_status || 'missing'}
                           </span>
                         </div>
                       </button>
@@ -1945,6 +1976,15 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                       </div>
                     )}
 
+                    {freshnessState === 'Manager unreachable' && (
+                      <div className="rounded-xl border border-amber-700/40 bg-amber-950/20 p-3">
+                        <div className="text-xs uppercase tracking-[0.16em] text-amber-300">Manager unreachable</div>
+                        <div className="mt-1 text-sm text-amber-100">
+                          Check 8020 before trusting cached runtime, repo, docs, scope, or pull authority. 8009 only proves the Control Center API is alive.
+                        </div>
+                      </div>
+                    )}
+
                     {nodeViewer?.needs_bootstrap && (
                       <div className="rounded-xl border border-amber-700/40 bg-amber-950/20 p-3">
                         <div className="text-xs uppercase tracking-[0.16em] text-amber-300">Bootstrap Still Missing</div>
@@ -2019,35 +2059,28 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                       </div>
                     )}
 
-                    <div className="rounded-xl border border-cyan-900/40 bg-cyan-950/20 p-3">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <div className="text-xs uppercase tracking-[0.16em] text-cyan-300">Dedicated API Lab</div>
-                          {apiLabEnvironment ? (
-                            <>
-                              <div className="mt-1 text-sm text-cyan-100">
-                                {apiLabEnvironment.display_name} opens as its own full-page environment viewer.
-                              </div>
-                              <div className="mt-1 text-xs text-cyan-100/70">
-                                Use it for runtime snapshots, API flows, dependency review, and run history outside this runtime card.
-                              </div>
-                            </>
-                          ) : (
-                            <div className="mt-1 text-sm text-cyan-100/80">
-                              No project environment is linked to this location yet. Add one in Projects to unlock the dedicated API Lab page.
+                    {apiLabEnvironment && (
+                      <div className="rounded-xl border border-cyan-900/40 bg-cyan-950/20 p-3">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.16em] text-cyan-300">Dedicated API Lab</div>
+                            <div className="mt-1 text-sm text-cyan-100">
+                              {apiLabEnvironment.display_name} opens as its own full-page environment viewer.
                             </div>
-                          )}
+                            <div className="mt-1 text-xs text-cyan-100/70">
+                              Use it for runtime snapshots, API flows, dependency review, and run history outside this runtime card.
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onOpenEnvironmentLab(apiLabEnvironment.environment_id)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-400 hover:text-white"
+                          >
+                            Open Full Page
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => apiLabEnvironment && onOpenEnvironmentLab(apiLabEnvironment.environment_id)}
-                          disabled={!apiLabEnvironment}
-                          className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-400 hover:text-white disabled:opacity-50"
-                        >
-                          Open Full Page
-                        </button>
                       </div>
-                    </div>
+                    )}
 
                     {locationOpen && (
                       <>
@@ -2057,7 +2090,11 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                     {nodeViewer ? (
                       <div className="mt-2 grid gap-2 text-sm text-gray-300 md:grid-cols-2">
                         <div className="flex items-center gap-2"><span className="text-gray-500">Connection:</span> <StatusBadge status={connectionStatus} /></div>
-                        <div><span className="text-gray-500">Freshness:</span> {freshnessState}</div>
+                        <div><span className="text-gray-500">Freshness:</span> {freshnessLabel}</div>
+                        <div><span className="text-gray-500">Truth source:</span> {nodeTruthSource}</div>
+                        <div><span className="text-gray-500">Data as of:</span> {formatTimestampLabel(nodeDataAsOf)}</div>
+                        <div><span className="text-gray-500">Truth as of:</span> {formatTimestampLabel(nodeTruthAsOf)}</div>
+                        <div><span className="text-gray-500">Last verified:</span> {formatTimestampLabel(nodeDataAsOf)}</div>
                         <div><span className="text-gray-500">Last inspected:</span> {formatTimestampLabel(lastInspectedAt)}</div>
                         <div><span className="text-gray-500">Last synced from node:</span> {formatTimestampLabel(lastSyncedFromNodeAt)}</div>
                         <div><span className="text-gray-500">Saved scope updated:</span> {formatTimestampLabel(savedScopeGeneratedAt)}</div>

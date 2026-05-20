@@ -7,6 +7,7 @@ const types = readFileSync(resolve(process.cwd(), 'src/types/switchboard.ts'), '
 const serviceCard = readFileSync(resolve(process.cwd(), 'src/components/ServiceCard.tsx'), 'utf-8')
 const controlCenterPage = readFileSync(resolve(process.cwd(), 'src/pages/ControlCenterPage.tsx'), 'utf-8')
 const serviceDetailPage = readFileSync(resolve(process.cwd(), 'src/pages/ServiceDetailPage.tsx'), 'utf-8')
+const workspacePage = readFileSync(resolve(process.cwd(), 'src/pages/WorkspacePage.tsx'), 'utf-8')
 
 describe('stale truth contract', () => {
   it('normalizes freshness metadata across operational API payloads', () => {
@@ -25,11 +26,29 @@ describe('stale truth contract', () => {
     expect(serviceCard).toContain('Manager unreachable')
     expect(serviceCard).toContain('Stale cache')
     expect(serviceCard).toContain('Check 8020')
+    expect(serviceCard).toContain('Unverified')
+    expect(serviceCard).toContain('Truth source:')
+    expect(serviceCard).toContain('Last verified:')
     expect(serviceCard).toContain('freshnessIsFresh')
     expect(serviceCard).toContain('legacy_runtime_port_label')
     expect(serviceDetailPage).toContain('target_manager_port')
     expect(serviceDetailPage).toContain('Manager unreachable')
+    expect(serviceDetailPage).toContain('8009 only proves the Control Center API')
+    expect(serviceDetailPage).toContain('Truth source:')
+    expect(serviceDetailPage).toContain('Data as of:')
+    expect(serviceDetailPage).toContain('Truth as of:')
+    expect(serviceDetailPage).toContain('Last verified:')
+    expect(serviceDetailPage).toContain('cached runtime')
     expect(serviceDetailPage).toContain('legacy_runtime_port_label')
+  })
+
+  it('marks workspace latest snapshots with data and truth timestamps', () => {
+    expect(workspacePage).toContain('workspaceFreshnessState')
+    expect(workspacePage).toContain('Stale cache')
+    expect(workspacePage).toContain('Truth source:')
+    expect(workspacePage).toContain('Data as of:')
+    expect(workspacePage).toContain('Truth as of:')
+    expect(workspacePage).toContain('Last verified:')
   })
 
   it('marks company cards stale when latest snapshots are older than truth', () => {

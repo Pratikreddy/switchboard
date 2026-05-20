@@ -28,6 +28,15 @@ function formatTimestampLabel(value?: string) {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
 }
 
+function freshnessDisplayLabel(value?: string) {
+  const state = value || 'Unverified'
+  return state === 'Stale' ? 'Stale cache' : state
+}
+
+function freshnessSourceLabel(value?: string) {
+  return value ? value.replace(/_/g, ' ') : 'Unverified'
+}
+
 export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   const actionKey = 'pull_bundle'
   const sessionKey = `pending:${actionKey}:${service.service_id}`
@@ -320,9 +329,12 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                   </div>
                   {preflight.freshness?.freshness_state && preflight.freshness.freshness_state !== 'Fresh' && (
                     <div className="mt-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100">
-                      Freshness: {preflight.freshness.freshness_state}
+                      Freshness: {freshnessDisplayLabel(preflight.freshness.freshness_state)}
                       {preflight.freshness.refresh_action ? ` · ${preflight.freshness.refresh_action}` : ''}
                       {preflight.freshness.stale_reason ? ` · ${preflight.freshness.stale_reason}` : ''}
+                      <div className="mt-1 text-amber-100/80">
+                        Truth source: {freshnessSourceLabel(preflight.freshness.freshness_source)} · Data as of: {formatTimestampLabel(preflight.freshness.data_as_of)} · Truth as of: {formatTimestampLabel(preflight.freshness.truth_as_of)} · Last verified: {formatTimestampLabel(preflight.freshness.data_as_of)}
+                      </div>
                     </div>
                   )}
                   {preflight.authority_stale && (

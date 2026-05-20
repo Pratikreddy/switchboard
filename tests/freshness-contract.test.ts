@@ -18,9 +18,13 @@ describe('freshness visibility contract', () => {
 
   it('shows node freshness and sync authority timestamps in service detail', () => {
     expect(serviceDetailPage).toContain('Last inspected')
+    expect(serviceDetailPage).toContain('Last verified')
     expect(serviceDetailPage).toContain('Last synced from node')
     expect(serviceDetailPage).toContain('Saved scope updated')
     expect(serviceDetailPage).toContain('Pull authority updated')
+    expect(serviceDetailPage).toContain('Truth source')
+    expect(serviceDetailPage).toContain('Data as of')
+    expect(serviceDetailPage).toContain('Truth as of')
     expect(serviceDetailPage).toContain('VPN is off or network blocked. Turn VPN on for live verification.')
     expect(serviceDetailPage).toContain('Inspect Node is read-only')
     expect(serviceDetailPage).toContain('Sync From Node imports node state into Control Center')
@@ -32,5 +36,9 @@ describe('freshness visibility contract', () => {
     expect(pullBundlePanel).toContain('control_center_scope_timestamp')
     expect(pullBundlePanel).toContain('Stale authority. Run Sync From Node with VPN on.')
     expect(pullBundlePanel).toContain('VPN required for live verification')
+    expect(pullBundlePanel).toContain('Truth source:')
+    expect(pullBundlePanel).toContain('Data as of:')
+    expect(pullBundlePanel).toContain('Truth as of:')
+    expect(pullBundlePanel).toContain('Last verified:')
   })
 })

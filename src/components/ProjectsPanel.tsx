@@ -24,6 +24,9 @@ import type {
   Service,
 } from '../types/switchboard'
 
+const PROJECT_EDITING_ENABLED = false
+const PROJECT_SECONDARY_SETUP_ENABLED = false
+
 interface Props {
   workspaceId: string
   offline: boolean
@@ -169,6 +172,15 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
     }
     return map
   }, [services])
+  const visibleRootProjects = useMemo(
+    () =>
+      rootProjects.filter((project) =>
+        (project.service_ids ?? []).some((serviceId) => servicesById.has(serviceId)) ||
+        (project.service_ids ?? []).length === 0,
+      ),
+    [rootProjects, servicesById],
+  )
+  const hiddenStaleProjectCount = rootProjects.length - visibleRootProjects.length
   const unassignedServiceCount = useMemo(
     () => services.filter((service) => !serviceOwnerById.has(service.service_id)).length,
     [serviceOwnerById, services],
@@ -708,7 +720,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
             <div className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
               {serviceCountLabel}
             </div>
-            {!offline && (
+            {!offline && PROJECT_EDITING_ENABLED && (
               <div className="flex items-center gap-2">
                 <button onClick={() => beginEditProject(project)} className="p-1 text-gray-500 hover:text-cyan-300">
                   <Pencil className="h-4 w-4" />
@@ -751,32 +763,29 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                     </span>
                   ))
                 )}
-                {missingServiceIds.map((serviceId) => (
-                  <span key={`${project.project_id}:missing:${serviceId}`} className="rounded-full border border-amber-900/40 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-200">
-                    Missing reference: {serviceId}
-                  </span>
-                ))}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-800 bg-gray-900/30 px-3 py-2">
               <div className="text-xs text-gray-500">
-                Main view stops at company, project, and owned services. Environment metadata is secondary.
+                Project grouping is read-only for now. Editing, environment links, and project-bundle rollups are parked until they are proven in the UI.
               </div>
-              <button
-                type="button"
-                onClick={() => setOpenProjectAdvanced((current) => ({ ...current, [project.project_id]: !current[project.project_id] }))}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:border-cyan-500 hover:text-white"
-              >
-                {advancedOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-                Secondary setup · {projectEnvironments.length} env · {children.length} child
-              </button>
+              {PROJECT_SECONDARY_SETUP_ENABLED && (
+                <button
+                  type="button"
+                  onClick={() => setOpenProjectAdvanced((current) => ({ ...current, [project.project_id]: !current[project.project_id] }))}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:border-cyan-500 hover:text-white"
+                >
+                  {advancedOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+                  Secondary setup · {projectEnvironments.length} env · {children.length} child
+                </button>
+              )}
             </div>
-            {advancedOpen && (
+            {PROJECT_SECONDARY_SETUP_ENABLED && advancedOpen && (
               <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/40 p-3">
                 <div className="mb-3 text-xs uppercase tracking-[0.16em] text-gray-500">
                   Secondary setup
                 </div>
-                  {!offline && (
+                  {!offline && PROJECT_EDITING_ENABLED && (
                     <button onClick={() => beginAddEnvironment(project.project_id)} className="mb-3 rounded-lg border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-cyan-500 hover:text-white">
                       Add Environment
                     </button>
@@ -830,7 +839,7 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
             <p className="text-xs text-gray-500">
               Company → project grouping for tracked services. Environments stay available but are secondary.
             </p>
-            {!offline && !addingProject && !editingProjectId && (
+            {!offline && PROJECT_EDITING_ENABLED && !addingProject && !editingProjectId && (
               <button
                 onClick={beginAddProject}
                 className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 text-xs px-3 py-1.5 rounded-lg transition-colors"
@@ -842,7 +851,13 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
 
           {error && <div className="mb-4 text-xs text-red-400 bg-red-950/30 p-2 rounded">{error}</div>}
 
-          {(addingProject || editingProjectId) && (
+          {!PROJECT_EDITING_ENABLED && (
+            <div className="mb-4 rounded-lg border border-amber-900/40 bg-amber-950/10 px-3 py-2 text-xs text-amber-100/80">
+              Project grouping is reference-only in this build. Add/edit project, environment linking, project bundle rollups, and API-lab links are hidden until those flows are tested end to end.
+            </div>
+          )}
+
+          {PROJECT_EDITING_ENABLED && (addingProject || editingProjectId) && (
             <div className="mb-6 bg-gray-950 border border-gray-800 p-4 rounded-xl">
               <div className="mb-3">
                 <h4 className="text-sm font-medium text-gray-300">{addingProject ? 'Add Project' : 'Edit Project'}</h4>
@@ -1026,10 +1041,15 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
 
             {loading ? (
               <div className="text-xs text-gray-500">Loading...</div>
-            ) : rootProjects.length === 0 && !addingProject ? (
+            ) : visibleRootProjects.length === 0 && !addingProject ? (
               <div className="text-xs text-gray-600 italic">No project groups found yet.</div>
             ) : (
-              rootProjects.map(renderProject)
+              visibleRootProjects.map(renderProject)
+            )}
+            {hiddenStaleProjectCount > 0 && (
+              <div className="rounded-lg border border-amber-900/40 bg-amber-950/10 px-3 py-2 text-xs text-amber-100/80">
+                {hiddenStaleProjectCount} stale project group{hiddenStaleProjectCount === 1 ? '' : 's'} hidden because every linked service reference is missing from the current workspace snapshot.
+              </div>
             )}
           </div>
         </div>

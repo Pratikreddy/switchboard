@@ -32,7 +32,8 @@ describe('Projects panel company grouping contract', () => {
 
   it('counts current project services separately from missing service references', () => {
     expect(projectsPanel).toContain('missing reference')
-    expect(projectsPanel).toContain('Missing reference:')
+    expect(projectsPanel).toContain('stale project group')
+    expect(projectsPanel).toContain('hidden because every linked service reference is missing')
     expect(projectsPanel).toContain('No current services owned by this project.')
     expect(projectsPanel).not.toContain('{project.service_ids.length} services')
   })
@@ -47,7 +48,9 @@ describe('Projects panel company grouping contract', () => {
 
   it('keeps environment editing secondary to the project view', () => {
     expect(projectsPanel).toContain('Secondary setup')
-    expect(projectsPanel).toContain('Main view stops at company, project, and owned services.')
+    expect(projectsPanel).toContain('PROJECT_SECONDARY_SETUP_ENABLED = false')
+    expect(projectsPanel).toContain('Project grouping is reference-only in this build')
+    expect(projectsPanel).toContain('environment linking, project bundle rollups, and API-lab links are hidden')
     expect(projectsPanel).not.toContain('Advanced ·')
   })
 

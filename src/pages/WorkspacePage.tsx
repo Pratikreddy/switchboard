@@ -20,6 +20,21 @@ interface Props {
   onLatestUpdated?: (workspaceId: string, latest: WorkspaceLatest) => void
 }
 
+function freshnessDisplayLabel(value?: string) {
+  const state = value || 'Unverified'
+  return state === 'Stale' ? 'Stale cache' : state
+}
+
+function freshnessSourceLabel(value?: string) {
+  return value ? value.replace(/_/g, ' ') : 'Unverified'
+}
+
+function formatTimestampLabel(value?: string) {
+  if (!value) return 'never'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+}
+
 export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnvironmentLab, onLatestUpdated }: Props) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [latest, setLatest] = useState<WorkspaceLatest | null>(null)
@@ -89,6 +104,13 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
   const services = (workspace?.services ?? []).sort(
     (a, b) => (a.favorite_tier ?? 99) - (b.favorite_tier ?? 99),
   )
+  const workspaceFreshness = latest?.summary ?? latest?.freshness
+  const workspaceFreshnessState = loading ? '' : workspaceFreshness?.freshness_state || 'Unverified'
+  const workspaceFreshnessLabel = freshnessDisplayLabel(workspaceFreshnessState)
+  const workspaceFreshnessStale = Boolean(workspaceFreshnessState && workspaceFreshnessState !== 'Fresh')
+  const workspaceRefreshAction =
+    workspaceFreshness?.refresh_action ||
+    (workspaceFreshnessState === 'Manager unreachable' ? 'Check 8020' : workspaceFreshnessStale ? 'Collect' : '')
 
   const allTasks = useMemo(() => {
     let list: TaskLedgerEntry[] = []
@@ -126,6 +148,42 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
           collecting={collecting}
           offline={offline}
         />
+        {workspaceFreshnessState && (
+          <div className={`mt-3 border-t pt-3 text-xs ${
+            workspaceFreshnessStale
+              ? 'border-amber-900/40 text-amber-100'
+              : 'border-gray-800 text-gray-400'
+          }`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full border px-2 py-1 ${
+                workspaceFreshnessStale
+                  ? 'border-amber-700/50 bg-amber-950/20 text-amber-200'
+                  : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-200'
+              }`}>
+                {workspaceFreshnessLabel}
+              </span>
+              {workspaceRefreshAction && (
+                <span className="rounded-full border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
+                  {workspaceRefreshAction}
+                </span>
+              )}
+              <span className="text-gray-500">
+                Last verified: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}
+              </span>
+            </div>
+            <details className="mt-2">
+              <summary className="cursor-pointer text-[11px] uppercase tracking-[0.14em] text-gray-500">
+                Freshness details
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500">
+                <span>Truth source: {freshnessSourceLabel(workspaceFreshness?.freshness_source)}</span>
+                <span>Data as of: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}</span>
+                <span>Truth as of: {formatTimestampLabel(workspaceFreshness?.truth_as_of)}</span>
+                <span>Last verified: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}</span>
+              </div>
+            </details>
+          </div>
+        )}
       </div>
 
       <div className="mb-6">
@@ -174,9 +232,14 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
       )}
 
       {allTasks.length > 0 && (
-        <div className="mt-8">
-          <TaskLedgerPanel tasks={allTasks} title="Task Ledger (Cross-Node Summary)" showServiceLabel />
-        </div>
+        <details className="mt-8">
+          <summary className="cursor-pointer px-1 py-3 text-sm font-medium text-gray-300">
+            Task Ledger (Cross-Node Summary)
+          </summary>
+          <div className="pt-2">
+            <TaskLedgerPanel tasks={allTasks} title="Task Ledger (Cross-Node Summary)" showServiceLabel />
+          </div>
+        </details>
       )}
     </div>
   )

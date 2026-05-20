@@ -1146,3 +1146,65 @@ Example format:
   - exclude | file | /Users/p/Desktop/dashboard/.env
   - exclude | file | /Users/p/Desktop/dashboard/.env.*
   - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+
+## 2026-05-20T16:33:52+05:30 | Backup-clean pull-bundle scope and stale Ready invalidation
+- Tags: task, handoff, scope
+- Summary: Prevented cached Pull Bundle Ready from staying current after service truth changes, added the internal `backup-clean` pull-bundle profile, and proved one comparison `switch` bundle with noisy cache/evidence paths excluded from the source tree.
+- Changed Paths: switchboard/collectors.py, src/components/PullBundlePanel.tsx, src/types/switchboard.ts, tests_backend/test_backend_regressions.py, tests/freshness-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Switchboard Brick 3B builder agent
+- Tool: codex-desktop
+- Read Back: Pratik asked for only Brick 3B: stale cached Pull Bundle Ready must stop implying current authority, backup-clean bundle behavior must remove obvious noise while preserving proof metadata, and exactly one comparison bundle may be created only after fresh local authority. No remote `.47`, GitHub backup automation, scanner stack, broad UI, cleanup, Palimpsest, commit, or push work was allowed.
+- Scope Check: Dashboard-only pull-bundle backend/UI/test work. No Agent Ops manager records, remote actions, GitHub operations, old bundle deletion, or destructive cleanup. The old Brick 3A proof bundle was preserved, and exactly one new comparison bundle was created.
+- Notes:
+  - Before: post-commit preflight for `switch-local_mac-primary` was stale with `authority_cache_older_than_truth`; the old proof bundle had `306` files and `6673` exposure findings and copied `.npm-cache`, `.pytest_cache`, `.DS_Store`, `.claude/settings.local.json`, `docs/evidence`, and `switchboard/evidence`.
+  - UI now keeps a preflight context key. If service freshness, node-viewer truth, node sync timestamp, location, or one-run scope changes after a Ready check, the panel shows `Needs refresh` / `Cached Ready is stale` and disables Create until Check scope is rerun.
+  - Pull Bundles now show compact profile copy: `Bundle profile: backup-clean · review required`.
+  - Backend pull-bundle creation now applies the internal `backup-clean` exclude profile on top of saved excludes. It excludes cache/runtime/generated/noise paths while keeping `uv.lock` and `package-lock.json`.
+  - Raw evidence history files are no longer copied into backup-clean source trees by default. Selected evidence entries are recorded as metadata summaries for scope snapshot, update gate, completed tasks, doc index, exposure findings, and skipped entries.
+  - Created exactly one comparison bundle: `1__switch__local_mac__20260520T110201Z` at `/Users/p/Desktop/dashboard/downloads/1/switch/1__switch__local_mac__20260520T110201Z`.
+  - Old vs new: old `file_count: 306`, `exposure_count: 6673`; new `file_count: 136`, `exposure_count: 115`, `skipped_entry_count: 5`, `bundle_profile: backup-clean`, `compared_to_bundle_id: 1__switch__local_mac__20260520T100157Z`.
+  - New source tree check found no `.npm-cache`, `.pytest_cache`, `.DS_Store`, `.claude/settings.local.json`, `docs/evidence`, or `switchboard/evidence` paths.
+  - UI evidence was captured as DOM evidence at `/tmp/switchboard-brick3b-after-stale-check-dom.txt`; in-app browser screenshot capture timed out, so DOM evidence was used instead.
+- Verification:
+  - `curl -sS http://127.0.0.1:8009/api/health`
+  - `curl -sS http://127.0.0.1:8020/api/health`
+  - `curl -sS -H 'Content-Type: application/json' -d '{"location_id":"switch-local_mac-primary"}' http://127.0.0.1:8009/api/services/switch/pull-bundles/preflight`
+  - `curl -sS -H 'Content-Type: application/json' -d '{"location_id":"switch-local_mac-primary","include_scope_snapshot":true,"include_runtime_config":true,"include_task_ledger":true,"include_dependency_context":true}' http://127.0.0.1:8009/api/services/switch/actions/sync-from-node`
+  - `curl -sS -H 'Content-Type: application/json' -d '{"location_id":"switch-local_mac-primary","extra_includes":[],"extra_excludes":[],"note":"Brick 3B backup-clean scope verification."}' http://127.0.0.1:8009/api/services/switch/pull-bundles`
+  - `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_backup_clean_excludes_noise_and_summarizes_evidence tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_preflight_blocks_local_authority_older_than_manager_truth tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable`
+  - `npm test -- --run tests/freshness-contract.test.ts`
+  - `git diff --check`
+  - `.venv/bin/python -m unittest discover -s tests_backend`
+  - `npm test`
+  - `npm run build`
+  - `npm run check:release-static`
+  - `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/build
+  - exclude | dir | /Users/p/Desktop/dashboard/release
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info
+  - exclude | file | /Users/p/Desktop/dashboard/.env
+  - exclude | file | /Users/p/Desktop/dashboard/.env.*
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc

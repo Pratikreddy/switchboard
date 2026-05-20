@@ -955,6 +955,9 @@ export interface PullBundlePreflight {
   missing_authority_timestamp?: boolean
   vpn_required?: boolean
   fix?: string
+  bundle_profile?: string
+  backup_clean?: boolean
+  backup_clean_exclude_count?: number
   include_count?: number
   saved_include_count?: number
   extra_include_count?: number
@@ -1000,6 +1003,19 @@ export interface DependencyContext {
   notes: string[]
   diagram: string
   composition?: DependencyComposition
+}
+
+export interface PullBundleMetadataSummaries {
+  profile?: string
+  source_tree_policy?: string
+  raw_evidence_files?: string
+  copied_summary?: Record<string, number>
+  skipped_summary?: Record<string, number>
+  exposure_summary?: Record<string, number>
+  scope_snapshot_summary?: Record<string, unknown>
+  update_gate_summary?: Record<string, unknown>
+  completed_tasks_summary?: Record<string, unknown>
+  doc_index_summary?: Record<string, unknown>
 }
 
 export interface PullBundleAuthority {
@@ -1097,6 +1113,8 @@ export interface PullBundleRecord {
   workspace_id: string
   service_id: string
   server_id: string
+  bundle_profile?: string
+  backup_clean?: boolean
   file_count: number
   docs_count: number
   logs_count: number
@@ -1110,6 +1128,7 @@ export interface PullBundleRecord {
   diff_entries?: PullBundleDiffEntry[]
   exposure_findings?: ExposureFinding[]
   dependency_context?: DependencyContext
+  metadata_summaries?: PullBundleMetadataSummaries
   authority?: PullBundleAuthority
   skipped_entry_count?: number
   skipped_entries?: Array<{

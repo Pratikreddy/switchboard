@@ -101,6 +101,50 @@ LEGACY_MANAGED_DOC_ID_MAP = {
 VPN_OR_NETWORK_BLOCKED_MESSAGE = "VPN is off or network blocked. Turn VPN on for live verification."
 SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node with VPN on."
 LOCAL_SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node."
+BUNDLE_PROFILE = "backup-clean"
+BACKUP_CLEAN_EXCLUDE_GLOBS = [
+    ".npm-cache",
+    ".pytest_cache",
+    ".DS_Store",
+    ".claude/settings.local.json",
+    ".claude/*.local.*",
+    ".claude/local",
+    ".gemini",
+    ".qwen",
+    ".opencode",
+    "downloads",
+    "release",
+    "dist",
+    "build",
+    "node_modules",
+    "state",
+    "logs",
+    "docs/evidence",
+    "switchboard/evidence",
+    "switchboard/manager/runtime",
+    "switchboard/manager/archives",
+    "read-and-ingest",
+    "browser-logs",
+    "search-logs",
+    "github-logs",
+    "github_logs",
+    "GitHub logs",
+]
+METADATA_SUMMARY_PATHS = {
+    "docs/evidence",
+    "switchboard/evidence",
+}
+METADATA_SUMMARY_FILES = {
+    "docs/evidence/pull-bundle-history.json",
+    "docs/evidence/repo-safety-history.json",
+    "docs/evidence/run-history.json",
+    "switchboard/evidence/completed-tasks.json",
+    "switchboard/evidence/doc-index.json",
+    "switchboard/evidence/pull-bundle-history.json",
+    "switchboard/evidence/repo-safety-history.json",
+    "switchboard/evidence/scope.snapshot.json",
+    "switchboard/evidence/update-gate.json",
+}
 
 
 class CollectionCoordinator:
@@ -1581,7 +1625,7 @@ class CollectionCoordinator:
 
             scope_entries = [entry for entry in service.scope_entries if entry.enabled]
             scope_entries.extend(request.extra_includes)
-            exclude_patterns = list(dict.fromkeys(DEFAULT_EXCLUDE_GLOBS + [entry.path for entry in service.scope_entries if entry.enabled and entry.kind == "exclude"] + request.extra_excludes))
+            exclude_patterns = self._pull_bundle_exclude_patterns(service, request)
 
             copied_files: list[dict[str, Any]] = []
             skipped_entries: list[dict[str, Any]] = []
@@ -1609,12 +1653,22 @@ class CollectionCoordinator:
             exposure_findings = self._bundle_exposure_findings(bundle_root / "source_tree", copied_files)
             dependency_context = self._bundle_dependency_context(service, copied_files)
             authority = self._bundle_authority_context(service, location, server)
+            metadata_summaries = self._bundle_metadata_summaries(
+                service=service,
+                server=server,
+                location_root=location.root,
+                copied_files=copied_files,
+                skipped_entries=skipped_entries,
+                exposure_findings=exposure_findings,
+            )
             manifest = {
                 "bundle_id": bundle_id,
                 "created_at": utc_now_iso(),
                 "workspace_id": service.workspace_id,
                 "service_id": service.service_id,
                 "server_id": server_id,
+                "bundle_profile": BUNDLE_PROFILE,
+                "backup_clean": True,
                 "location_root": location.root,
                 "saved_scope": [entry.model_dump(mode="json") for entry in service.scope_entries if entry.enabled],
                 "extra_includes": [entry.model_dump(mode="json") for entry in request.extra_includes],
@@ -1625,6 +1679,7 @@ class CollectionCoordinator:
                 "diff_entries": diff_entries,
                 "exposure_findings": exposure_findings,
                 "dependency_context": dependency_context,
+                "metadata_summaries": metadata_summaries,
                 "authority": authority,
                 "repo_metadata": repo_metadata,
                 "files": copied_files,
@@ -1639,6 +1694,8 @@ class CollectionCoordinator:
                 "workspace_id": service.workspace_id,
                 "service_id": service.service_id,
                 "server_id": server_id,
+                "bundle_profile": BUNDLE_PROFILE,
+                "backup_clean": True,
                 "file_count": len(copied_files),
                 "docs_count": len([item for item in copied_files if item["kind"] == "doc"]),
                 "logs_count": len([item for item in copied_files if item["kind"] == "log"]),
@@ -1652,6 +1709,7 @@ class CollectionCoordinator:
                 "diff_entries": diff_entries,
                 "exposure_findings": exposure_findings,
                 "dependency_context": dependency_context,
+                "metadata_summaries": metadata_summaries,
                 "authority": authority,
                 "skipped_entry_count": len(skipped_entries),
                 "skipped_entries": skipped_entries,
@@ -1778,10 +1836,13 @@ class CollectionCoordinator:
             "missing_authority_timestamp": missing_authority_timestamp,
             "vpn_required": server.vpn_required,
             "fix": authority_fix,
+            "bundle_profile": BUNDLE_PROFILE,
+            "backup_clean": True,
+            "backup_clean_exclude_count": len(BACKUP_CLEAN_EXCLUDE_GLOBS),
             "include_count": len(saved_scope) + len(extra_scope),
             "saved_include_count": len(saved_scope),
             "extra_include_count": len(extra_scope),
-            "exclude_count": len(exclude_entries) + len(request.extra_excludes),
+            "exclude_count": len(exclude_entries) + len(request.extra_excludes) + len(BACKUP_CLEAN_EXCLUDE_GLOBS),
             "suspicious_entries": suspicious,
             "blocked_reasons": blocked_reasons,
             "locations": [item.model_dump(mode="json") for item in service.locations],
@@ -3162,6 +3223,27 @@ class CollectionCoordinator:
                 findings.append({"path": file_path, "type": finding_type, "reason": f"Matched {finding_type} pattern"})
         return findings
 
+    def _pull_bundle_exclude_patterns(self, service: ServiceManifest, request: PullBundleRequest) -> list[str]:
+        saved_excludes = [entry.path for entry in service.scope_entries if entry.enabled and entry.kind == "exclude"]
+        return list(dict.fromkeys(DEFAULT_EXCLUDE_GLOBS + BACKUP_CLEAN_EXCLUDE_GLOBS + saved_excludes + request.extra_excludes))
+
+    def _relative_bundle_token(self, path: str, location_root: str) -> str:
+        normalized_path = str(path).replace("\\", "/").rstrip("/")
+        normalized_root = str(location_root).replace("\\", "/").rstrip("/")
+        if normalized_path == normalized_root:
+            return ""
+        if normalized_path.startswith(normalized_root + "/"):
+            return normalized_path[len(normalized_root) + 1 :]
+        return normalized_path.lstrip("/")
+
+    def _metadata_summary_reason(self, path: str, location_root: str) -> str:
+        relative = self._relative_bundle_token(path, location_root)
+        if relative in METADATA_SUMMARY_FILES:
+            return "metadata_summarized"
+        if any(relative == prefix or relative.startswith(prefix + "/") for prefix in METADATA_SUMMARY_PATHS):
+            return "metadata_summarized"
+        return ""
+
     def _copy_bundle_local(
         self,
         service: ServiceManifest,
@@ -3182,6 +3264,17 @@ class CollectionCoordinator:
                         "kind": entry.kind,
                         "path_type": entry.path_type,
                         "reason": "outside_location_root",
+                    }
+                )
+                continue
+            metadata_reason = self._metadata_summary_reason(entry.path, location_root)
+            if metadata_reason:
+                skipped.append(
+                    {
+                        "path": entry.path,
+                        "kind": entry.kind,
+                        "path_type": entry.path_type,
+                        "reason": metadata_reason,
                     }
                 )
                 continue
@@ -3225,6 +3318,17 @@ class CollectionCoordinator:
                         "kind": entry.kind,
                         "path_type": entry.path_type,
                         "reason": "outside_location_root",
+                    }
+                )
+                continue
+            metadata_reason = self._metadata_summary_reason(entry.path, location_root)
+            if metadata_reason:
+                skipped.append(
+                    {
+                        "path": entry.path,
+                        "kind": entry.kind,
+                        "path_type": entry.path_type,
+                        "reason": metadata_reason,
                     }
                 )
                 continue
@@ -3778,6 +3882,84 @@ class CollectionCoordinator:
             seen.add(key)
             unique.append(item)
         return unique
+
+    def _bundle_metadata_summaries(
+        self,
+        service: ServiceManifest,
+        server: ResolvedServer,
+        location_root: str,
+        copied_files: list[dict[str, Any]],
+        skipped_entries: list[dict[str, Any]],
+        exposure_findings: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        summaries: dict[str, Any] = {
+            "profile": BUNDLE_PROFILE,
+            "source_tree_policy": "backup-clean",
+            "raw_evidence_files": "metadata_summary_only",
+            "copied_summary": self._bundle_count_summary(copied_files, "kind"),
+            "skipped_summary": self._bundle_count_summary(skipped_entries, "reason"),
+            "exposure_summary": self._bundle_count_summary(exposure_findings, "finding_kind"),
+        }
+        if server.connection_type != "local":
+            return summaries
+
+        root = Path(location_root)
+        scope_snapshot = self._read_local_json(root / "switchboard" / "evidence" / "scope.snapshot.json") or {}
+        update_gate = self._read_local_json(root / "switchboard" / "evidence" / "update-gate.json") or {}
+        completed_tasks = self._read_local_json(root / "switchboard" / "evidence" / "completed-tasks.json") or {}
+        doc_index = self._read_local_json(root / "switchboard" / "evidence" / "doc-index.json") or {}
+        if not completed_tasks:
+            completed_tasks = self._read_local_json(root / "docs" / "evidence" / "completed-tasks.json") or {}
+        if not doc_index:
+            doc_index = self._read_local_json(root / "docs" / "evidence" / "doc-index.json") or {}
+
+        scope_entries = scope_snapshot.get("scope_entries", [])
+        summaries["scope_snapshot_summary"] = {
+            "generated": scope_snapshot.get("generated", ""),
+            "service_id": scope_snapshot.get("service_id", service.service_id),
+            "scope_entry_count": len(scope_entries) if isinstance(scope_entries, list) else 0,
+            "scope_entries_by_kind": self._bundle_count_summary(scope_entries if isinstance(scope_entries, list) else [], "kind"),
+        }
+        checks = update_gate.get("checks", [])
+        summaries["update_gate_summary"] = {
+            "generated": update_gate.get("generated", ""),
+            "status": update_gate.get("status", ""),
+            "check_count": len(checks) if isinstance(checks, list) else 0,
+            "checks_by_status": self._bundle_count_summary(checks if isinstance(checks, list) else [], "status"),
+        }
+        tasks = completed_tasks.get("tasks", [])
+        latest_task = (
+            max(
+                [task for task in tasks if isinstance(task, dict)],
+                key=lambda task: self._parse_timestamp(task.get("timestamp")) or datetime.min.replace(tzinfo=timezone.utc),
+            )
+            if isinstance(tasks, list) and tasks
+            else {}
+        )
+        summaries["completed_tasks_summary"] = {
+            "generated": completed_tasks.get("generated", ""),
+            "task_count": len(tasks) if isinstance(tasks, list) else 0,
+            "latest_task": {
+                "timestamp": latest_task.get("timestamp", ""),
+                "title": latest_task.get("title", ""),
+                "summary": latest_task.get("summary", ""),
+                "changed_paths": latest_task.get("changed_paths", [])[:20] if isinstance(latest_task.get("changed_paths", []), list) else [],
+            },
+        }
+        docs = doc_index.get("docs", [])
+        summaries["doc_index_summary"] = {
+            "generated": doc_index.get("generated", ""),
+            "doc_count": len(docs) if isinstance(docs, list) else 0,
+            "enabled_count": len([doc for doc in docs if isinstance(doc, dict) and doc.get("enabled")]) if isinstance(docs, list) else 0,
+        }
+        return summaries
+
+    def _bundle_count_summary(self, items: list[dict[str, Any]], key: str) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for item in items:
+            value = str(item.get(key, "unknown") or "unknown")
+            counts[value] = counts.get(value, 0) + 1
+        return counts
 
     def _bundle_authority_context(self, service: ServiceManifest, location: Any, server: ResolvedServer) -> dict[str, Any]:
         runtime_state = self.snapshots.get_service_runtime_state(service.service_id)

@@ -1008,6 +1008,141 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(result["exposure_findings"][0]["relative_path"], "app.py")
             self.assertTrue(result["exposure_findings"][0]["redacted"])
 
+    def test_pull_bundle_backup_clean_excludes_noise_and_summarizes_evidence(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "repo"
+            root.mkdir(parents=True)
+            (root / "app.py").write_text("print('ok')\n", encoding="utf-8")
+            (root / "uv.lock").write_text("uv lock\n", encoding="utf-8")
+            (root / "package-lock.json").write_text('{"lockfileVersion": 3}\n', encoding="utf-8")
+            (root / ".DS_Store").write_text("junk\n", encoding="utf-8")
+            (root / ".npm-cache" / "_logs").mkdir(parents=True)
+            (root / ".npm-cache" / "_logs" / "debug.log").write_text("token in cache\n", encoding="utf-8")
+            (root / ".pytest_cache").mkdir()
+            (root / ".pytest_cache" / "nodeids").write_text("cached\n", encoding="utf-8")
+            (root / ".claude").mkdir()
+            (root / ".claude" / "settings.local.json").write_text('{"token":"local"}\n', encoding="utf-8")
+            save_json(
+                root / "docs" / "evidence" / "pull-bundle-history.json",
+                {"generated": "2026-05-20T00:00:00+00:00", "bundles": [{"secret": "raw-history-token"}]},
+            )
+            save_json(
+                root / "switchboard" / "evidence" / "completed-tasks.json",
+                {
+                    "generated": "2026-05-20T00:01:00+00:00",
+                    "tasks": [
+                        {
+                            "timestamp": "2026-05-19T00:01:00+00:00",
+                            "title": "Older task",
+                            "summary": "Older summary",
+                            "changed_paths": [],
+                        },
+                        {
+                            "timestamp": "2026-05-20T00:01:00+00:00",
+                            "title": "Latest task",
+                            "summary": "Task summary",
+                            "changed_paths": ["app.py"],
+                        }
+                    ],
+                },
+            )
+            save_json(
+                root / "switchboard" / "evidence" / "scope.snapshot.json",
+                {
+                    "generated": "2026-05-20T00:02:00+00:00",
+                    "service_id": "svc",
+                    "scope_entries": [{"kind": "repo"}, {"kind": "doc"}],
+                },
+            )
+            save_json(
+                root / "switchboard" / "evidence" / "update-gate.json",
+                {
+                    "generated": "2026-05-20T00:03:00+00:00",
+                    "status": "ok",
+                    "checks": [{"status": "ok"}, {"status": "ok"}],
+                },
+            )
+            save_json(
+                root / "switchboard" / "evidence" / "doc-index.json",
+                {
+                    "generated": "2026-05-20T00:04:00+00:00",
+                    "docs": [{"enabled": True}, {"enabled": False}],
+                },
+            )
+
+            settings = Settings(
+                manifest_dir=Path(tmpdir) / "switchboard" / "manifests",
+                evidence_dir=Path(tmpdir) / "docs" / "evidence",
+                archive_dir=Path(tmpdir) / "docs" / "evidence" / "archive",
+                private_state_dir=Path(tmpdir) / "state" / "private",
+                downloads_dir=Path(tmpdir) / "downloads",
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            service = ServiceManifest(
+                service_id="svc",
+                workspace_id="ws",
+                display_name="Svc",
+                locations=[
+                    LocationSpec(
+                        location_id="loc",
+                        server_id="local_mac",
+                        access_mode="local",
+                        root=str(root),
+                        role="primary",
+                        is_primary=True,
+                        path_aliases=[],
+                    )
+                ],
+                scope_entries=[
+                    ScopeEntry(kind="repo", path=str(root), path_type="dir", source="user_added", enabled=True),
+                    ScopeEntry(kind="doc", path=str(root / "switchboard" / "evidence" / "completed-tasks.json"), path_type="file", source="user_added", enabled=True),
+                ],
+                repo_paths=[str(root)],
+            )
+            manifests.get_service = lambda _service_id: service  # type: ignore[assignment]
+            manifests.resolve_server = lambda *_args, **_kwargs: ResolvedServer(  # type: ignore[assignment]
+                server_id="local_mac",
+                name="Local",
+                connection_type="local",
+                host="127.0.0.1",
+                username="p",
+                port=22,
+                tags=[],
+                favorite_tier="primary",
+                notes="",
+                password=None,
+            )
+
+            result = coordinator.pull_bundle("svc", PullBundleRequest(location_id="loc"))
+
+            copied_relative_paths = {item["relative_path"] for item in result["files"]}
+            self.assertEqual(result["bundle_profile"], "backup-clean")
+            self.assertTrue(result["backup_clean"])
+            self.assertIn("app.py", copied_relative_paths)
+            self.assertIn("uv.lock", copied_relative_paths)
+            self.assertIn("package-lock.json", copied_relative_paths)
+            self.assertNotIn(".DS_Store", copied_relative_paths)
+            self.assertFalse(any(path.startswith(".npm-cache/") for path in copied_relative_paths))
+            self.assertFalse(any(path.startswith(".pytest_cache/") for path in copied_relative_paths))
+            self.assertNotIn(".claude/settings.local.json", copied_relative_paths)
+            self.assertFalse(any(path.startswith("docs/evidence/") for path in copied_relative_paths))
+            self.assertFalse(any(path.startswith("switchboard/evidence/") for path in copied_relative_paths))
+            self.assertIn(
+                {"path": str(root / "switchboard" / "evidence" / "completed-tasks.json"), "kind": "doc", "path_type": "file", "reason": "metadata_summarized"},
+                result["skipped_entries"],
+            )
+            summaries = result["metadata_summaries"]
+            self.assertEqual(summaries["profile"], "backup-clean")
+            self.assertEqual(summaries["raw_evidence_files"], "metadata_summary_only")
+            self.assertEqual(summaries["completed_tasks_summary"]["latest_task"]["title"], "Latest task")
+            self.assertEqual(summaries["scope_snapshot_summary"]["scope_entry_count"], 2)
+            self.assertEqual(summaries["update_gate_summary"]["status"], "ok")
+            self.assertEqual(summaries["doc_index_summary"]["doc_count"], 2)
+            self.assertEqual(summaries["skipped_summary"]["metadata_summarized"], 1)
+            self.assertEqual(result["preflight"]["bundle_profile"], "backup-clean")
+
     def test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable(self) -> None:
         with TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

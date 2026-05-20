@@ -37,6 +37,20 @@ function freshnessSourceLabel(value?: string) {
   return value ? value.replace(/_/g, ' ') : 'Unverified'
 }
 
+function timestampBefore(left?: string, right?: string) {
+  if (!left || !right) return false
+  const leftDate = new Date(left)
+  const rightDate = new Date(right)
+  if (Number.isNaN(leftDate.getTime()) || Number.isNaN(rightDate.getTime())) return false
+  return leftDate.getTime() < rightDate.getTime()
+}
+
+function countSummaryLabel(summary?: Record<string, number>) {
+  const entries = Object.entries(summary ?? {}).filter(([, count]) => count > 0)
+  if (entries.length === 0) return ''
+  return entries.map(([key, count]) => `${key} ${count}`).join(' · ')
+}
+
 function authorityBlockerCopy(preflight: PullBundlePreflight) {
   if (preflight.freshness?.stale_reason === 'manager_8020_unreachable' || preflight.freshness?.refresh_action === 'Check 8020') {
     return 'Manager truth is unavailable. Check 8020 before creating a bundle; 8009 only proves the Control Center API is alive.'
@@ -59,6 +73,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   const [creating, setCreating] = useState(false)
   const [message, setMessage] = useState('')
   const [preflight, setPreflight] = useState<PullBundlePreflight | null>(null)
+  const [preflightContextKey, setPreflightContextKey] = useState('')
   const [preflighting, setPreflighting] = useState(false)
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -73,9 +88,64 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   }, [service.locations])
   const [locationId, setLocationId] = useState(defaultLocationId)
 
+  const selectedNodeViewer = useMemo(
+    () => service.node_viewer?.find((entry) => entry.location_id === locationId),
+    [locationId, service.node_viewer],
+  )
+  const selectedNodeSync = useMemo(
+    () => service.node_sync?.find((entry) => entry.location_id === locationId && entry.direction === 'from_node'),
+    [locationId, service.node_sync],
+  )
+  const activeExtraExcludes = useMemo(
+    () => advancedOpen
+      ? extraExcludes
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+      : [],
+    [advancedOpen, extraExcludes],
+  )
+  const preflightAuthorityContextKey = useMemo(
+    () => JSON.stringify({
+      service_id: service.service_id,
+      location_id: locationId,
+      saved_scope_generated_at: service.saved_scope_generated_at ?? '',
+      service_data_as_of: service.freshness?.data_as_of ?? service.data_as_of ?? '',
+      service_truth_as_of: service.freshness?.truth_as_of ?? service.truth_as_of ?? '',
+      service_freshness_state: service.freshness?.freshness_state ?? service.freshness_state ?? '',
+      node_data_as_of: selectedNodeViewer?.data_as_of ?? '',
+      node_truth_as_of: selectedNodeViewer?.truth_as_of ?? '',
+      node_freshness_state: selectedNodeViewer?.freshness_state ?? '',
+      node_manifest_updated_at: selectedNodeViewer?.manifest_updated_at ?? '',
+      node_sync_timestamp: selectedNodeSync?.timestamp ?? '',
+      extra_includes: advancedOpen ? extraIncludes.map((entry) => `${entry.kind}:${entry.path_type}:${entry.path}:${entry.enabled}`).sort() : [],
+      extra_excludes: activeExtraExcludes,
+    }),
+    [
+      activeExtraExcludes,
+      advancedOpen,
+      extraIncludes,
+      locationId,
+      selectedNodeSync?.timestamp,
+      selectedNodeViewer?.data_as_of,
+      selectedNodeViewer?.freshness_state,
+      selectedNodeViewer?.manifest_updated_at,
+      selectedNodeViewer?.truth_as_of,
+      service.data_as_of,
+      service.freshness?.data_as_of,
+      service.freshness?.freshness_state,
+      service.freshness?.truth_as_of,
+      service.freshness_state,
+      service.saved_scope_generated_at,
+      service.service_id,
+      service.truth_as_of,
+    ],
+  )
+
   useEffect(() => {
     setLocationId(defaultLocationId)
     setPreflight(null)
+    setPreflightContextKey('')
     setMessage('')
   }, [defaultLocationId, service.service_id, refreshKey])
 
@@ -131,6 +201,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
 
   useEffect(() => {
     setPreflight(null)
+    setPreflightContextKey('')
     setMessage('')
   }, [refreshKey, service.scope_entries])
 
@@ -149,7 +220,13 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     if (bundleResult?.files?.length) return bundleResult
     return history.find((bundle) => (bundle.files?.length ?? 0) > 0) ?? null
   }, [bundleResult, history])
-  const preflightBlocksCreate = Boolean(preflight && preflight.status !== 'ok')
+  const cachedPreflightChanged = Boolean(preflight && preflightContextKey && preflightContextKey !== preflightAuthorityContextKey)
+  const cachedPreflightAuthorityStale = Boolean(
+    preflight?.status === 'ok' &&
+    timestampBefore(preflight.source_authority?.updated_at || preflight.freshness?.data_as_of, selectedNodeViewer?.truth_as_of || service.freshness?.truth_as_of || service.truth_as_of),
+  )
+  const cachedPreflightStale = cachedPreflightChanged || cachedPreflightAuthorityStale
+  const preflightBlocksCreate = Boolean(preflight && (preflight.status !== 'ok' || cachedPreflightStale))
 
   function addExtraInclude() {
     const trimmed = includePath.trim()
@@ -181,12 +258,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     return {
       location_id: locationId || undefined,
       extra_includes: advancedOpen ? extraIncludes : [],
-      extra_excludes: advancedOpen
-        ? extraExcludes
-            .split('\n')
-            .map((line) => line.trim())
-            .filter(Boolean)
-        : [],
+      extra_excludes: activeExtraExcludes,
       note,
     }
   }
@@ -197,6 +269,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     try {
       const result = await preflightPullBundle(service.service_id, pullRequestPayload())
       setPreflight(result as PullBundlePreflight)
+      setPreflightContextKey(preflightAuthorityContextKey)
       if ((result as PullBundlePreflight).status !== 'ok') {
         setMessage((result as PullBundlePreflight).message || 'Pull bundle preflight failed.')
         return false
@@ -284,6 +357,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
               Pull the selected node-defined scope into a versioned local mirror. Remote bundles require Sync From Node first.
               Clean-to-commit / backup eligibility still requires a clean repo, fresh pull authority, reviewed skipped entries, and no unresolved exposure findings.
             </p>
+            <p className="mt-2 text-xs text-cyan-200">Bundle profile: backup-clean · review required</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -330,10 +404,10 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
               {preflight ? (
                 <>
                   <div className={preflight.status === 'ok' ? 'text-green-300' : 'text-amber-200'}>
-                    {preflight.status === 'ok' ? 'Ready' : 'Blocked'} · {preflight.message}
+                    {cachedPreflightStale ? 'Needs refresh' : preflight.status === 'ok' ? 'Ready' : 'Blocked'} · {cachedPreflightStale ? 'Cached Ready is stale. Run Check scope again.' : preflight.message}
                   </div>
                   <div className="mt-1 text-gray-500">
-                    Authority {preflight.source_authority?.source ?? 'unknown'} · includes {preflight.include_count ?? 0} · excludes {preflight.exclude_count ?? 0}
+                    Authority {preflight.source_authority?.source ?? 'unknown'} · includes {preflight.include_count ?? 0} · excludes {preflight.exclude_count ?? 0} · profile {preflight.bundle_profile ?? 'backup-clean'}
                   </div>
                   <div className="mt-2 grid gap-1 text-[11px] text-gray-500 md:grid-cols-2">
                     <div>Node-local authority: {formatTimestampLabel(preflight.node_local_scope_timestamp)}</div>
@@ -356,8 +430,13 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                       {authorityBlockerCopy(preflight)}
                     </div>
                   )}
+                  {cachedPreflightStale && (
+                    <div className="mt-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100">
+                      Cached Ready is no longer current for this service truth. Run Check scope before creating a bundle.
+                    </div>
+                  )}
                   <div className={`mt-2 rounded-lg border px-3 py-2 text-xs ${preflight.status === 'ok' ? 'border-cyan-900/40 bg-cyan-950/20 text-cyan-100' : 'border-amber-800/50 bg-amber-950/30 text-amber-100'}`}>
-                    Clean-to-commit / backup: {preflight.status === 'ok'
+                    Clean-to-commit / backup: {preflight.status === 'ok' && !cachedPreflightStale
                       ? 'scope mirror is allowed, but repo cleanliness, skipped entries, and exposure findings still need review.'
                       : 'blocked until scope check is Ready and authority is fresh.'}
                   </div>
@@ -534,6 +613,9 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                 Authority: {bundleResult.authority.source} · {bundleResult.authority.root}
               </div>
             )}
+            <div className="mt-3 rounded-lg border border-cyan-900/40 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-100">
+              Bundle profile: {bundleResult.bundle_profile ?? 'backup-clean'} · review required
+            </div>
             {renderComposition(bundleResult.dependency_context?.composition)}
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               <div className="rounded-lg border border-green-900/40 bg-black/20 p-3">
@@ -555,6 +637,12 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                 {(bundleResult.exposure_findings?.length ?? 0) > 0 && (
                   <div className="mb-3 rounded-lg border border-yellow-900/30 bg-yellow-950/20 px-3 py-2 text-xs text-yellow-200">
                     {bundleResult.exposure_findings?.length} exposure finding{bundleResult.exposure_findings?.length === 1 ? '' : 's'} in pulled files.
+                    {countSummaryLabel(bundleResult.metadata_summaries?.exposure_summary) ? ` ${countSummaryLabel(bundleResult.metadata_summaries?.exposure_summary)}` : ''}
+                  </div>
+                )}
+                {countSummaryLabel(bundleResult.metadata_summaries?.skipped_summary) && (
+                  <div className="mb-3 rounded-lg border border-yellow-900/30 bg-yellow-950/20 px-3 py-2 text-xs text-yellow-200">
+                    Skipped summary: {countSummaryLabel(bundleResult.metadata_summaries?.skipped_summary)}
                   </div>
                 )}
                 <div className="text-xs uppercase tracking-[0.16em] text-yellow-200/80">Missed scope</div>
@@ -631,6 +719,9 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                       <div className="rounded-lg border border-gray-800 bg-gray-950 p-3">
                         <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Bundle Notes</div>
                         {bundle.note && <div className="mt-2 text-sm text-gray-300">{bundle.note}</div>}
+                        <div className="mt-2 rounded-lg border border-cyan-900/40 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-100">
+                          Bundle profile: {bundle.bundle_profile ?? 'backup-clean'} · review required
+                        </div>
                         {bundle.authority && (
                           <div className="mt-2 rounded-lg border border-cyan-900/40 bg-cyan-950/20 px-3 py-2 text-xs text-cyan-100">
                             Authority: {bundle.authority.source} · {bundle.authority.root}
@@ -673,12 +764,19 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                         {(bundle.exposure_findings?.length ?? 0) > 0 && (
                           <div className="mt-3">
                             <div className="text-[11px] uppercase tracking-[0.16em] text-yellow-300">Exposure Notes</div>
+                            <div className="mt-2 rounded border border-yellow-900/30 bg-yellow-950/20 px-2 py-1 text-xs text-yellow-100/90">
+                              {bundle.exposure_findings?.length} total
+                              {countSummaryLabel(bundle.metadata_summaries?.exposure_summary) ? ` · ${countSummaryLabel(bundle.metadata_summaries?.exposure_summary)}` : ''}
+                            </div>
                             <div className="mt-2 space-y-1">
-                              {bundle.exposure_findings?.map((finding, idx) => (
+                              {bundle.exposure_findings?.slice(0, 12).map((finding, idx) => (
                                 <div key={idx} className="text-xs text-yellow-100/90">
                                   {finding.relative_path} · {finding.finding_kind}{finding.variable_name ? ` · ${finding.variable_name}` : ''} · line {finding.line_number}
                                 </div>
                               ))}
+                              {(bundle.exposure_findings?.length ?? 0) > 12 && (
+                                <div className="text-xs text-yellow-100/70">Showing first 12 exposure findings.</div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -718,6 +816,11 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                     </div>
                     <div className="rounded-lg border border-gray-800 bg-gray-950 p-3">
                       <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Missed scope</div>
+                      {countSummaryLabel(bundle.metadata_summaries?.skipped_summary) && (
+                        <div className="mt-2 rounded border border-gray-800 px-2 py-1 text-xs text-gray-300">
+                          Skipped summary: {countSummaryLabel(bundle.metadata_summaries?.skipped_summary)}
+                        </div>
+                      )}
                       <div className="mt-2 max-h-56 space-y-1 overflow-auto">
                         {(bundle.skipped_entries ?? []).length === 0 ? (
                           <div className="text-xs text-gray-500">No missed scope entries.</div>

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-20T07:00:11+00:00",
+  "generated": "2026-05-20T10:18:02+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -13,7 +13,21 @@
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+      "path": "/Users/p/Desktop/dashboard/switchboard/node_runtime.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/node_api.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -27,14 +41,21 @@
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/defaults.py",
+      "path": "/Users/p/Desktop/dashboard/vite.config.ts",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+      "path": "/Users/p/Desktop/dashboard/tests_backend/test_runtime_and_node_sync.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -84,20 +105,6 @@
       "kind": "doc",
       "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "doc",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "doc",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/local/doc-index.md",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -3580,6 +3587,234 @@
           "kind": "doc",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/local/doc-index.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/build",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/release",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/manager/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/manager/archives",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard.egg-info",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.env",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.env.*",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.npmrc",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-20T15:33:28+05:30",
+      "title": "Local 8020 manager runtime and fresh self-bundle proof",
+      "summary": "Made the local manager runtime start/status path wait for the served port, made manager health report the actual served 8020 port separately from stale manifest metadata, blocked pull-bundle creation when local authority is older than manager truth, then proved one fresh-authority local `switch` pull bundle.",
+      "changed_paths": [
+        "switchboard/node_runtime.py",
+        "switchboard/node_api.py",
+        "switchboard/cli.py",
+        "switchboard/collectors.py",
+        "vite.config.ts",
+        "tests_backend/test_runtime_and_node_sync.py",
+        "tests_backend/test_node_mode.py",
+        "tests_backend/test_backend_regressions.py",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node_runtime.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node_api.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/vite.config.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_runtime_and_node_sync.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
           "enabled": true,
           "source": "tasks_completed"
         },

@@ -357,7 +357,7 @@ def node_manager_serve(
 ) -> None:
     import uvicorn
 
-    app_instance = create_manager_node_app(manager_root)
+    app_instance = create_manager_node_app(manager_root, runtime_port=port)
     uvicorn.run(app_instance, host=host, port=port)
 
 

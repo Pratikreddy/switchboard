@@ -100,6 +100,7 @@ LEGACY_MANAGED_DOC_ID_MAP = {
 }
 VPN_OR_NETWORK_BLOCKED_MESSAGE = "VPN is off or network blocked. Turn VPN on for live verification."
 SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node with VPN on."
+LOCAL_SYNC_FROM_NODE_FIX_MESSAGE = "Run Sync From Node."
 
 
 class CollectionCoordinator:
@@ -1744,6 +1745,21 @@ class CollectionCoordinator:
         if manager_unreachable:
             authority_stale = True
             blocked_reasons.append("Manager node 8020 is not live, so pull authority cannot be treated as fresh.")
+        authority_truth_as_of = node_viewer.get("truth_as_of", control_center_scope_timestamp)
+        authority_data_as_of = node_local_scope_timestamp or control_center_scope_timestamp
+        authority_cache_stale = (
+            not manager_unreachable
+            and bool(authority_truth_as_of)
+            and (not authority_data_as_of or self._timestamp_before(authority_data_as_of, authority_truth_as_of))
+        )
+        if authority_cache_stale:
+            authority_stale = True
+            blocked_reasons.append("Pull authority is older than current manager truth. Run Sync From Node before creating a bundle.")
+        authority_fix = ""
+        if manager_unreachable:
+            authority_fix = "Check 8020"
+        elif authority_stale:
+            authority_fix = SYNC_FROM_NODE_FIX_MESSAGE if server.vpn_required else LOCAL_SYNC_FROM_NODE_FIX_MESSAGE
         status = "ok" if not blocked_reasons else "partial"
         return {
             "status": status,
@@ -1761,7 +1777,7 @@ class CollectionCoordinator:
             "missing_remote_sync": missing_remote_sync,
             "missing_authority_timestamp": missing_authority_timestamp,
             "vpn_required": server.vpn_required,
-            "fix": "Check 8020" if manager_unreachable else SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
+            "fix": authority_fix,
             "include_count": len(saved_scope) + len(extra_scope),
             "saved_include_count": len(saved_scope),
             "extra_include_count": len(extra_scope),
@@ -1771,10 +1787,10 @@ class CollectionCoordinator:
             "locations": [item.model_dump(mode="json") for item in service.locations],
             "freshness": freshness_envelope(
                 data_as_of=latest_sync.get("timestamp", ""),
-                truth_as_of=node_viewer.get("truth_as_of", control_center_scope_timestamp),
+                truth_as_of=authority_truth_as_of,
                 source="pull_authority",
-                stale_reason="manager_8020_unreachable" if manager_unreachable else "authority_stale" if authority_stale else "",
-                refresh_action="Check 8020" if manager_unreachable else SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
+                stale_reason="manager_8020_unreachable" if manager_unreachable else "authority_cache_older_than_truth" if authority_cache_stale else "authority_stale" if authority_stale else "",
+                refresh_action=authority_fix,
             ),
         }
 

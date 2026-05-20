@@ -476,6 +476,7 @@ class RuntimeAndNodeSyncTests(unittest.TestCase):
                 status = manager_status(manager_root, port=port)
 
                 self.assertEqual(started["status"], "running")
+                self.assertTrue(started["runtime_ready"])
                 self.assertEqual(status["status"], "running")
                 self.assertEqual(Path(status["pid_file"]), runtime["pid"])
                 self.assertEqual(Path(status["log_file"]), runtime["log"])

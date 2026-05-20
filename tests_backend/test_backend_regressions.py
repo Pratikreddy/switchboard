@@ -1090,6 +1090,100 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(result["freshness"]["freshness_state"], "Manager unreachable")
             self.assertEqual(result["freshness"]["refresh_action"], "Check 8020")
 
+    def test_pull_bundle_preflight_blocks_local_authority_older_than_manager_truth(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "repo"
+            project_root.mkdir(parents=True)
+            (project_root / "app.py").write_text("print('ok')\n", encoding="utf-8")
+            save_json(
+                project_root / "switchboard" / "node.manifest.json",
+                {
+                    "service_id": "svc",
+                    "display_name": "Svc",
+                    "project_root": str(project_root),
+                    "installed_version": "1.12.6",
+                    "updated_at": "2026-05-20T00:00:00+00:00",
+                },
+            )
+            save_json(
+                root / "switchboard" / "manager.manifest.json",
+                {
+                    "managed_roots": [
+                        {
+                            "root_id": "svc-local",
+                            "project_root": str(project_root),
+                            "manifest_updated_at": "2026-05-20T00:00:00+00:00",
+                            "last_seen_version": "1.12.6",
+                        }
+                    ]
+                },
+            )
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            snapshots.persist_node_sync(
+                "svc",
+                "loc",
+                {
+                    "service_id": "svc",
+                    "location_id": "loc",
+                    "direction": "from_node",
+                    "timestamp": "2026-05-19T00:00:00+00:00",
+                    "scope_snapshot_generated_at": "2026-05-19T00:00:00+00:00",
+                    "status": "ok",
+                },
+            )
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            service = ServiceManifest(
+                service_id="svc",
+                workspace_id="ws",
+                display_name="Svc",
+                locations=[
+                    LocationSpec(
+                        location_id="loc",
+                        server_id="local_mac",
+                        access_mode="local",
+                        root=str(project_root),
+                        role="primary",
+                        is_primary=True,
+                        path_aliases=[],
+                    )
+                ],
+                scope_entries=[
+                    ScopeEntry(kind="repo", path=str(project_root), path_type="dir", source="user_added", enabled=True),
+                ],
+            )
+            manifests.get_service = lambda _service_id: service  # type: ignore[assignment]
+            manifests.resolve_server = lambda *_args, **_kwargs: ResolvedServer(  # type: ignore[assignment]
+                server_id="local_mac",
+                name="Local",
+                connection_type="local",
+                host="127.0.0.1",
+                username="p",
+                port=22,
+                tags=[],
+                favorite_tier="primary",
+                notes="",
+                password=None,
+            )
+
+            with mock.patch("switchboard.freshness.port_listening", return_value=True):
+                result = coordinator.pull_bundle_preflight("svc", PullBundleRequest(location_id="loc"))
+
+            self.assertEqual(result["status"], "partial")
+            self.assertTrue(result["authority_stale"])
+            self.assertEqual(result["fix"], "Run Sync From Node.")
+            self.assertIn("Pull authority is older than current manager truth", result["message"])
+            self.assertEqual(result["freshness"]["freshness_state"], "Stale")
+            self.assertEqual(result["freshness"]["stale_reason"], "authority_cache_older_than_truth")
+
     def test_pull_bundle_preflight_requires_explicit_location_for_multi_location_service(self) -> None:
         with TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

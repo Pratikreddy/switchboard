@@ -923,3 +923,68 @@
   - exclude | file | /Users/p/Desktop/dashboard/.env | true
   - exclude | file | /Users/p/Desktop/dashboard/.env.* | true
   - exclude | file | /Users/p/Desktop/dashboard/.npmrc | true
+
+## 2026-05-20T15:33:28+05:30 | Local 8020 manager runtime and fresh self-bundle proof
+- Tags: task, handoff, scope
+- Summary: Made the local manager runtime start/status path wait for the served port, made manager health report the actual served 8020 port separately from stale manifest metadata, blocked pull-bundle creation when local authority is older than manager truth, then proved one fresh-authority local `switch` pull bundle.
+- Changed Paths: switchboard/node_runtime.py, switchboard/node_api.py, switchboard/cli.py, switchboard/collectors.py, vite.config.ts, tests_backend/test_runtime_and_node_sync.py, tests_backend/test_node_mode.py, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Switchboard Brick 3A builder agent
+- Tool: codex-desktop
+- Read Back: Pratik asked for the local 8020 manager runtime path to be made reliable enough to prove the Switchboard self-dogfood pull-bundle workflow under fresh authority, or to record the exact blocker without forcing bundle creation. No remote `.47`, GitHub backup, scanner stack, broad UI, cleanup, commit, or push work was allowed.
+- Scope Check: Dashboard-only local runtime and pull-bundle authority work. No Agent Ops manager record was touched, no remote action was attempted, no GitHub operation was run, no stale docs or bundle artifacts were deleted, and exactly one local `switch` bundle was created after fresh preflight authority.
+- Notes:
+  - - Before: `8009 /api/health` was live on `1.12.6`; `8020 /api/health` refused connection; pull-bundle preflight was blocked with `Check 8020`.
+  - - Existing `manager-start` could start 8020, but start returned before proving the port was accepting connections and manager health reported stale manifest `runtime_port: 8010` while serving on 8020.
+  - - After: `switchboard node manager-start --manager-root /Users/p/Desktop/dashboard --port 8020` returns `runtime_ready: true`; `8020 /api/health` reports `runtime_port: 8020` and `manifest_runtime_port: 8010`.
+  - - Pull-bundle preflight now blocks local authority that is older than current manager truth and tells the operator to run Sync From Node instead of allowing a stale-looking `ok`.
+  - - Fresh authority was established through local Sync From Node. Final preflight for `switch-local_mac-primary` returned `status: ok`, `authority_stale: false`, `freshness_state: Fresh`, `node_local_scope_timestamp: 2026-05-20T10:10:47+00:00`, `node_scope_generated_at: 2026-05-20T10:10:23+00:00`, and `source_authority.source: node-local`.
+  - - Created exactly one local bundle: `1__switch__local_mac__20260520T100157Z` at `/Users/p/Desktop/dashboard/downloads/1/switch/1__switch__local_mac__20260520T100157Z`.
+  - - Bundle proof: `file_count: 306`, `docs_count: 3`, `logs_count: 0`, `skipped_entry_count: 2`, initial diff snapshot, repo branch `main`, repo dirty `true`, origin `pratikreddy9/switchboard`, mirror remote `Pratikreddy/switchboard`.
+  - - Bundle skipped entries were `/Users/p/Desktop/dashboard/GOALS.md` and `/Users/p/Desktop/dashboard/API.md` with `no_files_matched`.
+  - - Bundle exposure scan reported `6673` redacted `generic_token` findings, mostly from copied evidence/history files; no `.env` or `.npmrc` files were copied.
+  - - Test hygiene: Vitest now excludes generated runtime/proof output such as `downloads/` so `npm test` does not execute copied tests from the self-bundle artifact.
+  - - Blocker/manager decision: the saved `switch` repo-root scope still copies ignored/cache/evidence paths including `.npm-cache`, `.claude/settings.local.json`, `.pytest_cache`, `docs/evidence`, `switchboard/evidence`, `.DS_Store`, and `uv.lock`. This brick did not create a second bundle or widen into saved-scope cleanup.
+  - - Verification:
+  - - `curl -sS http://127.0.0.1:8009/api/health`
+  - - `curl -sS http://127.0.0.1:8020/api/health`
+  - - `curl -sS -H 'Content-Type: application/json' -d '{"location_id":"switch-local_mac-primary"}' http://127.0.0.1:8009/api/services/switch/pull-bundles/preflight`
+  - - `.venv/bin/python -m unittest tests_backend.test_runtime_and_node_sync.RuntimeAndNodeSyncTests.test_manager_runtime_start_status_and_stop_use_manager_runtime_files tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_preflight_blocks_local_authority_older_than_manager_truth tests_backend.test_node_mode.NodeModeTests.test_manager_node_health_prefers_served_port_over_stale_manifest_port tests_backend.test_node_mode.NodeModeTests.test_manager_node_default_port_is_standard_node_port`
+  - - `npm test -- --run tests/freshness-contract.test.ts tests/service-detail-checklist-contract.test.ts`
+  - - `git diff --check`
+  - - `.venv/bin/python -m unittest discover -s tests_backend`
+  - - `npm test`
+  - - `npm run build`
+  - - `npm run check:release-static`
+  - - `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/node_runtime.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/node_api.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/cli.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py | true
+  - code | file | /Users/p/Desktop/dashboard/vite.config.ts | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_runtime_and_node_sync.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_node_mode.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/build | true
+  - exclude | dir | /Users/p/Desktop/dashboard/release | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info | true
+  - exclude | file | /Users/p/Desktop/dashboard/.env | true
+  - exclude | file | /Users/p/Desktop/dashboard/.env.* | true
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc | true

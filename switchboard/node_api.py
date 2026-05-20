@@ -240,9 +240,12 @@ def create_node_app(project_root: str | Path | None = None) -> FastAPI:
     return app
 
 
-def create_manager_node_app(manager_root: str | Path) -> FastAPI:
+def create_manager_node_app(manager_root: str | Path, runtime_port: int | None = None) -> FastAPI:
     manager_root = Path(manager_root).resolve()
     app = FastAPI(title="Switchboard Manager Node", version=__version__)
+
+    def _reported_runtime_port(manifest: dict[str, object]) -> object:
+        return runtime_port if runtime_port is not None else manifest.get("runtime_port", DEFAULT_NODE_PORT)
 
     def _not_found(error: Exception) -> HTTPException:
         return HTTPException(status_code=404, detail=str(error))
@@ -258,7 +261,8 @@ def create_manager_node_app(manager_root: str | Path) -> FastAPI:
             "version": __version__,
             "manager_id": manifest.get("manager_id", ""),
             "manager_root": str(manager_root),
-            "runtime_port": manifest.get("runtime_port", DEFAULT_NODE_PORT),
+            "runtime_port": _reported_runtime_port(manifest),
+            "manifest_runtime_port": manifest.get("runtime_port", DEFAULT_NODE_PORT),
             "root_count": len(enabled_roots),
         }
 
@@ -390,7 +394,8 @@ def create_manager_node_app(manager_root: str | Path) -> FastAPI:
         <div class="muted">Switchboard Manager Node</div>
         <h1>{html.escape(str(manifest.get("manager_id", "manager")))}</h1>
         <p><strong>Manager root:</strong> <code>{html.escape(str(manager_root))}</code></p>
-        <p><strong>Runtime port:</strong> <code>{html.escape(str(manifest.get("runtime_port", DEFAULT_NODE_PORT)))}</code></p>
+        <p><strong>Runtime port:</strong> <code>{html.escape(str(_reported_runtime_port(manifest)))}</code></p>
+        <p class="muted"><strong>Manifest runtime port:</strong> <code>{html.escape(str(manifest.get("runtime_port", DEFAULT_NODE_PORT)))}</code></p>
       </section>
       <table>
         <thead><tr><th>Root ID</th><th>Project</th><th>Root</th><th>Verify</th></tr></thead>

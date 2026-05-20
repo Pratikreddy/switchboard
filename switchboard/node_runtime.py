@@ -6,8 +6,10 @@ import os
 import re
 import signal
 import shlex
+import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -86,6 +88,23 @@ def _process_command(pid: int | None) -> str:
         ).stdout.strip()
     except FileNotFoundError:
         return ""
+
+
+def _port_accepting(host: str, port: int, timeout: float = 0.2) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _wait_for_runtime_port(host: str, port: int, timeout: float = 5.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if _port_accepting(host, port):
+            return True
+        time.sleep(0.05)
+    return _port_accepting(host, port)
 
 
 def _manifest_runtime_port(project_root: Path) -> int | None:
@@ -277,9 +296,12 @@ def start_node_runtime(project_root: str | Path, host: str = "127.0.0.1", port: 
             env=os.environ.copy(),
         )
     paths["pid"].write_text(f"{process.pid}\n", encoding="utf-8")
+    port_ready = _wait_for_runtime_port(host, port)
+    current_status = node_status(project_root, port=port)
     return {
-        **node_status(project_root, port=port),
-        "message": f"Started node on http://{host}:{port}",
+        **current_status,
+        "runtime_ready": port_ready,
+        "message": f"Started node on http://{host}:{port}" if port_ready else f"Node process started, but http://{host}:{port} did not become ready. Inspect logs.",
         "host": host,
     }
 
@@ -318,9 +340,12 @@ def start_manager_runtime(manager_root: str | Path, host: str = "127.0.0.1", por
             env=os.environ.copy(),
         )
     paths["pid"].write_text(f"{process.pid}\n", encoding="utf-8")
+    port_ready = _wait_for_runtime_port(host, port)
+    current_status = manager_status(manager_root, port=port)
     return {
-        **manager_status(manager_root, port=port),
-        "message": f"Started manager on http://{host}:{port}",
+        **current_status,
+        "runtime_ready": port_ready,
+        "message": f"Started manager on http://{host}:{port}" if port_ready else f"Manager process started, but http://{host}:{port} did not become ready. Inspect logs.",
         "host": host,
     }
 

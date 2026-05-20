@@ -274,6 +274,17 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(init_result["manifest"]["runtime_port"], DEFAULT_NODE_PORT)
             self.assertEqual(client.get("/api/health").json()["runtime_port"], DEFAULT_NODE_PORT)
 
+    def test_manager_node_health_prefers_served_port_over_stale_manifest_port(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            manager_root = Path(tmpdir) / "manager"
+            init_manager_node(manager_root, runtime_port=8010)
+            client = TestClient(create_manager_node_app(manager_root, runtime_port=8020))
+
+            health = client.get("/api/health").json()
+
+            self.assertEqual(health["runtime_port"], 8020)
+            self.assertEqual(health["manifest_runtime_port"], 8010)
+
     def test_manager_safe_action_archives_only_old_scaffolding(self) -> None:
         with TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

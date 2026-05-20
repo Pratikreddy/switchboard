@@ -37,6 +37,14 @@ function freshnessSourceLabel(value?: string) {
   return value ? value.replace(/_/g, ' ') : 'Unverified'
 }
 
+function authorityBlockerCopy(preflight: PullBundlePreflight) {
+  if (preflight.freshness?.stale_reason === 'manager_8020_unreachable' || preflight.freshness?.refresh_action === 'Check 8020') {
+    return 'Manager truth is unavailable. Check 8020 before creating a bundle; 8009 only proves the Control Center API is alive.'
+  }
+  if (preflight.vpn_required) return 'Stale authority. Run Sync From Node with VPN on.'
+  return 'Stale authority. Run Sync From Node before creating a bundle.'
+}
+
 export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   const actionKey = 'pull_bundle'
   const sessionKey = `pending:${actionKey}:${service.service_id}`
@@ -141,6 +149,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     if (bundleResult?.files?.length) return bundleResult
     return history.find((bundle) => (bundle.files?.length ?? 0) > 0) ?? null
   }, [bundleResult, history])
+  const preflightBlocksCreate = Boolean(preflight && preflight.status !== 'ok')
 
   function addExtraInclude() {
     const trimmed = includePath.trim()
@@ -161,6 +170,10 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   }
 
   function initiateCreate() {
+    if (preflightBlocksCreate) {
+      setMessage('Create is blocked until scope check is Ready and pull authority is fresh.')
+      return
+    }
     setConfirmOpen(true)
   }
 
@@ -269,6 +282,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
           <div>
             <p className="mt-1 text-sm text-gray-500">
               Pull the selected node-defined scope into a versioned local mirror. Remote bundles require Sync From Node first.
+              Clean-to-commit / backup eligibility still requires a clean repo, fresh pull authority, reviewed skipped entries, and no unresolved exposure findings.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -282,7 +296,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
             </button>
             <button
               onClick={initiateCreate}
-              disabled={disabled || creating || pendingActions[`pending:pull_bundle:${service.service_id}`] || !locationId}
+              disabled={disabled || creating || pendingActions[`pending:pull_bundle:${service.service_id}`] || !locationId || preflightBlocksCreate}
               className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-gray-200 disabled:opacity-50"
             >
               {creating || pendingActions[`pending:pull_bundle:${service.service_id}`] ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
@@ -339,9 +353,14 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                   )}
                   {preflight.authority_stale && (
                     <div className="mt-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100">
-                      Stale authority. Run Sync From Node with VPN on.
+                      {authorityBlockerCopy(preflight)}
                     </div>
                   )}
+                  <div className={`mt-2 rounded-lg border px-3 py-2 text-xs ${preflight.status === 'ok' ? 'border-cyan-900/40 bg-cyan-950/20 text-cyan-100' : 'border-amber-800/50 bg-amber-950/30 text-amber-100'}`}>
+                    Clean-to-commit / backup: {preflight.status === 'ok'
+                      ? 'scope mirror is allowed, but repo cleanliness, skipped entries, and exposure findings still need review.'
+                      : 'blocked until scope check is Ready and authority is fresh.'}
+                  </div>
                   {preflight.status !== 'ok' && preflight.blocked_reasons && preflight.blocked_reasons.length > 0 && (
                     <ul className="mt-2 space-y-1 text-[11px] text-amber-100">
                       {preflight.blocked_reasons.map((reason) => (

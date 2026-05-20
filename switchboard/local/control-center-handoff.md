@@ -863,3 +863,63 @@
   - exclude | dir | /Users/p/Desktop/dashboard/release | true
   - exclude | dir | /Users/p/Desktop/dashboard/dist | true
   - exclude | dir | /Users/p/Desktop/dashboard/build | true
+
+## 2026-05-20T12:25:29+05:30 | Dogfood pull-bundle preflight clarity
+- Tags: task, handoff, scope
+- Summary: Verified Switchboard's own pull-bundle flow on `switch`, kept bundle creation blocked while 8020 manager truth was unreachable, clarified clean-to-commit/preflight copy, and protected default `.env*` bundle excludes.
+- Changed Paths: src/components/PullBundlePanel.tsx, switchboard/collectors.py, switchboard/defaults.py, tests/freshness-contract.test.ts, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Switchboard builder agent
+- Tool: codex-desktop
+- Read Back: Pratik asked for only the Switchboard self-dogfood pull-bundle verification and clean-to-commit preflight brick, with no unrelated cleanup, deletion, remote work, commit, or push.
+- Scope Check: Project shape did not change; the patch stayed inside pull-bundle preflight UI/backend wording, default bundle excludes, focused tests, and this ledger entry.
+- Notes:
+  - - UI dogfood path: Control Center -> P -> switchboard/switch -> Pull Bundles -> Create Bundle -> Check scope.
+  - - Result: preflight stayed blocked because manager 8020 is unreachable; Create bundle became disabled after the blocked preflight; no `switch` bundle was created.
+  - - Pull-bundle copy now separates the local 8020 blocker from remote Sync/VPN authority blockers and says 8009 only proves Control Center API liveness.
+  - - Clean-to-commit / backup eligibility copy now says fresh authority, clean repo state, skipped-entry review, and exposure-finding review are still required.
+  - - Default bundle excludes now include `.env`, `.env.*`, and `.npmrc`; focused backend coverage proves `.env.local` and `.npmrc` are not copied while copied token-like content is reported as a redacted exposure finding.
+  - - Restarted only the local Control Center backend on 8009 after the source patch so the live preflight API returned `fix: Check 8020`; 8020 was not started.
+  - - Verification:
+  - - `curl -sS http://127.0.0.1:8009/api/health`
+  - - `curl -sS -o /tmp/switchboard-8020-health.txt -w '%{http_code} %{errormsg}\n' http://127.0.0.1:8020/api/health || true`
+  - - Browser UI pass on `http://127.0.0.1:5173` for service `switch`
+  - - `npm test -- --run tests/freshness-contract.test.ts tests/stale-truth-contract.test.ts tests/service-detail-checklist-contract.test.ts tests/sync-refresh-contract.test.ts`
+  - - `.venv/bin/python -m unittest tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_excludes_env_files_and_reports_review_state tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable tests_backend.test_backend_regressions.BackendRegressionTests.test_pull_bundle_respects_explicit_ds_store_exclude tests_backend.test_runtime_and_node_sync.RuntimeAndNodeSyncTests.test_pull_bundle_preflight_blocks_stale_remote_authority tests_backend.test_runtime_and_node_sync.RuntimeAndNodeSyncTests.test_pull_bundle_preflight_blocks_missing_remote_sync_authority tests_backend.test_runtime_and_node_sync.RuntimeAndNodeSyncTests.test_pull_bundle_preflight_uses_per_location_import_timestamp_after_node_sync`
+  - - `.venv/bin/python -m unittest discover -s tests_backend`
+  - - `npm test`
+  - - `git diff --check`
+  - - `npm run build`
+  - - `npm run check:release-static`
+  - - `.venv/bin/switchboard node snapshot --project-root /Users/p/Desktop/dashboard`
+  - - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`
+  - - `./framework.sh backend`
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/defaults.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/build | true
+  - exclude | dir | /Users/p/Desktop/dashboard/release | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/runtime | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/manager/archives | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard.egg-info | true
+  - exclude | file | /Users/p/Desktop/dashboard/.env | true
+  - exclude | file | /Users/p/Desktop/dashboard/.env.* | true
+  - exclude | file | /Users/p/Desktop/dashboard/.npmrc | true

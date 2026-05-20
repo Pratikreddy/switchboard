@@ -13,6 +13,9 @@ DEFAULT_EXCLUDE_GLOBS = [
     "tmp",
     "temp",
     "generated_docs",
+    ".env",
+    ".env.*",
+    ".npmrc",
     "*.pyc",
 ]
 

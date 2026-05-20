@@ -937,6 +937,159 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertIn("main.py", copied_names)
             self.assertNotIn(".DS_Store", copied_names)
 
+    def test_pull_bundle_excludes_env_files_and_reports_review_state(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "repo"
+            root.mkdir(parents=True)
+            (root / "app.py").write_text("token = 'placeholder-secret-value'\n", encoding="utf-8")
+            (root / ".env.local").write_text("OPENAI_API_KEY=sk-test\n", encoding="utf-8")
+            (root / ".npmrc").write_text("//registry.npmjs.org/:_authToken=npm-test\n", encoding="utf-8")
+            outside = Path(tmpdir) / "outside.txt"
+            outside.write_text("outside\n", encoding="utf-8")
+
+            settings = Settings(
+                manifest_dir=Path(tmpdir) / "switchboard" / "manifests",
+                evidence_dir=Path(tmpdir) / "docs" / "evidence",
+                archive_dir=Path(tmpdir) / "docs" / "evidence" / "archive",
+                private_state_dir=Path(tmpdir) / "state" / "private",
+                downloads_dir=Path(tmpdir) / "downloads",
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            service = ServiceManifest(
+                service_id="svc",
+                workspace_id="ws",
+                display_name="Svc",
+                locations=[
+                    LocationSpec(
+                        location_id="loc",
+                        server_id="local_mac",
+                        access_mode="local",
+                        root=str(root),
+                        role="primary",
+                        is_primary=True,
+                        path_aliases=[],
+                    )
+                ],
+                scope_entries=[
+                    ScopeEntry(kind="repo", path=str(root), path_type="dir", source="user_added", enabled=True),
+                    ScopeEntry(kind="doc", path=str(outside), path_type="file", source="user_added", enabled=True),
+                ],
+                repo_paths=[str(root)],
+            )
+            manifests.get_service = lambda _service_id: service  # type: ignore[assignment]
+            manifests.resolve_server = lambda *_args, **_kwargs: ResolvedServer(  # type: ignore[assignment]
+                server_id="local_mac",
+                name="Local",
+                connection_type="local",
+                host="127.0.0.1",
+                username="p",
+                port=22,
+                tags=[],
+                favorite_tier="primary",
+                notes="",
+                password=None,
+            )
+
+            result = coordinator.pull_bundle("svc", PullBundleRequest())
+
+            copied_relative_paths = {item["relative_path"] for item in result["files"]}
+            self.assertIn("app.py", copied_relative_paths)
+            self.assertNotIn(".env.local", copied_relative_paths)
+            self.assertNotIn(".npmrc", copied_relative_paths)
+            self.assertFalse(Path(result["source_tree_path"], ".env.local").exists())
+            self.assertFalse(Path(result["source_tree_path"], ".npmrc").exists())
+            self.assertEqual(result["authority"]["source"], "control-center")
+            self.assertEqual(
+                result["skipped_entries"],
+                [{"path": str(outside), "kind": "doc", "path_type": "file", "reason": "outside_location_root"}],
+            )
+            self.assertEqual(result["exposure_findings"][0]["relative_path"], "app.py")
+            self.assertTrue(result["exposure_findings"][0]["redacted"])
+
+    def test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "repo"
+            project_root.mkdir(parents=True)
+            (project_root / "app.py").write_text("print('ok')\n", encoding="utf-8")
+            save_json(
+                project_root / "switchboard" / "node.manifest.json",
+                {
+                    "service_id": "svc",
+                    "display_name": "Svc",
+                    "project_root": str(project_root),
+                    "installed_version": "1.12.6",
+                    "updated_at": "2026-05-20T00:00:00+00:00",
+                },
+            )
+            save_json(
+                root / "switchboard" / "manager.manifest.json",
+                {
+                    "managed_roots": [
+                        {
+                            "root_id": "svc-local",
+                            "project_root": str(project_root),
+                            "manifest_updated_at": "2026-05-20T00:00:00+00:00",
+                            "last_seen_version": "1.12.6",
+                        }
+                    ]
+                },
+            )
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            service = ServiceManifest(
+                service_id="svc",
+                workspace_id="ws",
+                display_name="Svc",
+                locations=[
+                    LocationSpec(
+                        location_id="loc",
+                        server_id="local_mac",
+                        access_mode="local",
+                        root=str(project_root),
+                        role="primary",
+                        is_primary=True,
+                        path_aliases=[],
+                    )
+                ],
+                scope_entries=[
+                    ScopeEntry(kind="repo", path=str(project_root), path_type="dir", source="user_added", enabled=True),
+                ],
+            )
+            manifests.get_service = lambda _service_id: service  # type: ignore[assignment]
+            manifests.resolve_server = lambda *_args, **_kwargs: ResolvedServer(  # type: ignore[assignment]
+                server_id="local_mac",
+                name="Local",
+                connection_type="local",
+                host="127.0.0.1",
+                username="p",
+                port=22,
+                tags=[],
+                favorite_tier="primary",
+                notes="",
+                password=None,
+            )
+
+            with mock.patch("switchboard.freshness.port_listening", return_value=False):
+                result = coordinator.pull_bundle_preflight("svc", PullBundleRequest(location_id="loc"))
+
+            self.assertEqual(result["status"], "partial")
+            self.assertTrue(result["authority_stale"])
+            self.assertEqual(result["fix"], "Check 8020")
+            self.assertIn("Manager node 8020 is not live", result["message"])
+            self.assertEqual(result["freshness"]["freshness_state"], "Manager unreachable")
+            self.assertEqual(result["freshness"]["refresh_action"], "Check 8020")
+
     def test_pull_bundle_preflight_requires_explicit_location_for_multi_location_service(self) -> None:
         with TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

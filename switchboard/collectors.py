@@ -1740,7 +1740,8 @@ class CollectionCoordinator:
             elif self._timestamp_before(node_local_scope_timestamp, control_center_scope_timestamp):
                 authority_stale = True
                 blocked_reasons.append(f"Node-local pull authority is older than the saved Control Center scope. {SYNC_FROM_NODE_FIX_MESSAGE}")
-        if node_viewer.get("freshness_state") == "Manager unreachable":
+        manager_unreachable = node_viewer.get("freshness_state") == "Manager unreachable"
+        if manager_unreachable:
             authority_stale = True
             blocked_reasons.append("Manager node 8020 is not live, so pull authority cannot be treated as fresh.")
         status = "ok" if not blocked_reasons else "partial"
@@ -1760,7 +1761,7 @@ class CollectionCoordinator:
             "missing_remote_sync": missing_remote_sync,
             "missing_authority_timestamp": missing_authority_timestamp,
             "vpn_required": server.vpn_required,
-            "fix": SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
+            "fix": "Check 8020" if manager_unreachable else SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
             "include_count": len(saved_scope) + len(extra_scope),
             "saved_include_count": len(saved_scope),
             "extra_include_count": len(extra_scope),
@@ -1772,8 +1773,8 @@ class CollectionCoordinator:
                 data_as_of=latest_sync.get("timestamp", ""),
                 truth_as_of=node_viewer.get("truth_as_of", control_center_scope_timestamp),
                 source="pull_authority",
-                stale_reason="manager_8020_unreachable" if node_viewer.get("freshness_state") == "Manager unreachable" else "authority_stale" if authority_stale else "",
-                refresh_action="Check 8020" if node_viewer.get("freshness_state") == "Manager unreachable" else SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
+                stale_reason="manager_8020_unreachable" if manager_unreachable else "authority_stale" if authority_stale else "",
+                refresh_action="Check 8020" if manager_unreachable else SYNC_FROM_NODE_FIX_MESSAGE if authority_stale else "",
             ),
         }
 

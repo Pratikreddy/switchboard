@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-18T11:01:25+00:00",
+  "generated": "2026-05-20T07:00:11+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -11,30 +11,30 @@
       "source": "tasks_completed"
     },
     {
-      "kind": "doc",
+      "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/.gitignore",
+      "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
-      "kind": "doc",
+      "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/manifests/api-flows.json",
+      "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
-      "kind": "doc",
+      "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/manifests/services.json",
+      "path": "/Users/p/Desktop/dashboard/switchboard/defaults.py",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
-      "kind": "doc",
+      "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/manifests/projects.json",
+      "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -53,30 +53,72 @@
       "source": "tasks_completed"
     },
     {
-      "kind": "archive",
+      "kind": "doc",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/manager/archives/2026-05-18T16-28-00+05-30--side-artifacts/GOALS.md",
+      "path": "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
-      "kind": "exclude",
+      "kind": "doc",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/uv.lock",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "doc",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "doc",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "doc",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "doc",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "doc",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/local/doc-index.md",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
       "kind": "exclude",
       "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/switchboard/manager/archives",
+      "path": "/Users/p/Desktop/dashboard/.git",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
       "kind": "exclude",
       "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/release",
+      "path": "/Users/p/Desktop/dashboard/.venv",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/node_modules",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -91,6 +133,76 @@
       "kind": "exclude",
       "path_type": "dir",
       "path": "/Users/p/Desktop/dashboard/build",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/release",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/downloads",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/logs",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/state",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/switchboard/manager/runtime",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/switchboard/manager/archives",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "dir",
+      "path": "/Users/p/Desktop/dashboard/switchboard.egg-info",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/.env",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/.env.*",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "exclude",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/.npmrc",
       "enabled": true,
       "source": "tasks_completed"
     }
@@ -3355,6 +3467,224 @@
           "kind": "exclude",
           "path_type": "dir",
           "path": "/Users/p/Desktop/dashboard/build",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-20T12:25:29+05:30",
+      "title": "Dogfood pull-bundle preflight clarity",
+      "summary": "Verified Switchboard's own pull-bundle flow on `switch`, kept bundle creation blocked while 8020 manager truth was unreachable, clarified clean-to-commit/preflight copy, and protected default `.env*` bundle excludes.",
+      "changed_paths": [
+        "src/components/PullBundlePanel.tsx",
+        "switchboard/collectors.py",
+        "switchboard/defaults.py",
+        "tests/freshness-contract.test.ts",
+        "tests_backend/test_backend_regressions.py",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/defaults.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/control-center-handoff.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/doc-index.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/build",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/release",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/manager/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/manager/archives",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard.egg-info",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.env",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.env.*",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/.npmrc",
           "enabled": true,
           "source": "tasks_completed"
         }

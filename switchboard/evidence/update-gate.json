@@ -1,12 +1,12 @@
 {
-  "generated": "2026-05-18T11:01:32+00:00",
+  "generated": "2026-05-20T07:12:36+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-18T16:30:18+05:30",
-    "title": "Finalize Switchboard local release metadata cleanup",
-    "agent": "Switchboard finalization worker",
+    "timestamp": "2026-05-20T12:25:29+05:30",
+    "title": "Dogfood pull-bundle preflight clarity",
+    "agent": "Switchboard builder agent",
     "tool": "codex-desktop"
   },
   "checks": [

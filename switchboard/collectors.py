@@ -842,7 +842,9 @@ class CollectionCoordinator:
         return record
 
     def list_github_backup_dry_runs(self, service_id: str) -> list[dict[str, Any]]:
-        return self.snapshots.list_github_backup_dry_runs(service_id)
+        service = self.manifests.get_service(service_id)
+        bundles = [self.normalize_pull_bundle_record(bundle) for bundle in self.snapshots.list_pull_bundles(service_id)]
+        return self._project_github_backup_dry_runs(service, self.snapshots.list_github_backup_dry_runs(service_id), bundles)
 
     def github_backup_dry_run_from_pull_bundle(
         self,
@@ -877,6 +879,7 @@ class CollectionCoordinator:
         git_summary = self._readonly_git_summary(repo_path)
         exposure_review = bundle.get("exposure_review") if isinstance(bundle.get("exposure_review"), dict) else {}
         review_state_counts = exposure_review.get("review_state_counts", {}) if isinstance(exposure_review, dict) else {}
+        review_counts_hash = self._github_backup_review_counts_hash(review_state_counts)
         authority = bundle.get("authority") if isinstance(bundle.get("authority"), dict) else {}
         control_center_truth_as_of = self._control_center_scope_timestamp() or ""
         authority_updated_at = str(authority.get("updated_at") or "")
@@ -922,8 +925,12 @@ class CollectionCoordinator:
             "target_branch": git_summary.get("target_branch", ""),
             "repo_head": git_summary.get("repo_head", ""),
             "repo_dirty": bool(git_summary.get("repo_dirty")),
+            "repo_head_at_run": git_summary.get("repo_head", ""),
+            "repo_dirty_at_run": bool(git_summary.get("repo_dirty")),
+            "report_artifact_write": True,
             "repo_status": git_summary.get("repo_status", "unverified"),
             "bundle_profile": bundle.get("bundle_profile") or "",
+            "bundle_created_at": str(bundle.get("created_at") or ""),
             "backup_readiness_status": bundle.get("backup_readiness_status") or "",
             "not_backup_ready": True,
             "not_push_ready": True,
@@ -932,9 +939,13 @@ class CollectionCoordinator:
             "skipped_entry_count": skipped_entry_count,
             "unresolved_exposure_count": unresolved_exposure_count,
             "review_state_counts": review_state_counts,
+            "review_counts_hash": review_counts_hash,
             "authority_fresh": authority_fresh,
             "authority_updated_at": authority_updated_at,
+            "bundle_authority_updated_at": authority_updated_at,
             "control_center_truth_as_of": control_center_truth_as_of,
+            "pull_authority_truth_as_of": control_center_truth_as_of,
+            "manager_health_checked_at": self._github_backup_manager_health_checked_at(service_id),
             "blocked_reasons": sorted(dict.fromkeys(blocked_reasons)),
             "would_stage_files": would_stage_files,
             "would_commit": False,
@@ -952,7 +963,119 @@ class CollectionCoordinator:
             "bundle_history_count": len(bundles),
         }
         self.snapshots.append_github_backup_dry_run(report)
-        return report
+        return self._project_github_backup_dry_runs(service, [report], bundles)[0]
+
+    def _github_backup_review_counts_hash(self, counts: Any) -> str:
+        if not isinstance(counts, dict):
+            counts = {}
+        stable_counts = {
+            "accepted_risk": 0,
+            "false_positive": 0,
+            "needs_action": 0,
+            "unreviewed": 0,
+        }
+        stable_counts.update({str(key): int(value or 0) for key, value in counts.items()})
+        stable_counts = {key: stable_counts[key] for key in sorted(stable_counts)}
+        return hashlib.sha256(json.dumps(stable_counts, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()[:16]
+
+    def _github_backup_manager_health_checked_at(self, service_id: str) -> str:
+        try:
+            node_viewer = self.get_node_viewer(service_id)
+        except Exception:
+            return ""
+        locations = node_viewer.get("locations") if isinstance(node_viewer, dict) else []
+        if not isinstance(locations, list):
+            return ""
+        for location in locations:
+            if isinstance(location, dict) and location.get("manager_health_checked_at"):
+                return str(location.get("manager_health_checked_at") or "")
+        return ""
+
+    def _project_github_backup_dry_runs(
+        self,
+        service: ServiceManifest,
+        reports: list[dict[str, Any]],
+        bundles: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        bundles_by_id = {str(bundle.get("bundle_id") or ""): bundle for bundle in bundles}
+        latest_by_bundle: dict[str, str] = {}
+        for report in reports:
+            bundle_id = str(report.get("bundle_id") or "")
+            run_id = str(report.get("run_id") or "")
+            if bundle_id and run_id and bundle_id not in latest_by_bundle:
+                latest_by_bundle[bundle_id] = run_id
+        return [self._project_github_backup_dry_run(service, report, bundles_by_id, latest_by_bundle) for report in reports]
+
+    def _project_github_backup_dry_run(
+        self,
+        service: ServiceManifest,
+        report: dict[str, Any],
+        bundles_by_id: dict[str, dict[str, Any]],
+        latest_by_bundle: dict[str, str],
+    ) -> dict[str, Any]:
+        projected = dict(report)
+        bundle_id = str(projected.get("bundle_id") or "")
+        run_id = str(projected.get("run_id") or "")
+        bundle = bundles_by_id.get(bundle_id, {})
+        git_summary: dict[str, Any] = {}
+        if bundle:
+            git_summary = self._readonly_git_summary(self._repo_path_for_bundle(service, bundle))
+
+        repo_head_at_run = str(projected.get("repo_head_at_run") or projected.get("repo_head") or "")
+        repo_dirty_at_run = bool(projected.get("repo_dirty_at_run", projected.get("repo_dirty", False)))
+        current_repo_head = str(git_summary.get("repo_head") or "")
+        current_repo_dirty = bool(git_summary.get("repo_dirty", False))
+        report_counts = projected.get("review_state_counts") if isinstance(projected.get("review_state_counts"), dict) else {}
+        exposure_review = bundle.get("exposure_review") if isinstance(bundle.get("exposure_review"), dict) else {}
+        current_counts = exposure_review.get("review_state_counts") if isinstance(exposure_review, dict) else {}
+        report_counts_hash = str(projected.get("review_counts_hash") or self._github_backup_review_counts_hash(report_counts))
+        current_counts_hash = self._github_backup_review_counts_hash(current_counts or report_counts)
+        current_truth_as_of = self._control_center_scope_timestamp() or ""
+        authority_updated_at = str(projected.get("bundle_authority_updated_at") or projected.get("authority_updated_at") or "")
+        latest_run_id = latest_by_bundle.get(bundle_id, "")
+        freshness_reasons: list[str] = []
+        superseded_by = ""
+
+        if latest_run_id and run_id and run_id != latest_run_id:
+            freshness_reasons.append("superseded")
+            superseded_by = latest_run_id
+        if repo_head_at_run and current_repo_head and repo_head_at_run != current_repo_head:
+            freshness_reasons.append("stale_repo_head")
+        if authority_updated_at and current_truth_as_of and self._timestamp_before(authority_updated_at, current_truth_as_of):
+            freshness_reasons.append("stale_authority")
+        if report_counts_hash and current_counts_hash and report_counts_hash != current_counts_hash:
+            freshness_reasons.append("stale_review_state")
+        if not bundle:
+            freshness_reasons.append("bundle_missing")
+
+        if "superseded" in freshness_reasons:
+            freshness_state = "superseded"
+        elif freshness_reasons:
+            freshness_state = freshness_reasons[0]
+        else:
+            freshness_state = "current"
+
+        projected.update(
+            {
+                "repo_head_at_run": repo_head_at_run,
+                "repo_dirty_at_run": repo_dirty_at_run,
+                "report_artifact_write": bool(projected.get("report_artifact_write", True)),
+                "current_repo_head": current_repo_head,
+                "current_repo_dirty": current_repo_dirty,
+                "bundle_created_at": str(projected.get("bundle_created_at") or bundle.get("created_at") or ""),
+                "bundle_authority_updated_at": authority_updated_at,
+                "review_counts_hash": report_counts_hash,
+                "current_review_counts_hash": current_counts_hash,
+                "pull_authority_truth_as_of": current_truth_as_of,
+                "manager_health_checked_at": str(
+                    projected.get("manager_health_checked_at") or self._github_backup_manager_health_checked_at(str(projected.get("service_id") or ""))
+                ),
+                "freshness_state": freshness_state,
+                "freshness_reasons": sorted(dict.fromkeys(freshness_reasons)),
+                "superseded_by": superseded_by,
+            }
+        )
+        return projected
 
     def runtime_check(self, service_id: str, request: RuntimeActionRequest) -> dict[str, Any]:
         service = self.manifests.get_service(service_id)

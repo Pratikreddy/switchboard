@@ -820,6 +820,11 @@ export interface PullBundleGithubBackupDryRun {
   target_branch: string
   repo_head: string
   repo_dirty: boolean
+  repo_head_at_run?: string
+  repo_dirty_at_run?: boolean
+  report_artifact_write?: boolean
+  current_repo_head?: string
+  current_repo_dirty?: boolean
   repo_status?: string
   bundle_profile: string
   backup_readiness_status: 'proof_only' | 'review_required' | 'not_backup_ready'
@@ -830,9 +835,18 @@ export interface PullBundleGithubBackupDryRun {
   skipped_entry_count: number
   unresolved_exposure_count: number
   review_state_counts: Record<ExposureReviewState, number>
+  review_counts_hash?: string
+  current_review_counts_hash?: string
   authority_fresh: boolean
   authority_updated_at: string
+  bundle_created_at?: string
+  bundle_authority_updated_at?: string
   control_center_truth_as_of: string
+  pull_authority_truth_as_of?: string
+  manager_health_checked_at?: string
+  freshness_state?: 'current' | 'stale_repo_head' | 'stale_authority' | 'stale_review_state' | 'superseded' | 'historical' | string
+  freshness_reasons?: string[]
+  superseded_by?: string
   blocked_reasons: string[]
   would_stage_files: string[]
   would_commit: boolean

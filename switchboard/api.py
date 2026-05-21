@@ -729,7 +729,7 @@ def list_service_github_backup_dry_runs(service_id: str) -> dict[str, object]:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {
         "service_id": service_id,
-        "runs": snapshot_store.list_github_backup_dry_runs(service_id),
+        "runs": coordinator.list_github_backup_dry_runs(service_id),
     }
 
 

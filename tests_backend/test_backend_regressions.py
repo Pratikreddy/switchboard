@@ -1605,6 +1605,230 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(summary["target_remote"], "origin\thttps://github.com/pratikreddy9/switchboard.git (push)")
             self.assertEqual(summary["target_repo"], "pratikreddy9/switchboard")
 
+    def test_pull_bundle_github_backup_dry_run_projects_stale_and_superseded_reports(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "repo"
+            source_tree = root / "downloads" / "ws" / "svc" / "bundle-1" / "source_tree"
+            project_root.mkdir(parents=True)
+            source_tree.mkdir(parents=True)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "ws",
+                        "display_name": "Svc",
+                        "locations": [
+                            {
+                                "location_id": "svc-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                                "role": "primary",
+                                "is_primary": True,
+                                "path_aliases": [],
+                            }
+                        ],
+                        "repo_paths": [str(project_root)],
+                    }
+                ],
+            )
+            bundle = {
+                "bundle_id": "bundle-1",
+                "created_at": "2026-05-20T00:00:00+00:00",
+                "workspace_id": "ws",
+                "service_id": "svc",
+                "server_id": "local_mac",
+                "bundle_profile": "backup-clean",
+                "backup_clean": True,
+                "location_root": str(project_root),
+                "source_tree_path": str(source_tree),
+                "authority": {"updated_at": "2026-05-20T00:00:00+00:00", "source": "node-local"},
+                "authority_fresh": False,
+                "files": [{"relative_path": "app.py", "kind": "code"}],
+                "exposure_review": {
+                    "review_state_counts": {
+                        "accepted_risk": 0,
+                        "false_positive": 0,
+                        "needs_action": 0,
+                        "unreviewed": 1,
+                    }
+                },
+                "backup_readiness_status": "review_required",
+                "not_backup_ready": True,
+            }
+            save_json(settings.evidence_dir / "pull-bundle-history.json", {"bundles": [bundle]})
+            save_json(
+                settings.manifest_dir.parent / "evidence" / "github-backup-dry-runs.json",
+                {
+                    "runs": [
+                        {
+                            "run_id": "newer",
+                            "generated_at": "2026-05-20T00:02:00+00:00",
+                            "service_id": "svc",
+                            "bundle_id": "bundle-1",
+                            "repo_head": "oldhead",
+                            "repo_dirty": True,
+                            "authority_updated_at": "2026-05-20T00:00:00+00:00",
+                            "review_state_counts": {"unreviewed": 1},
+                        },
+                        {
+                            "run_id": "older",
+                            "generated_at": "2026-05-20T00:01:00+00:00",
+                            "service_id": "svc",
+                            "bundle_id": "bundle-1",
+                            "repo_head": "oldhead",
+                            "repo_dirty": True,
+                            "authority_updated_at": "2026-05-20T00:00:00+00:00",
+                            "review_state_counts": {"unreviewed": 1},
+                        },
+                    ]
+                },
+            )
+            coordinator = CollectionCoordinator(settings, ManifestStore(settings), SnapshotStore(settings, ManifestStore(settings)))
+
+            with (
+                mock.patch.object(
+                    coordinator,
+                    "_readonly_git_summary",
+                    return_value={"repo_status": "ok", "repo_head": "newhead", "repo_dirty": False},
+                ),
+                mock.patch.object(coordinator, "_control_center_scope_timestamp", return_value="2026-05-21T00:00:00+00:00"),
+                mock.patch.object(coordinator, "_github_backup_manager_health_checked_at", return_value="2026-05-21T00:00:01+00:00"),
+            ):
+                reports = coordinator.list_github_backup_dry_runs("svc")
+
+            self.assertEqual(len(reports), 2)
+            self.assertEqual(reports[0]["run_id"], "newer")
+            self.assertEqual(reports[0]["freshness_state"], "stale_repo_head")
+            self.assertIn("stale_repo_head", reports[0]["freshness_reasons"])
+            self.assertIn("stale_authority", reports[0]["freshness_reasons"])
+            self.assertEqual(reports[0]["current_repo_head"], "newhead")
+            self.assertEqual(reports[0]["repo_head_at_run"], "oldhead")
+            self.assertEqual(reports[1]["freshness_state"], "superseded")
+            self.assertEqual(reports[1]["superseded_by"], "newer")
+
+    def test_service_github_backup_dry_runs_route_uses_projected_reports(self) -> None:
+        projected = [{"run_id": "run-1", "freshness_state": "stale_repo_head"}]
+        with (
+            mock.patch.object(api_module.manifest_store, "get_service", return_value=ServiceManifest(service_id="svc", workspace_id="ws", display_name="Svc")),
+            mock.patch.object(api_module.coordinator, "list_github_backup_dry_runs", return_value=projected) as list_reports,
+        ):
+            result = api_module.list_service_github_backup_dry_runs("svc")
+
+        self.assertEqual(result, {"service_id": "svc", "runs": projected})
+        list_reports.assert_called_once_with("svc")
+
+    def test_pull_bundle_github_backup_dry_run_artifact_write_does_not_self_invalidate(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "repo"
+            source_tree = root / "downloads" / "ws" / "svc" / "bundle-1" / "source_tree"
+            project_root.mkdir(parents=True)
+            source_tree.mkdir(parents=True)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "ws",
+                        "display_name": "Svc",
+                        "locations": [
+                            {
+                                "location_id": "svc-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                                "role": "primary",
+                                "is_primary": True,
+                                "path_aliases": [],
+                            }
+                        ],
+                        "repo_paths": [str(project_root)],
+                    }
+                ],
+            )
+            bundle = {
+                "bundle_id": "bundle-1",
+                "created_at": "2026-05-20T00:00:00+00:00",
+                "workspace_id": "ws",
+                "service_id": "svc",
+                "server_id": "local_mac",
+                "bundle_profile": "backup-clean",
+                "backup_clean": True,
+                "location_root": str(project_root),
+                "source_tree_path": str(source_tree),
+                "authority": {"updated_at": "2026-05-22T00:00:00+00:00", "source": "node-local"},
+                "authority_fresh": True,
+                "files": [{"relative_path": "app.py", "kind": "code"}],
+                "exposure_findings": [
+                    {
+                        "relative_path": "app.py",
+                        "finding_kind": "generic_token",
+                        "variable_name": "API_TOKEN",
+                        "line_number": 1,
+                        "redacted": True,
+                    }
+                ],
+                "exposure_review": {"review_state_counts": {"unreviewed": 1}},
+                "backup_readiness_status": "review_required",
+                "not_backup_ready": True,
+            }
+            save_json(settings.evidence_dir / "pull-bundle-history.json", {"bundles": [bundle]})
+            save_json(
+                settings.manifest_dir.parent / "evidence" / "github-backup-dry-runs.json",
+                {
+                    "runs": [
+                        {
+                            "run_id": "current",
+                            "generated_at": "2026-05-22T00:01:00+00:00",
+                            "service_id": "svc",
+                            "bundle_id": "bundle-1",
+                            "repo_head": "samehead",
+                            "repo_dirty": False,
+                            "repo_head_at_run": "samehead",
+                            "repo_dirty_at_run": False,
+                            "report_artifact_write": True,
+                            "authority_updated_at": "2026-05-22T00:00:00+00:00",
+                            "review_state_counts": {"unreviewed": 1},
+                        }
+                    ]
+                },
+            )
+            coordinator = CollectionCoordinator(settings, ManifestStore(settings), SnapshotStore(settings, ManifestStore(settings)))
+
+            with (
+                mock.patch.object(
+                    coordinator,
+                    "_readonly_git_summary",
+                    return_value={"repo_status": "ok", "repo_head": "samehead", "repo_dirty": True},
+                ),
+                mock.patch.object(coordinator, "_control_center_scope_timestamp", return_value="2026-05-21T00:00:00+00:00"),
+                mock.patch.object(coordinator, "_github_backup_manager_health_checked_at", return_value="2026-05-22T00:01:01+00:00"),
+            ):
+                reports = coordinator.list_github_backup_dry_runs("svc")
+
+            self.assertEqual(reports[0]["freshness_state"], "current")
+            self.assertEqual(reports[0]["freshness_reasons"], [])
+            self.assertFalse(reports[0]["repo_dirty_at_run"])
+            self.assertTrue(reports[0]["report_artifact_write"])
+            self.assertTrue(reports[0]["current_repo_dirty"])
+
     def test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable(self) -> None:
         with TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

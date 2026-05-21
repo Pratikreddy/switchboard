@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-21T20:37:33+00:00",
+  "generated": "2026-05-21T21:17:07+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -5903,6 +5903,117 @@
       "runtime": {
         "expected_ports": [],
         "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q \"not_push_ready\"",
+        "run_command_hint": "open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-22T02:37:30+05:30",
+      "title": "Label stale GitHub backup dry-run reports",
+      "tags": [
+        "task"
+      ],
+      "version": "",
+      "summary": "Added read-time freshness projection for GitHub backup dry-run reports so historical reports remain visible but are labeled current, stale, or superseded instead of being mistaken for current repo truth.",
+      "changed_paths": [
+        "switchboard/collectors.py",
+        "switchboard/api.py",
+        "src/types/switchboard.ts",
+        "src/components/PullBundlePanel.tsx",
+        "tests_backend/test_backend_regressions.py",
+        "tests/freshness-contract.test.ts",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager with Faraday partial edit acknowledged",
+      "tool": "codex-desktop, Chrome extension backend",
+      "read_back": "Brick 7 keeps old dry-run reports as audit evidence, adds freshness labels/projection, and prevents the `ab7280f9...` report from looking current while the repo is actually at `4ca2d13...`. It does not implement review workflow, does not create a bundle, does not mutate review state, and does not perform GitHub mutation.",
+      "scope_check": "Dry-run freshness labels only; no push, no stage, no commit from builder lane, no branch/checkout, no new bundle, no review-state mutation, no scanner stack, no .47, no project grouping repair, no Palimpsest, no deletion.",
+      "bootstrap_version": "",
+      "notes": [],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "artifact",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/github-backup-dry-runs.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q \"freshness_state\"",
         "run_command_hint": "open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run",
         "monitoring_mode": "manual",
         "notes": ""

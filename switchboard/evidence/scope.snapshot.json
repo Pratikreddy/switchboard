@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-21T20:37:33+00:00",
+  "generated": "2026-05-21T21:17:07+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -27,21 +27,7 @@
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/storage.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/models.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -56,13 +42,6 @@
       "kind": "code",
       "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/src/api/client.ts",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -4538,6 +4517,92 @@
           "kind": "code",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/src/api/client.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-22T02:37:30+05:30",
+      "title": "Label stale GitHub backup dry-run reports",
+      "summary": "Added read-time freshness projection for GitHub backup dry-run reports so historical reports remain visible but are labeled current, stale, or superseded instead of being mistaken for current repo truth.",
+      "changed_paths": [
+        "switchboard/collectors.py",
+        "switchboard/api.py",
+        "src/types/switchboard.ts",
+        "src/components/PullBundlePanel.tsx",
+        "tests_backend/test_backend_regressions.py",
+        "tests/freshness-contract.test.ts",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "artifact",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/github-backup-dry-runs.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
           "enabled": true,
           "source": "tasks_completed"
         },

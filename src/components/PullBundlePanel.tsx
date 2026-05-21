@@ -101,6 +101,25 @@ function dryRunReviewCountsLabel(report: PullBundleGithubBackupDryRun) {
   ].join(' · ')
 }
 
+function dryRunFreshnessLabel(report: PullBundleGithubBackupDryRun) {
+  const state = report.freshness_state || 'historical'
+  if (state === 'current') return 'Current report'
+  if (state === 'superseded') return 'Superseded report'
+  if (state === 'stale_repo_head') return 'Historical report'
+  if (state === 'stale_authority') return 'Stale authority'
+  if (state === 'stale_review_state') return 'Review state changed'
+  return state.replace(/_/g, ' ')
+}
+
+function dryRunFreshnessDetail(report: PullBundleGithubBackupDryRun) {
+  const reasons = report.freshness_reasons ?? []
+  if (reasons.includes('stale_repo_head')) return 'Repo state changed since this run'
+  if (reasons.includes('superseded')) return 'Superseded by newer dry run'
+  if (reasons.includes('stale_authority')) return 'Authority changed since this run'
+  if (reasons.includes('stale_review_state')) return 'Review state changed since this run'
+  return ''
+}
+
 function authorityBlockerCopy(preflight: PullBundlePreflight) {
   if (preflight.freshness?.stale_reason === 'manager_8020_unreachable' || preflight.freshness?.refresh_action === 'Check 8020') {
     return 'Manager truth is unavailable. Check 8020 before creating a bundle; 8009 only proves the Control Center API is alive.'
@@ -947,18 +966,27 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                             </div>
                             {latestDryRunForBundle(bundle.bundle_id) ? (
                               <div className="mt-2 rounded border border-blue-900/30 bg-black/20 px-2 py-1">
-                                <div>
-                                  {latestDryRunForBundle(bundle.bundle_id)?.status} · not push ready · no push/stage/commit performed
+                                <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                  <span>{latestDryRunForBundle(bundle.bundle_id)?.status} · not push ready · no push/stage/commit performed</span>
+                                  <span className="text-blue-200">{dryRunFreshnessLabel(latestDryRunForBundle(bundle.bundle_id) as PullBundleGithubBackupDryRun)}</span>
                                 </div>
+                                {dryRunFreshnessDetail(latestDryRunForBundle(bundle.bundle_id) as PullBundleGithubBackupDryRun) && (
+                                  <div className="mt-1 text-blue-100/70">
+                                    {dryRunFreshnessDetail(latestDryRunForBundle(bundle.bundle_id) as PullBundleGithubBackupDryRun)}
+                                  </div>
+                                )}
                                 {dryRunOpen[bundle.bundle_id] && latestDryRunForBundle(bundle.bundle_id) && (
                                   <div className="mt-2 space-y-1 text-blue-100/80">
                                     <div>Run: {latestDryRunForBundle(bundle.bundle_id)?.run_id}</div>
                                     <div>Repo: {latestDryRunForBundle(bundle.bundle_id)?.target_repo || 'unknown'} · {latestDryRunForBundle(bundle.bundle_id)?.target_branch || 'no branch'}</div>
-                                    <div>Head: {latestDryRunForBundle(bundle.bundle_id)?.repo_head || 'unknown'}</div>
-                                    <div>Repo dirty: {latestDryRunForBundle(bundle.bundle_id)?.repo_dirty ? 'yes' : 'no'}</div>
+                                    <div>Head at run: {latestDryRunForBundle(bundle.bundle_id)?.repo_head_at_run || latestDryRunForBundle(bundle.bundle_id)?.repo_head || 'unknown'}</div>
+                                    <div>Current head: {latestDryRunForBundle(bundle.bundle_id)?.current_repo_head || 'unknown'}</div>
+                                    <div>Repo dirty at run: {(latestDryRunForBundle(bundle.bundle_id)?.repo_dirty_at_run ?? latestDryRunForBundle(bundle.bundle_id)?.repo_dirty) ? 'yes' : 'no'}</div>
+                                    <div>Current repo dirty: {latestDryRunForBundle(bundle.bundle_id)?.current_repo_dirty ? 'yes' : 'no'}</div>
                                     <div>Unresolved exposures: {latestDryRunForBundle(bundle.bundle_id)?.unresolved_exposure_count ?? 0} · skipped: {latestDryRunForBundle(bundle.bundle_id)?.skipped_entry_count ?? 0}</div>
                                     <div>Review: {dryRunReviewCountsLabel(latestDryRunForBundle(bundle.bundle_id) as PullBundleGithubBackupDryRun)}</div>
                                     <div>Authority: {latestDryRunForBundle(bundle.bundle_id)?.authority_fresh ? 'fresh' : 'stale'}</div>
+                                    <div>Report freshness: {dryRunFreshnessLabel(latestDryRunForBundle(bundle.bundle_id) as PullBundleGithubBackupDryRun)}</div>
                                     <div>Blocked: {(latestDryRunForBundle(bundle.bundle_id)?.blocked_reasons ?? []).join(' · ')}</div>
                                     <div className="font-mono break-all">Source: {latestDryRunForBundle(bundle.bundle_id)?.source_tree_path}</div>
                                   </div>

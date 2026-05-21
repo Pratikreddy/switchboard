@@ -1423,3 +1423,49 @@ Example format:
   - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q "not_push_ready"
   - run_command_hint: open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run
   - monitoring_mode: manual
+
+## 2026-05-22T02:37:30+05:30 | Label stale GitHub backup dry-run reports
+
+- Tags: task, switchboard, pull-bundle, github-backup, dry-run, freshness, stale-truth, ui, tests
+- Summary: Added read-time freshness projection for GitHub backup dry-run reports so historical reports remain visible but are labeled current, stale, or superseded instead of being mistaken for current repo truth.
+- Changed Paths: switchboard/collectors.py, switchboard/api.py, src/types/switchboard.ts, src/components/PullBundlePanel.tsx, tests_backend/test_backend_regressions.py, tests/freshness-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Codex manager with Faraday partial edit acknowledged
+- Tool: codex-desktop, Chrome extension backend
+- Read Back: Brick 7 keeps old dry-run reports as audit evidence, adds freshness labels/projection, and prevents the `ab7280f9...` report from looking current while the repo is actually at `4ca2d13...`. It does not implement review workflow, does not create a bundle, does not mutate review state, and does not perform GitHub mutation.
+- Scope Check: Dry-run freshness labels only; no push, no stage, no commit from builder lane, no branch/checkout, no new bundle, no review-state mutation, no scanner stack, no .47, no project grouping repair, no Palimpsest, no deletion.
+- Runtime Notes:
+  - No 8020 restart.
+  - No bundle creation.
+  - No review-state mutation.
+  - No Sync From Node.
+  - Local 8009 Control Center backend was reloaded to load the changed Python route/projection code.
+- Evidence:
+  - Existing dry-run reports remain visible.
+  - Existing reports generated at `ab7280f9...` project as historical/stale against current repo head `4ca2d13...`.
+  - The service dry-run list API now uses the projected coordinator path instead of raw snapshot history.
+  - Freshness projection includes `repo_head_at_run`, `repo_dirty_at_run`, `report_artifact_write`, `current_repo_head`, `current_repo_dirty`, `review_counts_hash`, `freshness_state`, `freshness_reasons`, and `superseded_by`.
+  - UI copy stays under Pull Bundles / Bundle History and uses compact labels such as `Historical report` and `Repo state changed since this run`.
+  - Chrome extension UI proof screenshot: `/Users/p/Desktop/agent-ops/read-and-ingest/2026-05-20-gpt55-pro-switchboard-planning/evidence/screenshots/chrome-brick7-dry-run-historical.png`
+- Tests:
+  - `git diff --check`: passed.
+  - focused backend dry-run freshness tests: passed.
+  - focused frontend freshness contract: passed.
+  - `.venv/bin/python -m unittest discover -s tests_backend`: passed, 68 tests.
+  - `npm test`: passed, 63 tests.
+  - `npm run build`: passed with existing Vite chunk-size warning.
+  - `npm run check:release-static`: passed.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/github-backup-dry-runs.json
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/api.py
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+- Runtime:
+  - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q "freshness_state"
+  - run_command_hint: open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run
+  - monitoring_mode: manual

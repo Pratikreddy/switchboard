@@ -88,6 +88,7 @@ class SnapshotStore:
         logs_index = {"generated": generated, "files": []}
         run_history = {"generated": generated, "runs": []}
         pull_bundle_history = {"generated": generated, "bundles": []}
+        pull_bundle_exposure_reviews = {"generated": generated, "bundles": {}}
         repo_safety_history = {"generated": generated, "checks": []}
         github_backup_history = {"generated": generated, "runs": []}
         secret_index = {"generated": generated, "entries": []}
@@ -100,6 +101,7 @@ class SnapshotStore:
         write_json(self.settings.evidence_dir / "logs-index.json", logs_index)
         write_json(self.settings.evidence_dir / "run-history.json", run_history)
         write_json(self.settings.evidence_dir / "pull-bundle-history.json", pull_bundle_history)
+        write_json(self.settings.evidence_dir / "pull-bundle-exposure-reviews.json", pull_bundle_exposure_reviews)
         write_json(self.settings.evidence_dir / "repo-safety-history.json", repo_safety_history)
         write_json(self.settings.evidence_dir / "github-backup-history.json", github_backup_history)
         write_json(self.settings.private_state_dir / "secret-path-index.json", secret_index)
@@ -472,6 +474,12 @@ class SnapshotStore:
     def list_all_pull_bundles(self) -> list[dict[str, Any]]:
         data = read_json(self.settings.evidence_dir / "pull-bundle-history.json", {"bundles": []})
         return list(data.get("bundles", []))
+
+    def load_pull_bundle_exposure_reviews(self) -> dict[str, Any]:
+        return read_json(
+            self.settings.evidence_dir / "pull-bundle-exposure-reviews.json",
+            {"generated": "", "bundles": {}},
+        )
 
     def append_github_backup(self, record: dict[str, Any]) -> dict[str, Any]:
         path = self.settings.evidence_dir / "github-backup-history.json"

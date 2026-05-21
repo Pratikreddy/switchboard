@@ -1340,6 +1340,112 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertFalse(body["bundles"][0]["backup_clean"])
             self.assertEqual(body["bundles"][0]["unresolved_exposure_count"], 1)
             self.assertEqual(body["bundles"][0]["exposure_summary"], {"generic_token": 1})
+            self.assertEqual(body["bundles"][0]["exposure_review"]["review_state_counts"]["unreviewed"], 1)
+
+    def test_pull_bundle_exposure_review_projection_groups_findings_without_mutating_history(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "ws",
+                        "display_name": "Svc",
+                    }
+                ],
+            )
+            bundle = {
+                "bundle_id": "bundle-1",
+                "created_at": "2026-05-20T00:00:00+00:00",
+                "workspace_id": "ws",
+                "service_id": "svc",
+                "server_id": "local_mac",
+                "bundle_profile": "backup-clean",
+                "backup_clean": True,
+                "authority_fresh": True,
+                "file_count": 1,
+                "docs_count": 0,
+                "logs_count": 0,
+                "manifest_path": "/tmp/missing",
+                "repo_commits": [],
+                "exposure_findings": [
+                    {
+                        "relative_path": "app.py",
+                        "finding_kind": "generic_token",
+                        "variable_name": "API_TOKEN",
+                        "line_number": 1,
+                        "redacted": True,
+                    },
+                    {
+                        "relative_path": "app.py",
+                        "finding_kind": "generic_token",
+                        "variable_name": "API_TOKEN",
+                        "line_number": 2,
+                        "redacted": True,
+                    },
+                    {
+                        "relative_path": "settings.py",
+                        "finding_kind": "generic_token",
+                        "variable_name": "PASSWORD",
+                        "line_number": 3,
+                        "redacted": True,
+                    },
+                ],
+            }
+            save_json(
+                settings.evidence_dir / "pull-bundle-history.json",
+                {"generated": "2026-05-20T00:00:00+00:00", "bundles": [bundle]},
+            )
+            save_json(
+                settings.evidence_dir / "pull-bundle-exposure-reviews.json",
+                {
+                    "generated": "2026-05-20T00:00:00+00:00",
+                    "bundles": {
+                        "bundle-1": {
+                            "reviews": [
+                                {
+                                    "bundle_id": "bundle-1",
+                                    "finding_kind": "generic_token",
+                                    "relative_path": "settings.py",
+                                    "variable_name": "PASSWORD",
+                                    "review_state": "needs_action",
+                                    "review_note": "synthetic fixture",
+                                }
+                            ]
+                        }
+                    },
+                },
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+            with (
+                mock.patch.object(api_module, "manifest_store", manifests),
+                mock.patch.object(api_module, "snapshot_store", snapshots),
+                mock.patch.object(api_module, "coordinator", coordinator),
+            ):
+                body = api_module.list_pull_bundles("svc")
+                review = api_module.get_pull_bundle_exposure_review("svc", "bundle-1")
+
+            projected = body["bundles"][0]["exposure_review"]
+            self.assertEqual(projected["total_findings"], 3)
+            self.assertEqual(projected["total_groups"], 2)
+            self.assertEqual(projected["review_state_counts"]["unreviewed"], 2)
+            self.assertEqual(projected["review_state_counts"]["needs_action"], 1)
+            self.assertEqual(projected["finding_kind_counts"], {"generic_token": 3})
+            self.assertEqual(projected["path_counts"]["app.py"], 2)
+            self.assertEqual(projected["variable_counts"]["API_TOKEN"], 2)
+            self.assertEqual(review["review_state_counts"]["needs_action"], 1)
+            stored_history = read_json(settings.evidence_dir / "pull-bundle-history.json", {"bundles": []})
+            self.assertNotIn("exposure_review", stored_history["bundles"][0])
 
     def test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable(self) -> None:
         with TemporaryDirectory() as tmpdir:

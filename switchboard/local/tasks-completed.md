@@ -1313,3 +1313,56 @@ Example format:
   - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/node-viewer | rg -q "manager_health"
   - run_command_hint: open Switchboard UI, P workspace, switch service, Runtime card
   - monitoring_mode: manual
+
+## 2026-05-22T01:31:52+05:30 | Add pull-bundle exposure review classification
+
+- Tags: task, switchboard, pull-bundle, exposure-review, backup-readiness, ui, tests
+- Summary: Added a lightweight exposure review overlay/projection for pull bundles so unresolved findings are grouped and visible without creating a new bundle or marking anything safe.
+- Changed Paths: switchboard/storage.py, switchboard/collectors.py, switchboard/api.py, switchboard/evidence/pull-bundle-exposure-reviews.json, src/types/switchboard.ts, src/components/PullBundlePanel.tsx, tests_backend/test_backend_regressions.py, tests/freshness-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop, Chrome extension backend
+- Read Back: The latest backup-clean bundle still stays blocked as `review_required` / `not_backup_ready`, but its 115 generic-token findings now project into 45 grouped exposure review rows with review-state counts. Real findings default to `unreviewed`; no real finding was marked `false_positive`, `needs_action`, or `accepted_risk`.
+- Scope Check: Exposure review classification only; no new bundle, no GitHub backup dry-run, no scanner stack, no Collect, no Sync From Node, no .47, no project grouping repair, no Palimpsest, no deletion.
+- Runtime Notes:
+  - Restarted only the local 8009 Control Center backend so live UI/API could load the new code; uvicorn was not running with reload.
+  - Did not restart 8020.
+  - Did not run Collect.
+  - Did not run Sync From Node.
+  - Did not create a bundle.
+  - Removed one stale non-listening old 8009 uvicorn process after the framework pid guard left it running; the active listener is the new 8009 process.
+- Evidence:
+  - 8009 health ok.
+  - 8020 health ok with runtime_port `8020` and manifest_runtime_port `8010`.
+  - Bundle history remains exactly two bundles.
+  - Latest bundle remains `1__switch__local_mac__20260520T110201Z`.
+  - Latest bundle remains `review_required` / `not_backup_ready`.
+  - Exposure review projection reports `45` groups and `115` total findings.
+  - Review counts: `unreviewed 115`, `false_positive 0`, `needs_action 0`, `accepted_risk 0`.
+  - Runtime node-viewer still reports manager-health `8020` and legacy manifest `8010`.
+  - Chrome extension screenshots:
+    - `/Users/p/Desktop/agent-ops/read-and-ingest/2026-05-20-gpt55-pro-switchboard-planning/evidence/screenshots/chrome-brick5-exposure-review-ui.png`
+    - `/Users/p/Desktop/agent-ops/read-and-ingest/2026-05-20-gpt55-pro-switchboard-planning/evidence/screenshots/chrome-brick5-runtime-still-manager-health.png`
+- Tests:
+  - `git diff --check`: passed.
+  - focused backend exposure review tests: passed.
+  - focused frontend freshness contract: passed.
+  - `.venv/bin/python -m unittest discover -s tests_backend`: passed, 63 tests.
+  - `npm test`: passed, 62 tests.
+  - `npm run build`: passed with existing Vite chunk-size warning.
+  - `npm run check:release-static`: passed.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/pull-bundle-exposure-reviews.json
+  - code | file | /Users/p/Desktop/dashboard/switchboard/storage.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/api.py
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+- Runtime:
+  - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/pull-bundles | rg -q "exposure_review"
+  - run_command_hint: open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle
+  - monitoring_mode: manual

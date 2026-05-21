@@ -77,6 +77,20 @@ function skippedReviewCount(bundle: PullBundleRecord) {
   return bundle.skipped_review_count ?? bundle.skipped_entry_count ?? 0
 }
 
+function exposureReviewCount(bundle: PullBundleRecord, state: 'unreviewed' | 'false_positive' | 'needs_action' | 'accepted_risk') {
+  return bundle.exposure_review?.review_state_counts?.[state] ?? 0
+}
+
+function exposureReviewCountsLabel(bundle: PullBundleRecord) {
+  const parts = [
+    `unreviewed ${exposureReviewCount(bundle, 'unreviewed')}`,
+    `false_positive ${exposureReviewCount(bundle, 'false_positive')}`,
+    `needs_action ${exposureReviewCount(bundle, 'needs_action')}`,
+    `accepted_risk ${exposureReviewCount(bundle, 'accepted_risk')}`,
+  ]
+  return parts.join(' · ')
+}
+
 function authorityBlockerCopy(preflight: PullBundlePreflight) {
   if (preflight.freshness?.stale_reason === 'manager_8020_unreachable' || preflight.freshness?.refresh_action === 'Check 8020') {
     return 'Manager truth is unavailable. Check 8020 before creating a bundle; 8009 only proves the Control Center API is alive.'
@@ -808,6 +822,43 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                               {bundle.exposure_findings?.length} total
                               {countSummaryLabel(exposureSummary(bundle)) ? ` · ${countSummaryLabel(exposureSummary(bundle))}` : ''}
                             </div>
+                            {bundle.exposure_review && (
+                              <div className="mt-2 rounded border border-yellow-900/30 bg-yellow-950/20 p-2 text-xs text-yellow-100/90">
+                                <div className="text-[11px] uppercase tracking-[0.16em] text-yellow-300">Exposure Review</div>
+                                <div className="mt-1">
+                                  {bundle.exposure_review.total_groups} groups · {exposureReviewCountsLabel(bundle)}
+                                </div>
+                                <div className="mt-2 max-h-44 overflow-auto rounded border border-yellow-900/20">
+                                  <table className="w-full text-left text-[11px]">
+                                    <thead className="sticky top-0 bg-yellow-950 text-yellow-100/70">
+                                      <tr>
+                                        <th className="px-2 py-1 font-medium">Path</th>
+                                        <th className="px-2 py-1 font-medium">Kind</th>
+                                        <th className="px-2 py-1 font-medium">Variable</th>
+                                        <th className="px-2 py-1 text-right font-medium">Count</th>
+                                        <th className="px-2 py-1 font-medium">Review</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {bundle.exposure_review.groups.slice(0, 20).map((group) => (
+                                        <tr key={group.group_key} className="border-t border-yellow-900/20">
+                                          <td className="px-2 py-1 font-mono break-all">{group.relative_path}</td>
+                                          <td className="px-2 py-1">{group.finding_kind}</td>
+                                          <td className="px-2 py-1">{group.variable_name || 'none'}</td>
+                                          <td className="px-2 py-1 text-right">{group.finding_count}</td>
+                                          <td className="px-2 py-1">{group.review_state}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                {bundle.exposure_review.groups.length > 20 && (
+                                  <div className="mt-1 text-yellow-100/70">
+                                    Showing first 20 exposure review groups.
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <div className="mt-2 space-y-1">
                               {bundle.exposure_findings?.slice(0, 12).map((finding, idx) => (
                                 <div key={idx} className="text-xs text-yellow-100/90">

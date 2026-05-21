@@ -1129,6 +1129,7 @@ export interface PullBundleRecord {
   authority_fresh?: boolean
   unresolved_exposure_count?: number
   exposure_review_status?: 'unreviewed' | 'reviewed'
+  exposure_review?: PullBundleExposureReview
   exposure_summary?: Record<string, number>
   exposure_variable_summary?: Record<string, number>
   skipped_review_required?: boolean
@@ -1165,6 +1166,34 @@ export interface PullBundleRecord {
     mtime: string
     sha256: string
   }>
+}
+
+export type ExposureReviewState = 'unreviewed' | 'false_positive' | 'needs_action' | 'accepted_risk'
+
+export interface PullBundleExposureReviewGroup {
+  group_key: string
+  bundle_id: string
+  finding_kind: string
+  relative_path: string
+  variable_name?: string
+  finding_count: number
+  line_numbers?: number[]
+  review_state: ExposureReviewState
+  review_note?: string
+  reviewed_by?: string
+  reviewed_at?: string
+}
+
+export interface PullBundleExposureReview {
+  bundle_id: string
+  review_state_counts: Record<ExposureReviewState, number>
+  finding_kind_counts: Record<string, number>
+  path_counts: Record<string, number>
+  variable_counts: Record<string, number>
+  total_groups: number
+  total_findings: number
+  unresolved_review_count: number
+  groups: PullBundleExposureReviewGroup[]
 }
 
 export interface CreateServiceRequest {

@@ -107,6 +107,15 @@ BUNDLE_READINESS_REVIEW_REQUIRED = "review_required"
 BUNDLE_READINESS_NOT_READY = "not_backup_ready"
 EXPOSURE_REVIEW_UNREVIEWED = "unreviewed"
 EXPOSURE_REVIEW_REVIEWED = "reviewed"
+EXPOSURE_REVIEW_FALSE_POSITIVE = "false_positive"
+EXPOSURE_REVIEW_NEEDS_ACTION = "needs_action"
+EXPOSURE_REVIEW_ACCEPTED_RISK = "accepted_risk"
+EXPOSURE_REVIEW_STATES = {
+    EXPOSURE_REVIEW_UNREVIEWED,
+    EXPOSURE_REVIEW_FALSE_POSITIVE,
+    EXPOSURE_REVIEW_NEEDS_ACTION,
+    EXPOSURE_REVIEW_ACCEPTED_RISK,
+}
 BACKUP_CLEAN_EXCLUDE_GLOBS = [
     ".npm-cache",
     ".pytest_cache",
@@ -1749,6 +1758,7 @@ class CollectionCoordinator:
         for key, value in readiness_metadata.items():
             if key not in normalized:
                 normalized[key] = value
+        normalized["exposure_review"] = self._bundle_exposure_review_projection(normalized)
         return normalized
 
     def pull_bundle_preflight(self, service_id: str, request: PullBundleRequest) -> dict[str, Any]:
@@ -3995,6 +4005,127 @@ class CollectionCoordinator:
                 continue
             counts[value] = counts.get(value, 0) + 1
         return counts
+
+    def _bundle_exposure_group_key(self, bundle_id: str, finding_kind: str, relative_path: str, variable_name: str) -> str:
+        return "|".join([bundle_id, finding_kind, relative_path, variable_name])
+
+    def _bundle_exposure_review_overrides(self, bundle_id: str) -> dict[str, dict[str, Any]]:
+        overlay = self.snapshots.load_pull_bundle_exposure_reviews()
+        bundles = overlay.get("bundles", {}) if isinstance(overlay, dict) else {}
+        bundle_overlay = bundles.get(bundle_id, {}) if isinstance(bundles, dict) else {}
+        review_items = bundle_overlay.get("reviews", []) if isinstance(bundle_overlay, dict) else []
+        overrides: dict[str, dict[str, Any]] = {}
+        if isinstance(review_items, dict):
+            review_iterable = review_items.values()
+        elif isinstance(review_items, list):
+            review_iterable = review_items
+        else:
+            review_iterable = []
+        for item in review_iterable:
+            if not isinstance(item, dict):
+                continue
+            state = str(item.get("review_state") or EXPOSURE_REVIEW_UNREVIEWED)
+            if state not in EXPOSURE_REVIEW_STATES:
+                state = EXPOSURE_REVIEW_UNREVIEWED
+            key = str(item.get("group_key") or "")
+            if not key:
+                key = self._bundle_exposure_group_key(
+                    bundle_id,
+                    str(item.get("finding_kind") or "unknown"),
+                    str(item.get("relative_path") or "unknown"),
+                    str(item.get("variable_name") or ""),
+                )
+            overrides[key] = {**item, "review_state": state, "group_key": key}
+        return overrides
+
+    def _bundle_exposure_review_projection(self, record: dict[str, Any]) -> dict[str, Any]:
+        bundle_id = str(record.get("bundle_id") or "")
+        findings = record.get("exposure_findings", [])
+        if not isinstance(findings, list):
+            findings = []
+        overrides = self._bundle_exposure_review_overrides(bundle_id) if bundle_id else {}
+        groups_by_key: dict[str, dict[str, Any]] = {}
+        for finding in findings:
+            if not isinstance(finding, dict):
+                continue
+            finding_kind = str(finding.get("finding_kind") or "unknown")
+            relative_path = str(finding.get("relative_path") or "unknown")
+            variable_name = str(finding.get("variable_name") or "")
+            group_key = self._bundle_exposure_group_key(bundle_id, finding_kind, relative_path, variable_name)
+            group = groups_by_key.setdefault(
+                group_key,
+                {
+                    "group_key": group_key,
+                    "bundle_id": bundle_id,
+                    "finding_kind": finding_kind,
+                    "relative_path": relative_path,
+                    "variable_name": variable_name,
+                    "finding_count": 0,
+                    "line_numbers": [],
+                    "review_state": EXPOSURE_REVIEW_UNREVIEWED,
+                },
+            )
+            group["finding_count"] += 1
+            line_number = finding.get("line_number")
+            if isinstance(line_number, int) and line_number not in group["line_numbers"]:
+                group["line_numbers"].append(line_number)
+
+        for group_key, override in overrides.items():
+            if group_key not in groups_by_key:
+                groups_by_key[group_key] = {
+                    "group_key": group_key,
+                    "bundle_id": bundle_id,
+                    "finding_kind": str(override.get("finding_kind") or "unknown"),
+                    "relative_path": str(override.get("relative_path") or "unknown"),
+                    "variable_name": str(override.get("variable_name") or ""),
+                    "finding_count": 0,
+                    "line_numbers": [],
+                    "review_state": EXPOSURE_REVIEW_UNREVIEWED,
+                }
+            groups_by_key[group_key]["review_state"] = override["review_state"]
+            for key in ("review_note", "reviewed_by", "reviewed_at"):
+                if override.get(key):
+                    groups_by_key[group_key][key] = override[key]
+
+        state_counts = {state: 0 for state in sorted(EXPOSURE_REVIEW_STATES)}
+        kind_counts: dict[str, int] = {}
+        path_counts: dict[str, int] = {}
+        variable_counts: dict[str, int] = {}
+        groups = sorted(
+            groups_by_key.values(),
+            key=lambda item: (item.get("relative_path", ""), item.get("finding_kind", ""), item.get("variable_name", "")),
+        )
+        for group in groups:
+            group["line_numbers"] = sorted(group.get("line_numbers", []))[:12]
+            state = str(group.get("review_state") or EXPOSURE_REVIEW_UNREVIEWED)
+            if state not in EXPOSURE_REVIEW_STATES:
+                state = EXPOSURE_REVIEW_UNREVIEWED
+                group["review_state"] = state
+            finding_count = int(group.get("finding_count") or 0)
+            state_counts[state] = state_counts.get(state, 0) + finding_count
+            kind = str(group.get("finding_kind") or "unknown")
+            path = str(group.get("relative_path") or "unknown")
+            variable = str(group.get("variable_name") or "")
+            kind_counts[kind] = kind_counts.get(kind, 0) + finding_count
+            path_counts[path] = path_counts.get(path, 0) + finding_count
+            if variable:
+                variable_counts[variable] = variable_counts.get(variable, 0) + finding_count
+
+        unresolved_count = (
+            state_counts.get(EXPOSURE_REVIEW_UNREVIEWED, 0)
+            + state_counts.get(EXPOSURE_REVIEW_NEEDS_ACTION, 0)
+        )
+        return {
+            "bundle_id": bundle_id,
+            "review_state_counts": state_counts,
+            "finding_kind_counts": kind_counts,
+            "path_counts": path_counts,
+            "variable_counts": variable_counts,
+            "total_groups": len(groups),
+            "total_findings": sum(int(group.get("finding_count") or 0) for group in groups),
+            "unresolved_review_count": unresolved_count,
+            "groups": groups,
+        }
 
     def _bundle_readiness_metadata(
         self,

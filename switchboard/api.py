@@ -707,6 +707,19 @@ def list_pull_bundles(service_id: str) -> dict[str, object]:
     }
 
 
+@app.get("/api/services/{service_id}/pull-bundles/{bundle_id}/exposure-review")
+def get_pull_bundle_exposure_review(service_id: str, bundle_id: str) -> dict[str, object]:
+    try:
+        manifest_store.get_service(service_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    for bundle in snapshot_store.list_pull_bundles(service_id):
+        if bundle.get("bundle_id") == bundle_id:
+            normalized = coordinator.normalize_pull_bundle_record(bundle)
+            return normalized.get("exposure_review", {"bundle_id": bundle_id, "groups": []})
+    raise HTTPException(status_code=404, detail=f"bundle not found: {bundle_id}")
+
+
 @app.post("/api/services/{service_id}/pull-bundles")
 def create_pull_bundle(service_id: str, request: PullBundleRequest) -> dict[str, object]:
     try:

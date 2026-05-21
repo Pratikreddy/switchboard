@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-21T19:29:41+00:00",
+  "generated": "2026-05-21T20:02:17+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -5648,6 +5648,126 @@
         "expected_ports": [],
         "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/node-viewer | rg -q \"manager_health\"",
         "run_command_hint": "open Switchboard UI, P workspace, switch service, Runtime card",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-22T01:31:52+05:30",
+      "title": "Add pull-bundle exposure review classification",
+      "tags": [
+        "task"
+      ],
+      "version": "",
+      "summary": "Added a lightweight exposure review overlay/projection for pull bundles so unresolved findings are grouped and visible without creating a new bundle or marking anything safe.",
+      "changed_paths": [
+        "switchboard/storage.py",
+        "switchboard/collectors.py",
+        "switchboard/api.py",
+        "switchboard/evidence/pull-bundle-exposure-reviews.json",
+        "src/types/switchboard.ts",
+        "src/components/PullBundlePanel.tsx",
+        "tests_backend/test_backend_regressions.py",
+        "tests/freshness-contract.test.ts",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager",
+      "tool": "codex-desktop, Chrome extension backend",
+      "read_back": "The latest backup-clean bundle still stays blocked as `review_required` / `not_backup_ready`, but its 115 generic-token findings now project into 45 grouped exposure review rows with review-state counts. Real findings default to `unreviewed`; no real finding was marked `false_positive`, `needs_action`, or `accepted_risk`.",
+      "scope_check": "Exposure review classification only; no new bundle, no GitHub backup dry-run, no scanner stack, no Collect, no Sync From Node, no .47, no project grouping repair, no Palimpsest, no deletion.",
+      "bootstrap_version": "",
+      "notes": [],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "artifact",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/pull-bundle-exposure-reviews.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/storage.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/pull-bundles | rg -q \"exposure_review\"",
+        "run_command_hint": "open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle",
         "monitoring_mode": "manual",
         "notes": ""
       },

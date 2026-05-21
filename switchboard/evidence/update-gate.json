@@ -1,12 +1,12 @@
 {
-  "generated": "2026-05-21T19:30:44+00:00",
+  "generated": "2026-05-21T20:02:54+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-22T00:59:18+05:30",
-    "title": "Repair runtime authority UI truth",
-    "agent": "Codex manager + Brick 4 builder agent",
+    "timestamp": "2026-05-22T01:31:52+05:30",
+    "title": "Add pull-bundle exposure review classification",
+    "agent": "Codex manager",
     "tool": "codex-desktop, Chrome extension backend"
   },
   "checks": [
@@ -29,11 +29,6 @@
       "check_id": "ledger_recorded_as_changed",
       "status": "ok",
       "message": "Latest task records the canonical ledger as changed."
-    },
-    {
-      "check_id": "scope_tag_has_entries",
-      "status": "ok",
-      "message": "Scope-tagged tasks include Scope Entries."
     },
     {
       "check_id": "manifest_exists",

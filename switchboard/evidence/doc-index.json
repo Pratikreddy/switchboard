@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-21T19:29:41+00:00",
+  "generated": "2026-05-21T20:02:17+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "docs": [
@@ -66,7 +66,8 @@
         "2026-05-20T15:33:28+05:30",
         "2026-05-20T16:33:52+05:30",
         "2026-05-20T17:29:06+05:30",
-        "2026-05-22T00:59:18+05:30"
+        "2026-05-22T00:59:18+05:30",
+        "2026-05-22T01:31:52+05:30"
       ]
     },
     {
@@ -74,7 +75,7 @@
       "label": "Control Center Handoff",
       "path": "switchboard/local/control-center-handoff.md",
       "enabled": true,
-      "generated_at": "2026-05-21T19:29:41+00:00",
+      "generated_at": "2026-05-21T20:02:17+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-04-06T15:30:38+00:00",
@@ -117,7 +118,7 @@
       "label": "Runbook",
       "path": "switchboard/local/runbook.md",
       "enabled": true,
-      "generated_at": "2026-05-21T19:29:41+00:00",
+      "generated_at": "2026-05-21T20:02:17+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": []
     },
@@ -126,7 +127,7 @@
       "label": "Approach History",
       "path": "switchboard/local/approach-history.md",
       "enabled": true,
-      "generated_at": "2026-05-21T19:29:41+00:00",
+      "generated_at": "2026-05-21T20:02:17+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-05-14T01:34:00+00:00",
@@ -141,7 +142,7 @@
       "label": "Doc Index Markdown",
       "path": "switchboard/local/doc-index.md",
       "enabled": true,
-      "generated_at": "2026-05-21T19:29:41+00:00",
+      "generated_at": "2026-05-21T20:02:17+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-04-06T15:30:38+00:00",
@@ -179,7 +180,8 @@
         "2026-05-20T15:33:28+05:30",
         "2026-05-20T16:33:52+05:30",
         "2026-05-20T17:29:06+05:30",
-        "2026-05-22T00:59:18+05:30"
+        "2026-05-22T00:59:18+05:30",
+        "2026-05-22T01:31:52+05:30"
       ]
     },
     {
@@ -187,7 +189,7 @@
       "label": "Doc Index JSON",
       "path": "switchboard/evidence/doc-index.json",
       "enabled": true,
-      "generated_at": "2026-05-21T19:29:41+00:00",
+      "generated_at": "2026-05-21T20:02:17+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-04-06T15:30:38+00:00",
@@ -225,7 +227,8 @@
         "2026-05-20T15:33:28+05:30",
         "2026-05-20T16:33:52+05:30",
         "2026-05-20T17:29:06+05:30",
-        "2026-05-22T00:59:18+05:30"
+        "2026-05-22T00:59:18+05:30",
+        "2026-05-22T01:31:52+05:30"
       ]
     }
   ]

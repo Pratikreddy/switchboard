@@ -597,7 +597,12 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
     () =>
       (service?.locations ?? []).filter((location) => {
         const nodeViewer = nodeViewerByLocation.get(location.location_id)
-        return Boolean(nodeViewer?.needs_install || nodeViewer?.needs_upgrade || nodeViewer?.needs_bootstrap)
+        const staleOrBlocked = Boolean(
+          nodeViewer?.freshness_state &&
+          nodeViewer.freshness_state !== 'Fresh' &&
+          nodeViewer.freshness_state !== 'Unverified',
+        )
+        return Boolean(nodeViewer?.needs_install || nodeViewer?.needs_upgrade || nodeViewer?.needs_bootstrap || staleOrBlocked || nodeViewer?.refresh_action)
       }).length,
     [nodeViewerByLocation, service?.locations],
   )
@@ -1224,9 +1229,15 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               const managerFreshnessLabel = freshnessDisplayLabel(managerFreshness)
               const managerUnreachable = managerFreshness === 'Manager unreachable'
               const managerTruthSource = freshnessSourceLabel(nodeViewer?.freshness_source)
-              const managerDataAsOf = nodeViewer?.data_as_of || nodeViewer?.last_inspected_at || latestRuntime?.checked_at || ''
+              const managerHealthCheckedAt = nodeViewer?.manager_health_checked_at || ''
+              const managerLivePort = nodeViewer?.manager_health_runtime_port
+              const managerLive = nodeViewer?.manager_health_status === 'ok' && managerLivePort === DEFAULT_MANAGER_PORT
+              const managerManifestPort = nodeViewer?.manager_manifest_runtime_port
+              const managerManifestUpdatedAt = nodeViewer?.manifest_updated_at || nodeViewer?.truth_as_of || ''
               const managerPortLabel =
-                managerPort === DEFAULT_MANAGER_PORT
+                managerLive
+                  ? `live :${managerLivePort}`
+                  : managerPort === DEFAULT_MANAGER_PORT
                   ? `:${DEFAULT_MANAGER_PORT}`
                   : `cached :${managerPort} / target :${DEFAULT_MANAGER_PORT}`
               const configuredPorts = location.runtime.expected_ports ?? []
@@ -1275,7 +1286,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                         Manager node <span className="font-mono text-cyan-200">{managerPortLabel}</span>
                         <span className="text-gray-500"> · </span>
                         <span className={managerUnreachable ? 'text-amber-200' : 'text-gray-300'}>
-                          {managerUnreachable ? 'Manager unreachable' : nodeViewer?.runtime_status?.replace('_', ' ') || 'not inspected'}
+                          {managerUnreachable ? 'Manager unreachable' : managerLive ? 'Manager live on 8020' : nodeViewer?.runtime_status?.replace('_', ' ') || 'not inspected'}
                         </span>
                       </div>
                       <div className="mt-1 font-mono text-xs text-gray-500 break-all">{location.server_id} · {location.root}</div>
@@ -1294,6 +1305,11 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                             {nodeViewer.legacy_runtime_port_label}
                           </span>
                         )}
+                        {managerManifestPort && managerManifestPort !== DEFAULT_MANAGER_PORT && (
+                          <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
+                            Manifest runtime port: {managerManifestPort}
+                          </span>
+                        )}
                         {(nodeViewer?.stale_reason || nodeViewer?.refresh_action) && (
                           <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-gray-400">
                             {nodeViewer.refresh_action || 'Inspect Node'}{nodeViewer.stale_reason ? ` · ${nodeViewer.stale_reason}` : ''}
@@ -1303,7 +1319,10 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                           Truth source: {managerTruthSource}
                         </span>
                         <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-gray-400">
-                          Last verified: {formatTimestampLabel(managerDataAsOf)}
+                          Manager health checked: {formatTimestampLabel(managerHealthCheckedAt)}
+                        </span>
+                        <span className="rounded-full border border-gray-800 bg-gray-900 px-2 py-1 text-gray-400">
+                          Manifest last updated: {formatTimestampLabel(managerManifestUpdatedAt)}
                         </span>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -1633,6 +1652,11 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               const pullAuthorityUpdatedAt = lastSyncedFromNodeAt || latestSync?.timestamp || ''
               const savedScopeGeneratedAt = service.saved_scope_generated_at || ''
               const connectionStatus = nodeViewer?.connection_status ?? 'unverified'
+              const managerHealthCheckedAt = nodeViewer?.manager_health_checked_at || ''
+              const managerLivePort = nodeViewer?.manager_health_runtime_port
+              const managerLive = nodeViewer?.manager_health_status === 'ok' && managerLivePort === DEFAULT_MANAGER_PORT
+              const managerManifestPort = nodeViewer?.manager_manifest_runtime_port
+              const manifestLastUpdatedAt = nodeViewer?.manifest_updated_at || nodeViewer?.truth_as_of || ''
               const nodeNeedsSync =
                 connectionStatus === 'ok' &&
                 Boolean(lastInspectedAt) &&
@@ -1860,7 +1884,11 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                           </span>
                           {nodeTruthFresh ? (
                             <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
-                              {managerManaged ? `manager ${managerVersion || 'active'}` : `node ${rootManifestVersion || 'not installed'}`}
+                              {managerLive
+                                ? `Manager live :${managerLivePort}`
+                                : managerManaged
+                                  ? `manager ${managerVersion || 'active'}`
+                                  : `node ${rootManifestVersion || 'not installed'}`}
                             </span>
                           ) : (
                             <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
@@ -1871,7 +1899,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                             Truth source: {nodeTruthSource}
                           </span>
                           <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
-                            Last verified: {formatTimestampLabel(nodeDataAsOf)}
+                            Manager health checked: {formatTimestampLabel(managerHealthCheckedAt)}
                           </span>
                           {rootManifestStale && (
                             <span className="rounded-full border border-amber-700 bg-amber-950/30 px-2 py-1 text-amber-200">
@@ -1888,8 +1916,13 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                               {nodeViewer.legacy_runtime_port_label}
                             </span>
                           )}
+                          {managerManifestPort && managerManifestPort !== DEFAULT_MANAGER_PORT && (
+                            <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-amber-200">
+                              Manifest runtime port: {managerManifestPort}
+                            </span>
+                          )}
                           <span className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-gray-300">
-                            {nodeTruthFresh ? 'runtime' : 'cached runtime'} {nodeViewer?.runtime_status || 'missing'}
+                            {managerLive ? 'manager runtime' : nodeTruthFresh ? 'runtime' : 'cached runtime'} {nodeViewer?.runtime_status || 'missing'}
                           </span>
                         </div>
                       </button>
@@ -2094,13 +2127,16 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                         <div><span className="text-gray-500">Truth source:</span> {nodeTruthSource}</div>
                         <div><span className="text-gray-500">Data as of:</span> {formatTimestampLabel(nodeDataAsOf)}</div>
                         <div><span className="text-gray-500">Truth as of:</span> {formatTimestampLabel(nodeTruthAsOf)}</div>
-                        <div><span className="text-gray-500">Last verified:</span> {formatTimestampLabel(nodeDataAsOf)}</div>
+                        <div><span className="text-gray-500">Manager health checked:</span> {formatTimestampLabel(managerHealthCheckedAt)}</div>
                         <div><span className="text-gray-500">Last inspected:</span> {formatTimestampLabel(lastInspectedAt)}</div>
                         <div><span className="text-gray-500">Last synced from node:</span> {formatTimestampLabel(lastSyncedFromNodeAt)}</div>
                         <div><span className="text-gray-500">Saved scope updated:</span> {formatTimestampLabel(savedScopeGeneratedAt)}</div>
                         <div><span className="text-gray-500">Pull authority updated:</span> {formatTimestampLabel(pullAuthorityUpdatedAt)}</div>
+                        <div><span className="text-gray-500">Manifest last updated:</span> {formatTimestampLabel(manifestLastUpdatedAt)}</div>
                         <div><span className="text-gray-500">Root manifest:</span> {rootManifestVersion || 'not installed'}</div>
                         <div><span className="text-gray-500">Manager version:</span> {managerManaged ? managerVersion || 'active' : 'not manager-owned'}</div>
+                        <div><span className="text-gray-500">Manager live port:</span> {managerLivePort ? `:${managerLivePort}` : 'unknown'}</div>
+                        <div><span className="text-gray-500">Manifest runtime port:</span> {managerManifestPort ? `:${managerManifestPort}` : 'unknown'}</div>
                         <div><span className="text-gray-500">Bootstrap:</span> {nodeViewer.bootstrap_version || 'not ready'}</div>
                         <div><span className="text-gray-500">Manager owned:</span> {nodeViewer.manager_managed ? 'yes' : 'no'}</div>
                         <div><span className="text-gray-500">Manager root:</span> {nodeViewer.manager_root_id || 'unregistered'}</div>

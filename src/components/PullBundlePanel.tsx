@@ -449,7 +449,7 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                       {preflight.freshness.refresh_action ? ` · ${preflight.freshness.refresh_action}` : ''}
                       {preflight.freshness.stale_reason ? ` · ${preflight.freshness.stale_reason}` : ''}
                       <div className="mt-1 text-amber-100/80">
-                        Truth source: {freshnessSourceLabel(preflight.freshness.freshness_source)} · Data as of: {formatTimestampLabel(preflight.freshness.data_as_of)} · Truth as of: {formatTimestampLabel(preflight.freshness.truth_as_of)} · Last verified: {formatTimestampLabel(preflight.freshness.data_as_of)}
+                        Truth source: {freshnessSourceLabel(preflight.freshness.freshness_source)} · Authority data as of: {formatTimestampLabel(preflight.freshness.data_as_of)} · Truth as of: {formatTimestampLabel(preflight.freshness.truth_as_of)}
                       </div>
                     </div>
                   )}

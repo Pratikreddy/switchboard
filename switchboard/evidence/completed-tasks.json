@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-20T12:18:28+00:00",
+  "generated": "2026-05-21T19:29:41+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -5479,6 +5479,175 @@
         "expected_ports": [],
         "healthcheck_command": "",
         "run_command_hint": "",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-22T00:59:18+05:30",
+      "title": "Repair runtime authority UI truth",
+      "tags": [
+        "task",
+        "scope"
+      ],
+      "version": "",
+      "summary": "Separated live manager authority from legacy manifest/runtime cache in node-viewer data and Runtime UI copy.",
+      "changed_paths": [
+        "switchboard/freshness.py",
+        "switchboard/collectors.py",
+        "switchboard/models.py",
+        "src/types/switchboard.ts",
+        "src/api/client.ts",
+        "src/components/ServiceCard.tsx",
+        "src/pages/ServiceDetailPage.tsx",
+        "src/pages/WorkspacePage.tsx",
+        "src/components/PullBundlePanel.tsx",
+        "tests/stale-truth-contract.test.ts",
+        "tests/freshness-contract.test.ts",
+        "tests_backend/test_backend_regressions.py",
+        "tests_backend/test_runtime_and_node_sync.py",
+        "switchboard/evidence/update-gate.json",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager + Brick 4 builder agent",
+      "tool": "codex-desktop, Chrome extension backend",
+      "read_back": "Runtime now reports manager health as the source of live `8020` truth while keeping legacy `8010` labeled as manifest/cache metadata. The UI no longer shows the switch runtime card as stale with `LAST VERIFIED: NEVER` when live manager health is ok.",
+      "scope_check": "Runtime truth only; no bundle creation, no Pull Bundle behavior change, no GitHub backup dry-run, no scanner stack, no events/docs-forgetting implementation, no .47 work, no deletion.",
+      "bootstrap_version": "",
+      "notes": [],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "artifact",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/freshness.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/models.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/api/client.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/ServiceCard.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/WorkspacePage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/stale-truth-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_runtime_and_node_sync.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/node-viewer | rg -q \"manager_health\"",
+        "run_command_hint": "open Switchboard UI, P workspace, switch service, Runtime card",
         "monitoring_mode": "manual",
         "notes": ""
       },

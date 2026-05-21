@@ -40,6 +40,9 @@ export function ServiceCard({ service, result, onClick }: Props) {
   const rootManifestVersion = nodeViewer?.installed_version || ''
   const managerVersion = nodeViewer?.manager_version || ''
   const managerManaged = Boolean(nodeViewer?.manager_managed)
+  const managerLive = Boolean(nodeViewer?.manager_health_status === 'ok' && nodeViewer?.manager_health_runtime_port)
+  const managerHealthCheckedAt = nodeViewer?.manager_health_checked_at || ''
+  const manifestLastUpdatedAt = nodeViewer?.manifest_updated_at || nodeViewer?.truth_as_of || ''
   const rootManifestStale = Boolean(freshnessIsFresh && managerManaged && managerVersion && rootManifestVersion && managerVersion !== rootManifestVersion)
 
   return (
@@ -93,12 +96,16 @@ export function ServiceCard({ service, result, onClick }: Props) {
                   ? 'border-cyan-900/40 bg-cyan-950/20 text-cyan-200'
                   : 'border-gray-800 bg-gray-900 text-gray-400'
             }`}>
-              {managerManaged ? `manager ${managerVersion || 'active'}` : `node ${rootManifestVersion || 'missing'}`}
+              {managerLive
+                ? `Manager live :${nodeViewer.manager_health_runtime_port}`
+                : managerManaged
+                  ? `manager ${managerVersion || 'active'}`
+                  : `node ${rootManifestVersion || 'missing'}`}
             </span>
           ) : (
             <span
               className="text-xs px-2 py-0.5 rounded border border-amber-700 bg-amber-950/30 text-amber-200"
-              title={`Truth source: ${truthSource}; Last verified: ${formatTimestampLabel(lastVerifiedAt)}`}
+              title={`Truth source: ${truthSource}; Manager health checked: ${formatTimestampLabel(managerHealthCheckedAt)}; Manifest last updated: ${formatTimestampLabel(manifestLastUpdatedAt)}; Last inspected: ${formatTimestampLabel(lastVerifiedAt)}`}
             >
               {freshnessLabel}
             </span>
@@ -121,6 +128,11 @@ export function ServiceCard({ service, result, onClick }: Props) {
           {refreshAction && stale && (
             <span className="text-xs px-2 py-0.5 rounded border border-gray-700 bg-gray-900 text-gray-300">
               {refreshAction}
+            </span>
+          )}
+          {managerManaged && (
+            <span className="text-xs px-2 py-0.5 rounded border border-gray-800 bg-gray-900 text-gray-400">
+              Manager health checked: {formatTimestampLabel(managerHealthCheckedAt)}
             </span>
           )}
         </div>

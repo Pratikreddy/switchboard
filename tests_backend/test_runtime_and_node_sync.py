@@ -513,6 +513,13 @@ class RuntimeAndNodeSyncTests(unittest.TestCase):
                 scope_entries=[],
             )
             request = NodeActionRequest(location_id="svc-local")
+            manifest_path = project_root / "switchboard" / "node.manifest.json"
+            manifest_before_inspect = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest_before_inspect["runtime_port"] = 8010
+            save_json(manifest_path, manifest_before_inspect)
+            snapshots.persist_node_viewer("svc", "svc-local", {"runtime_port": 8020})
+            inspect = coordinator.node_inspect("svc", request)
+            inspected_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
             deploy = coordinator.node_deploy("svc", request)
             upgrade = coordinator.node_upgrade("svc", request)
@@ -520,6 +527,8 @@ class RuntimeAndNodeSyncTests(unittest.TestCase):
             with mock.patch("switchboard.collectors.manager_status", return_value={"status": "running", "pid": 123, "runtime_dir": "", "log_file": ""}):
                 restart = coordinator.node_restart("svc", request)
 
+            self.assertEqual(inspect["status"], "ok")
+            self.assertEqual(inspected_manifest["runtime_port"], 8010)
             self.assertEqual(deploy["status"], "ok")
             self.assertEqual(upgrade["status"], "ok")
             self.assertEqual(restart["status"], "ok")

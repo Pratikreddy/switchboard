@@ -1,13 +1,13 @@
 {
-  "generated": "2026-05-20T12:18:34+00:00",
+  "generated": "2026-05-21T19:30:44+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-20T17:29:06+05:30",
-    "title": "Persist pull-bundle readiness review labels",
-    "agent": "Switchboard Brick 3C builder agent",
-    "tool": "codex-desktop"
+    "timestamp": "2026-05-22T00:59:18+05:30",
+    "title": "Repair runtime authority UI truth",
+    "agent": "Codex manager + Brick 4 builder agent",
+    "tool": "codex-desktop, Chrome extension backend"
   },
   "checks": [
     {

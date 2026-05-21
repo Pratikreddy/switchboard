@@ -639,6 +639,7 @@ class NodeInspectResult(BaseModel):
     runtime_status: Literal["running", "stopped", "running_unmanaged", "missing", "manager_running"] = "missing"
     runtime_pid: int | None = None
     runtime_port: int = DEFAULT_NODE_PORT
+    runtime_port_source: str = ""
     needs_install: bool = False
     needs_upgrade: bool = False
     needs_bootstrap: bool = False
@@ -664,7 +665,13 @@ class NodeInspectResult(BaseModel):
     refresh_action: str = ""
     freshness_source: str = ""
     target_manager_port: int = DEFAULT_NODE_PORT
+    manager_health_status: str = ""
+    manager_health_mode: str = ""
+    manager_health_checked_at: str = ""
+    manager_health_runtime_port: int | None = None
+    manager_manifest_runtime_port: int | None = None
     legacy_runtime_port: int | None = None
+    legacy_runtime_port_source: str = ""
     legacy_runtime_port_label: str = ""
 
 

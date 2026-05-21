@@ -1265,3 +1265,51 @@ Example format:
   - exclude | file | /Users/p/Desktop/dashboard/.env
   - exclude | file | /Users/p/Desktop/dashboard/.env.*
   - exclude | file | /Users/p/Desktop/dashboard/.npmrc
+## 2026-05-22T00:59:18+05:30 | Repair runtime authority UI truth
+
+- Tags: task, switchboard, runtime, freshness, ui, tests, scope
+- Summary: Separated live manager authority from legacy manifest/runtime cache in node-viewer data and Runtime UI copy.
+- Changed Paths: switchboard/freshness.py, switchboard/collectors.py, switchboard/models.py, src/types/switchboard.ts, src/api/client.ts, src/components/ServiceCard.tsx, src/pages/ServiceDetailPage.tsx, src/pages/WorkspacePage.tsx, src/components/PullBundlePanel.tsx, tests/stale-truth-contract.test.ts, tests/freshness-contract.test.ts, tests_backend/test_backend_regressions.py, tests_backend/test_runtime_and_node_sync.py, switchboard/evidence/update-gate.json, switchboard/local/tasks-completed.md
+- Agent: Codex manager + Brick 4 builder agent
+- Tool: codex-desktop, Chrome extension backend
+- Read Back: Runtime now reports manager health as the source of live `8020` truth while keeping legacy `8010` labeled as manifest/cache metadata. The UI no longer shows the switch runtime card as stale with `LAST VERIFIED: NEVER` when live manager health is ok.
+- Scope Check: Runtime truth only; no bundle creation, no Pull Bundle behavior change, no GitHub backup dry-run, no scanner stack, no events/docs-forgetting implementation, no .47 work, no deletion.
+- Evidence:
+  - 8009 health ok after local backend reload.
+  - 8020 health ok with runtime_port `8020` and manifest_runtime_port `8010`.
+  - node-viewer reports freshness_source `manager_health`, runtime_port `8020`, legacy_runtime_port `8010`, and empty refresh/attention reasons for `switch`.
+  - Chrome extension screenshots:
+    - `/Users/p/Desktop/agent-ops/read-and-ingest/2026-05-20-gpt55-pro-switchboard-planning/evidence/screenshots/chrome-brick4-runtime-authority-ui-truth-service.png`
+    - `/Users/p/Desktop/agent-ops/read-and-ingest/2026-05-20-gpt55-pro-switchboard-planning/evidence/screenshots/chrome-brick4-service-list-runtime-authority.png`
+  - Bundle history remains exactly two bundles.
+- Tests:
+  - `git diff --check`: passed.
+  - `.venv/bin/python -m unittest tests_backend.test_runtime_and_node_sync tests_backend.test_node_mode tests_backend.test_backend_regressions`: passed, 62 tests.
+  - `npm test -- --run tests/freshness-contract.test.ts tests/stale-truth-contract.test.ts tests/service-detail-checklist-contract.test.ts`: passed, 11 tests.
+  - `.venv/bin/python -m unittest discover -s tests_backend`: passed, 62 tests.
+  - `npm test`: passed, 62 tests.
+  - `npm run build`: passed with existing Vite chunk-size warning.
+  - `npm run check:release-static`: passed.
+  - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`: passed.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json
+  - code | file | /Users/p/Desktop/dashboard/switchboard/freshness.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/models.py
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/src/api/client.ts
+  - code | file | /Users/p/Desktop/dashboard/src/components/ServiceCard.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/WorkspacePage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/tests/stale-truth-contract.test.ts
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_runtime_and_node_sync.py
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+- Runtime:
+  - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/node-viewer | rg -q "manager_health"
+  - run_command_hint: open Switchboard UI, P workspace, switch service, Runtime card
+  - monitoring_mode: manual

@@ -232,6 +232,82 @@ class BackendRegressionTests(unittest.TestCase):
         self.assertEqual(envelope["stale_reason"], "cache_older_than_truth")
         self.assertEqual(envelope["refresh_action"], "Collect")
 
+    def test_live_manager_health_overrides_stale_runtime_cache_without_rewriting_legacy_port(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "project"
+            (project_root / "switchboard").mkdir(parents=True)
+            save_json(
+                project_root / "switchboard" / "node.manifest.json",
+                {
+                    "service_id": "switch",
+                    "installed_version": "1.12.6",
+                    "runtime_port": 8010,
+                    "updated_at": "2026-05-15T00:00:00+00:00",
+                },
+            )
+            save_json(
+                root / "switchboard" / "manager.manifest.json",
+                {
+                    "managed_roots": [
+                        {
+                            "root_id": "switch",
+                            "service_id": "switch",
+                            "project_root": str(project_root),
+                            "last_seen_version": "1.12.6",
+                            "manifest_updated_at": "2026-05-15T00:00:00+00:00",
+                        }
+                    ]
+                },
+            )
+
+            with mock.patch(
+                "switchboard.freshness.manager_health",
+                return_value={
+                    "status": "ok",
+                    "mode": "manager",
+                    "manager_root": str(root.resolve()),
+                    "runtime_port": 8020,
+                    "manifest_runtime_port": 8010,
+                    "checked_at": "2999-05-20T00:00:00+00:00",
+                },
+            ):
+                rows = freshen_node_viewers(
+                    manager_root=root,
+                    service_payload={
+                        "service_id": "switch",
+                        "locations": [
+                            {
+                                "location_id": "local",
+                                "server_id": "local",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                            }
+                        ],
+                    },
+                    cached_rows=[
+                        {
+                            "service_id": "switch",
+                            "location_id": "local",
+                            "runtime_port": 8010,
+                        }
+                    ],
+                    control_center_version="1.12.6",
+                )
+
+            self.assertEqual(rows[0]["freshness_state"], "Fresh")
+            self.assertEqual(rows[0]["freshness_source"], "manager_health")
+            self.assertEqual(rows[0]["runtime_port"], 8020)
+            self.assertEqual(rows[0]["runtime_port_source"], "manager_health")
+            self.assertEqual(rows[0]["target_manager_port"], 8020)
+            self.assertEqual(rows[0]["manager_health_runtime_port"], 8020)
+            self.assertEqual(rows[0]["manager_manifest_runtime_port"], 8010)
+            self.assertEqual(rows[0]["manager_health_checked_at"], "2999-05-20T00:00:00+00:00")
+            self.assertEqual(rows[0]["legacy_runtime_port"], 8010)
+            self.assertIn("legacy", rows[0]["legacy_runtime_port_label"])
+            self.assertEqual(rows[0]["refresh_action"], "")
+            self.assertEqual(rows[0]["attention_reason"], "")
+
     def test_legacy_47_node_health_api_flows_are_disabled(self) -> None:
         flows = json.loads(Path("switchboard/manifests/api-flows.json").read_text(encoding="utf-8"))
         legacy = [flow for flow in flows if "legacy-node-health" in flow.get("tags", [])]

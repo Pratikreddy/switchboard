@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import socket
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -101,6 +103,18 @@ def port_listening(port: int, host: str = "127.0.0.1", timeout: float = 0.2) -> 
         return False
 
 
+def manager_health(port: int = DEFAULT_NODE_PORT, host: str = "127.0.0.1", timeout: float = 0.5) -> dict[str, Any]:
+    checked_at = iso_timestamp(datetime.now(timezone.utc))
+    try:
+        with urllib.request.urlopen(f"http://{host}:{port}/api/health", timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, TimeoutError, urllib.error.URLError, json.JSONDecodeError):
+        return {"status": "unreachable", "checked_at": checked_at}
+    if not isinstance(payload, dict):
+        return {"status": "unverified", "checked_at": checked_at}
+    return {**payload, "checked_at": checked_at}
+
+
 def manager_manifest_path(manager_root: Path) -> Path:
     return manager_root / "switchboard" / "manager.manifest.json"
 
@@ -165,14 +179,34 @@ def freshen_node_viewers(
             manager_record = manager_record_for_root(manager_root, root)
             manager_truth = manager_manifest_truth(manager_root, manager_record)
 
-        truth_as_of = latest_timestamp(root_truth, manager_truth)
-        data_as_of = latest_timestamp(
+        health: dict[str, Any] = {}
+        if manager_record:
+            health = manager_health(DEFAULT_NODE_PORT)
+        health_status = str(health.get("status", ""))
+        health_mode = str(health.get("mode", ""))
+        health_runtime_port = health.get("runtime_port")
+        health_manifest_port = health.get("manifest_runtime_port")
+        health_checked_at = str(health.get("checked_at", ""))
+        health_manager_root = str(health.get("manager_root", ""))
+        manager_health_ok = (
+            health_status == "ok"
+            and health_mode == "manager"
+            and health_manager_root == str(manager_root.resolve())
+            and isinstance(health_runtime_port, int)
+            and health_runtime_port == DEFAULT_NODE_PORT
+        )
+
+        truth_as_of = latest_timestamp(root_truth, manager_truth, health_checked_at if manager_health_ok else "")
+        cache_data_as_of = latest_timestamp(
             cached.get("last_inspected_at", ""),
             cached.get("manifest_updated_at", ""),
             cached.get("data_as_of", ""),
         )
+        data_as_of = health_checked_at if manager_health_ok else cache_data_as_of
         source = "runtime_cache"
-        if manager_record:
+        if manager_health_ok:
+            source = "manager_health"
+        elif manager_record:
             source = "manager_manifest"
         elif root_manifest:
             source = "root_manifest"
@@ -182,14 +216,26 @@ def freshen_node_viewers(
         manifest_port = root_manifest.get("runtime_port")
         cached_port = cached.get("runtime_port")
         legacy_port = None
+        legacy_port_sources: list[str] = []
         if isinstance(cached_port, int) and cached_port > 0 and cached_port != DEFAULT_NODE_PORT:
             legacy_port = cached_port
+            legacy_port_sources.append("runtime_cache")
         if isinstance(manifest_port, int) and manifest_port > 0 and manifest_port != DEFAULT_NODE_PORT:
             legacy_port = legacy_port or manifest_port
+            if manifest_port == legacy_port:
+                legacy_port_sources.append("manifest")
+        if isinstance(health_manifest_port, int) and health_manifest_port > 0 and health_manifest_port != DEFAULT_NODE_PORT:
+            legacy_port = legacy_port or health_manifest_port
+            if health_manifest_port == legacy_port:
+                legacy_port_sources.append("manager_manifest")
+        legacy_port_source = "/".join(dict.fromkeys(legacy_port_sources))
 
         stale_reason = ""
         refresh_action = ""
-        if manager_record and not port_listening(DEFAULT_NODE_PORT):
+        if manager_health_ok:
+            stale_reason = ""
+            refresh_action = ""
+        elif manager_record and not port_listening(DEFAULT_NODE_PORT):
             stale_reason = "manager_8020_unreachable"
             refresh_action = "Check 8020"
         elif truth_as_of and (not data_as_of or timestamp_before(data_as_of, truth_as_of)):
@@ -207,7 +253,7 @@ def freshen_node_viewers(
             refresh_action=refresh_action,
         )
         manager_managed = manager_record is not None
-        manager_live = manager_managed and freshness["freshness_state"] != "Manager unreachable"
+        manager_live = manager_managed and manager_health_ok
 
         row = {
             **cached,
@@ -224,9 +270,16 @@ def freshen_node_viewers(
             "runtime_status": "manager_running" if manager_live else "missing" if manager_managed else str(cached.get("runtime_status", "missing")),
             "runtime_pid": cached.get("runtime_pid") if manager_live else None,
             "runtime_port": DEFAULT_NODE_PORT if manager_managed else int(cached.get("runtime_port") or DEFAULT_NODE_PORT),
+            "runtime_port_source": "manager_health" if manager_health_ok else "manager_target" if manager_managed else "runtime_cache",
             "target_manager_port": DEFAULT_NODE_PORT,
+            "manager_health_status": health_status,
+            "manager_health_mode": health_mode,
+            "manager_health_checked_at": health_checked_at,
+            "manager_health_runtime_port": health_runtime_port if isinstance(health_runtime_port, int) else None,
+            "manager_manifest_runtime_port": health_manifest_port if isinstance(health_manifest_port, int) else None,
             "legacy_runtime_port": legacy_port,
-            "legacy_runtime_port_label": f"legacy cached :{legacy_port}" if legacy_port else "",
+            "legacy_runtime_port_source": legacy_port_source,
+            "legacy_runtime_port_label": f"legacy {legacy_port_source.replace('_', ' ')} :{legacy_port}" if legacy_port else "",
             "needs_install": bool(cached.get("needs_install", False)) and not root_manifest,
             "needs_upgrade": False,
             "needs_bootstrap": False if manager_record else bool(cached.get("needs_bootstrap", False)),

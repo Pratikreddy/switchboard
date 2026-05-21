@@ -1045,6 +1045,7 @@ export interface NodeViewerEntry {
   runtime_status: 'running' | 'stopped' | 'running_unmanaged' | 'missing' | 'manager_running'
   runtime_pid?: number
   runtime_port: number
+  runtime_port_source?: string
   needs_install: boolean
   needs_upgrade: boolean
   needs_bootstrap: boolean
@@ -1070,7 +1071,13 @@ export interface NodeViewerEntry {
   refresh_action?: string
   freshness_source?: string
   target_manager_port?: number
+  manager_health_status?: string
+  manager_health_mode?: string
+  manager_health_checked_at?: string
+  manager_health_runtime_port?: number
+  manager_manifest_runtime_port?: number
   legacy_runtime_port?: number
+  legacy_runtime_port_source?: string
   legacy_runtime_port_label?: string
 }
 

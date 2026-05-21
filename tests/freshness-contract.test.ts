@@ -18,7 +18,8 @@ describe('freshness visibility contract', () => {
 
   it('shows node freshness and sync authority timestamps in service detail', () => {
     expect(serviceDetailPage).toContain('Last inspected')
-    expect(serviceDetailPage).toContain('Last verified')
+    expect(serviceDetailPage).toContain('Manager health checked')
+    expect(serviceDetailPage).toContain('Manifest last updated')
     expect(serviceDetailPage).toContain('Last synced from node')
     expect(serviceDetailPage).toContain('Saved scope updated')
     expect(serviceDetailPage).toContain('Pull authority updated')
@@ -41,9 +42,8 @@ describe('freshness visibility contract', () => {
     expect(pullBundlePanel).toContain('repo cleanliness, skipped entries, and exposure findings still need review')
     expect(pullBundlePanel).toContain('VPN required for live verification')
     expect(pullBundlePanel).toContain('Truth source:')
-    expect(pullBundlePanel).toContain('Data as of:')
+    expect(pullBundlePanel).toContain('Authority data as of:')
     expect(pullBundlePanel).toContain('Truth as of:')
-    expect(pullBundlePanel).toContain('Last verified:')
     expect(pullBundlePanel).toContain('preflightContextKey')
     expect(pullBundlePanel).toContain('cachedPreflightStale')
     expect(pullBundlePanel).toContain('Cached Ready is stale. Run Check scope again.')

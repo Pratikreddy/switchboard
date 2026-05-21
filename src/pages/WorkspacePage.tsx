@@ -168,7 +168,7 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
                 </span>
               )}
               <span className="text-gray-500">
-                Last verified: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}
+                Snapshot data as of: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}
               </span>
             </div>
             <details className="mt-2">
@@ -179,7 +179,7 @@ export function WorkspacePage({ workspaceId, offline, onSelectService, onOpenEnv
                 <span>Truth source: {freshnessSourceLabel(workspaceFreshness?.freshness_source)}</span>
                 <span>Data as of: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}</span>
                 <span>Truth as of: {formatTimestampLabel(workspaceFreshness?.truth_as_of)}</span>
-                <span>Last verified: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}</span>
+                <span>Snapshot data as of: {formatTimestampLabel(workspaceFreshness?.data_as_of || latest?.summary?.timestamp)}</span>
               </div>
             </details>
           </div>

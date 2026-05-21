@@ -4440,8 +4440,8 @@ class CollectionCoordinator:
             if manifest:
                 manager_record = self._local_manager_record_for_root(location.root)
                 runtime_port = self._detect_node_runtime_port(service, location, server, manifest)
-                manifest = self._persist_manifest_runtime_port(server, location.root, manifest, runtime_port)
                 if manager_record is None:
+                    manifest = self._persist_manifest_runtime_port(server, location.root, manifest, runtime_port)
                     runtime_state = node_status(location.root, port=runtime_port)
             else:
                 runtime_port = self._cached_node_runtime_port(service.service_id, location.location_id) or DEFAULT_NODE_PORT
@@ -4473,12 +4473,28 @@ class CollectionCoordinator:
         bootstrap_version = str((manifest or {}).get("bootstrap_version", ""))
         installed_release = (manifest or {}).get("installed_release", {}) if isinstance((manifest or {}).get("installed_release", {}), dict) else {}
         runtime_status = runtime_state.get("status", "missing")
+        manifest_runtime_port = self._manifest_runtime_port(manifest) if manifest else None
         manager_record = self._local_manager_record_for_root(location.root) if server.connection_type == "local" else None
         manager_root = self._local_manager_root() if manager_record is not None else None
+        manager_health_status = ""
+        manager_health_mode = ""
+        manager_health_checked_at = ""
+        manager_health_runtime_port: int | None = None
+        manager_manifest_runtime_port: int | None = None
+        runtime_port_source = "manifest" if manifest else "runtime_cache"
+        legacy_runtime_port: int | None = manifest_runtime_port if manifest_runtime_port and manifest_runtime_port != DEFAULT_NODE_PORT else None
+        legacy_runtime_port_source = "manifest" if legacy_runtime_port else ""
         if manager_root is not None:
             manager_runtime = manager_status(manager_root, port=DEFAULT_NODE_PORT)
+            manager_health_checked_at = utc_now_iso()
+            manager_health_status = "ok" if manager_runtime.get("status") == "running" else str(manager_runtime.get("status", "unverified"))
+            manager_health_mode = "manager"
+            manager_health_runtime_port = DEFAULT_NODE_PORT if manager_runtime.get("status") == "running" else None
+            manager_manifest_runtime_port = manifest_runtime_port
             if manager_runtime.get("status") == "running":
                 runtime_status = "manager_running"
+                runtime_port = DEFAULT_NODE_PORT
+                runtime_port_source = "manager_health"
                 runtime_state = {
                     **runtime_state,
                     "status": runtime_status,
@@ -4514,6 +4530,7 @@ class CollectionCoordinator:
             "runtime_status": runtime_status,
             "runtime_pid": runtime_state.get("pid"),
             "runtime_port": runtime_port,
+            "runtime_port_source": runtime_port_source,
             "needs_install": not node_present,
             "needs_upgrade": False,
             "needs_bootstrap": bool(node_present and not bootstrap_ready),
@@ -4533,6 +4550,15 @@ class CollectionCoordinator:
             "manager_root_id": str((manager_record or {}).get("root_id", "")),
             "manager_root": str(manager_root or ""),
             "manager_version": manager_version,
+            "target_manager_port": DEFAULT_NODE_PORT,
+            "manager_health_status": manager_health_status,
+            "manager_health_mode": manager_health_mode,
+            "manager_health_checked_at": manager_health_checked_at,
+            "manager_health_runtime_port": manager_health_runtime_port,
+            "manager_manifest_runtime_port": manager_manifest_runtime_port,
+            "legacy_runtime_port": legacy_runtime_port,
+            "legacy_runtime_port_source": legacy_runtime_port_source,
+            "legacy_runtime_port_label": f"legacy {legacy_runtime_port_source} :{legacy_runtime_port}" if legacy_runtime_port else "",
         }
         return record
 

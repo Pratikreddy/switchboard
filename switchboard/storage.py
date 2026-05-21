@@ -52,6 +52,9 @@ class SnapshotStore:
         self.settings = settings
         self.manifests = manifests
 
+    def _switchboard_evidence_dir(self) -> Path:
+        return self.settings.manifest_dir.parent / "evidence"
+
     def seed_flat_files(self) -> dict[str, Any]:
         generated = utc_now_iso()
         workspaces = self.manifests.load_workspaces()
@@ -89,6 +92,7 @@ class SnapshotStore:
         run_history = {"generated": generated, "runs": []}
         pull_bundle_history = {"generated": generated, "bundles": []}
         pull_bundle_exposure_reviews = {"generated": generated, "bundles": {}}
+        github_backup_dry_runs = {"generated": generated, "runs": []}
         repo_safety_history = {"generated": generated, "checks": []}
         github_backup_history = {"generated": generated, "runs": []}
         secret_index = {"generated": generated, "entries": []}
@@ -102,6 +106,7 @@ class SnapshotStore:
         write_json(self.settings.evidence_dir / "run-history.json", run_history)
         write_json(self.settings.evidence_dir / "pull-bundle-history.json", pull_bundle_history)
         write_json(self.settings.evidence_dir / "pull-bundle-exposure-reviews.json", pull_bundle_exposure_reviews)
+        write_json(self._switchboard_evidence_dir() / "github-backup-dry-runs.json", github_backup_dry_runs)
         write_json(self.settings.evidence_dir / "repo-safety-history.json", repo_safety_history)
         write_json(self.settings.evidence_dir / "github-backup-history.json", github_backup_history)
         write_json(self.settings.private_state_dir / "secret-path-index.json", secret_index)
@@ -480,6 +485,19 @@ class SnapshotStore:
             self.settings.evidence_dir / "pull-bundle-exposure-reviews.json",
             {"generated": "", "bundles": {}},
         )
+
+    def append_github_backup_dry_run(self, record: dict[str, Any]) -> dict[str, Any]:
+        path = self._switchboard_evidence_dir() / "github-backup-dry-runs.json"
+        generated = str(record.get("generated_at") or utc_now_iso())
+        history = read_json(path, {"generated": generated, "runs": []})
+        history["generated"] = generated
+        history["runs"].insert(0, record)
+        write_json(path, history)
+        return record
+
+    def list_github_backup_dry_runs(self, service_id: str) -> list[dict[str, Any]]:
+        data = read_json(self._switchboard_evidence_dir() / "github-backup-dry-runs.json", {"runs": []})
+        return [entry for entry in data.get("runs", []) if entry.get("service_id") == service_id]
 
     def append_github_backup(self, record: dict[str, Any]) -> dict[str, Any]:
         path = self.settings.evidence_dir / "github-backup-history.json"

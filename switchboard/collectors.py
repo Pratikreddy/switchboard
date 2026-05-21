@@ -43,6 +43,7 @@ from .models import (
     NodeActionRequest,
     NodeSyncRequest,
     ProjectEnvironmentManifest,
+    PullBundleBackupDryRunRequest,
     PullBundleRequest,
     RepoActionRequest,
     ResolvedServer,
@@ -839,6 +840,119 @@ class CollectionCoordinator:
         }
         self.snapshots.append_github_backup(record)
         return record
+
+    def list_github_backup_dry_runs(self, service_id: str) -> list[dict[str, Any]]:
+        return self.snapshots.list_github_backup_dry_runs(service_id)
+
+    def github_backup_dry_run_from_pull_bundle(
+        self,
+        service_id: str,
+        request: PullBundleBackupDryRunRequest | None = None,
+    ) -> dict[str, Any]:
+        request = request or PullBundleBackupDryRunRequest()
+        service = self.manifests.get_service(service_id)
+        bundles = [self.normalize_pull_bundle_record(bundle) for bundle in self.snapshots.list_pull_bundles(service_id)]
+        backup_clean_bundles = [
+            bundle
+            for bundle in bundles
+            if bool(bundle.get("backup_clean")) and str(bundle.get("bundle_profile") or "") == BUNDLE_PROFILE
+        ]
+        if request.bundle_id:
+            backup_clean_bundles = [bundle for bundle in backup_clean_bundles if bundle.get("bundle_id") == request.bundle_id]
+        if not backup_clean_bundles:
+            return {
+                "status": "path_missing",
+                "message": "No backup-clean pull bundle is available for a report-only dry run.",
+                "service_id": service_id,
+                "push_performed": False,
+                "commit_performed": False,
+                "stage_performed": False,
+            }
+
+        bundle = backup_clean_bundles[0]
+        generated_at = utc_now_iso()
+        bundle_id = str(bundle.get("bundle_id") or "")
+        source_tree_path = str(bundle.get("source_tree_path") or "")
+        repo_path = self._repo_path_for_bundle(service, bundle)
+        git_summary = self._readonly_git_summary(repo_path)
+        exposure_review = bundle.get("exposure_review") if isinstance(bundle.get("exposure_review"), dict) else {}
+        review_state_counts = exposure_review.get("review_state_counts", {}) if isinstance(exposure_review, dict) else {}
+        authority = bundle.get("authority") if isinstance(bundle.get("authority"), dict) else {}
+        control_center_truth_as_of = self._control_center_scope_timestamp() or ""
+        authority_updated_at = str(authority.get("updated_at") or "")
+        authority_fresh = bool(bundle.get("authority_fresh"))
+        if authority_updated_at and control_center_truth_as_of:
+            authority_fresh = authority_fresh and not self._timestamp_before(authority_updated_at, control_center_truth_as_of)
+
+        unresolved_exposure_count = int(bundle.get("unresolved_exposure_count") or 0)
+        skipped_entry_count = int(bundle.get("skipped_entry_count") or bundle.get("skipped_review_count") or 0)
+        blocked_reasons = ["report_only_no_push", "human_approval_missing"]
+        if bundle.get("backup_readiness_status") != BUNDLE_READINESS_NOT_READY:
+            blocked_reasons.append(f"bundle_{bundle.get('backup_readiness_status') or 'unknown'}")
+        if bool(bundle.get("not_backup_ready")):
+            blocked_reasons.append("not_backup_ready")
+        if unresolved_exposure_count > 0:
+            blocked_reasons.append("unresolved_exposures")
+        if skipped_entry_count > 0:
+            blocked_reasons.append("skipped_entries_need_review")
+        if not authority_fresh:
+            blocked_reasons.append("authority_stale")
+        if bool(git_summary.get("repo_dirty")):
+            blocked_reasons.append("repo_dirty")
+        if git_summary.get("repo_status") != "ok":
+            blocked_reasons.append(f"repo_{git_summary.get('repo_status') or 'unverified'}")
+
+        files = bundle.get("files", [])
+        if not isinstance(files, list):
+            files = []
+        would_stage_files = [
+            str(item.get("relative_path") or "")
+            for item in files
+            if isinstance(item, dict) and str(item.get("relative_path") or "")
+        ]
+        report = {
+            "run_id": f"github-backup-dry-run__{service_id}__{generated_at.replace(':', '').replace('-', '')}",
+            "generated_at": generated_at,
+            "service_id": service_id,
+            "bundle_id": bundle_id,
+            "source_tree_path": source_tree_path,
+            "source_policy": "latest_backup_clean_pull_bundle_only",
+            "target_repo": git_summary.get("target_repo", ""),
+            "target_remote": git_summary.get("target_remote", ""),
+            "target_branch": git_summary.get("target_branch", ""),
+            "repo_head": git_summary.get("repo_head", ""),
+            "repo_dirty": bool(git_summary.get("repo_dirty")),
+            "repo_status": git_summary.get("repo_status", "unverified"),
+            "bundle_profile": bundle.get("bundle_profile") or "",
+            "backup_readiness_status": bundle.get("backup_readiness_status") or "",
+            "not_backup_ready": True,
+            "not_push_ready": True,
+            "status": "blocked",
+            "included_file_count": int(bundle.get("file_count") or len(would_stage_files)),
+            "skipped_entry_count": skipped_entry_count,
+            "unresolved_exposure_count": unresolved_exposure_count,
+            "review_state_counts": review_state_counts,
+            "authority_fresh": authority_fresh,
+            "authority_updated_at": authority_updated_at,
+            "control_center_truth_as_of": control_center_truth_as_of,
+            "blocked_reasons": sorted(dict.fromkeys(blocked_reasons)),
+            "would_stage_files": would_stage_files,
+            "would_commit": False,
+            "would_push": False,
+            "push_performed": False,
+            "commit_performed": False,
+            "stage_performed": False,
+            "git_readonly_commands": [
+                "git status --short",
+                "git remote -v",
+                "git rev-parse HEAD",
+                "git branch --show-current",
+                "git diff --name-only",
+            ],
+            "bundle_history_count": len(bundles),
+        }
+        self.snapshots.append_github_backup_dry_run(report)
+        return report
 
     def runtime_check(self, service_id: str, request: RuntimeActionRequest) -> dict[str, Any]:
         service = self.manifests.get_service(service_id)
@@ -2310,6 +2424,71 @@ class CollectionCoordinator:
             "push_mode": policy.push_mode if policy else "blocked",
             "eligible": len(reasons) == 0,
             "blocking_reasons": reasons,
+        }
+
+    def _repo_path_for_bundle(self, service: ServiceManifest, bundle: dict[str, Any]) -> str:
+        location_root = str(bundle.get("location_root") or "")
+        if location_root:
+            for repo_path in service.repo_paths:
+                if repo_path == location_root or repo_path.startswith(location_root) or location_root.startswith(repo_path):
+                    return repo_path
+        return service.repo_paths[0] if service.repo_paths else location_root
+
+    def _timestamp_before(self, left: str, right: str) -> bool:
+        try:
+            return datetime.fromisoformat(left.replace("Z", "+00:00")) < datetime.fromisoformat(right.replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return False
+
+    def _github_repo_from_remotes(self, remotes: list[str]) -> str:
+        for remote in remotes:
+            if "(push)" not in remote or "github.com" not in remote:
+                continue
+            parts = remote.split()
+            if len(parts) < 2:
+                continue
+            url = parts[1]
+            if url.startswith("https://github.com/"):
+                return url.removeprefix("https://github.com/").removesuffix(".git")
+            if "github.com:" in url:
+                return url.split("github.com:", 1)[1].removesuffix(".git")
+        return ""
+
+    def _readonly_git_summary(self, repo_path: str) -> dict[str, Any]:
+        if not repo_path:
+            return {
+                "repo_status": "path_missing",
+                "target_remote": "",
+                "target_repo": "",
+                "target_branch": "",
+                "repo_head": "",
+                "repo_dirty": False,
+            }
+        top_level = self._run_local(["git", "-C", repo_path, "rev-parse", "--show-toplevel"])
+        if top_level["returncode"] != 0:
+            return {
+                "repo_status": "not_git_repo",
+                "target_remote": "",
+                "target_repo": "",
+                "target_branch": "",
+                "repo_head": "",
+                "repo_dirty": False,
+            }
+        status = self._run_local(["git", "-C", repo_path, "status", "--short"])
+        remotes_result = self._run_local(["git", "-C", repo_path, "remote", "-v"])
+        head = self._run_local(["git", "-C", repo_path, "rev-parse", "HEAD"])
+        branch = self._run_local(["git", "-C", repo_path, "branch", "--show-current"])
+        diff_names = self._run_local(["git", "-C", repo_path, "diff", "--name-only"])
+        remotes = self._split_lines(remotes_result["stdout"])
+        target_remote = next((remote for remote in remotes if remote.startswith("origin") and "(push)" in remote), remotes[0] if remotes else "")
+        return {
+            "repo_status": "ok",
+            "target_remote": target_remote,
+            "target_repo": self._github_repo_from_remotes([target_remote] if target_remote else remotes),
+            "target_branch": branch["stdout"].strip(),
+            "repo_head": head["stdout"].strip(),
+            "repo_dirty": bool(status["stdout"].strip()),
+            "dirty_paths": self._split_lines(diff_names["stdout"]),
         }
 
     def _latest_bundle_for_deployment(

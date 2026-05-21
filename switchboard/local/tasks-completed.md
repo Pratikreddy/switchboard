@@ -1366,3 +1366,60 @@ Example format:
   - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/pull-bundles | rg -q "exposure_review"
   - run_command_hint: open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle
   - monitoring_mode: manual
+
+## 2026-05-22T02:01:37+05:30 | Add report-only GitHub backup dry run
+
+- Tags: task, switchboard, pull-bundle, github-backup, dry-run, backup-readiness, ui, tests
+- Summary: Added a service-level report-only GitHub backup dry-run path that uses the latest backup-clean pull bundle as source, persists blocked/not-push-ready reports, and surfaces why backup cannot proceed without pushing, staging, committing, or creating a new bundle.
+- Changed Paths: switchboard/storage.py, switchboard/collectors.py, switchboard/models.py, switchboard/api.py, switchboard/evidence/github-backup-dry-runs.json, src/types/switchboard.ts, src/api/client.ts, src/components/PullBundlePanel.tsx, tests_backend/test_backend_regressions.py, tests/freshness-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop, Chrome extension backend
+- Read Back: The dry run is diagnostic only. It reports `blocked`, `not_push_ready: true`, `push_performed: false`, `commit_performed: false`, and `stage_performed: false`. It uses bundle `1__switch__local_mac__20260520T110201Z` as source, not the raw working tree, and keeps the latest bundle `review_required` / `not_backup_ready`.
+- Scope Check: Report-only dry run only; no push, no stage, no commit, no branch/checkout, no new bundle, no review-state mutation, no scanner stack, no .47, no project grouping repair, no Palimpsest, no deletion.
+- Runtime Notes:
+  - Restarted only the local 8009 Control Center backend twice so the live UI/API could load the new endpoint and then the canonical-origin parser fix.
+  - Did not restart 8020.
+  - Did not run Collect.
+  - Did not run Sync From Node.
+  - Did not create a bundle.
+  - A Chrome extension UI pass caught and fixed a mirror-selection bug: the first dry run showed `Pratikreddy/switchboard` because `git remote -v` listed the mirror first; the parser now prefers `origin` and the UI shows `pratikreddy9/switchboard`.
+- Evidence:
+  - 8009 health ok after targeted backend reload.
+  - 8020 health ok; runtime stayed manager-health `8020` with legacy manifest/cache `8010`.
+  - Bundle history remains exactly two bundles.
+  - Latest bundle remains `1__switch__local_mac__20260520T110201Z`.
+  - Latest bundle remains `review_required` / `not_backup_ready`.
+  - Exposure review remains `45` groups and `115` unreviewed findings.
+  - New dry-run report persisted to `switchboard/evidence/github-backup-dry-runs.json`.
+  - Latest dry-run report target repo is `pratikreddy9/switchboard`.
+  - Latest dry-run report is blocked/not-push-ready and records no push/stage/commit performed.
+  - Current implementation-time blockers include `authority_stale`, `bundle_review_required`, `human_approval_missing`, `not_backup_ready`, `repo_dirty`, `report_only_no_push`, `skipped_entries_need_review`, and `unresolved_exposures`.
+  - Chrome extension screenshot:
+    - `/Users/p/Desktop/agent-ops/read-and-ingest/2026-05-20-gpt55-pro-switchboard-planning/evidence/screenshots/chrome-brick6-dry-run-blocked.png`
+- Tests:
+  - `git diff --check`: passed.
+  - focused backend dry-run tests: passed.
+  - focused frontend freshness contract: passed.
+  - `.venv/bin/python -m unittest discover -s tests_backend`: passed, 65 tests.
+  - `npm test`: passed, 63 tests.
+  - `npm run build`: passed with existing Vite chunk-size warning.
+  - `npm run check:release-static`: passed.
+  - `.venv/bin/switchboard node verify-update --project-root /Users/p/Desktop/dashboard`: passed.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/github-backup-dry-runs.json
+  - code | file | /Users/p/Desktop/dashboard/switchboard/storage.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/models.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/api.py
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/src/api/client.ts
+  - code | file | /Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - code | file | /Users/p/Desktop/dashboard/tests/freshness-contract.test.ts
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+- Runtime:
+  - healthcheck_command: curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q "not_push_ready"
+  - run_command_hint: open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run
+  - monitoring_mode: manual

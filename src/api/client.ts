@@ -31,6 +31,8 @@ import type {
   DownloadRequest,
   GitHubBackupRequest,
   GitHubBackupResult,
+  PullBundleGithubBackupDryRun,
+  PullBundleGithubBackupDryRunRequest,
   GitPushRequest,
   GitPullRequest,
   GitPullResult,
@@ -618,6 +620,7 @@ type ServiceResponse = { service: unknown }
 type ServersResponse = { servers: unknown[] }
 type ServiceScopeResponse = { service_id: string; scope_entries: unknown[]; repo_policies: unknown[] }
 type PullBundlesResponse = { service_id: string; bundles: unknown[] }
+type GithubBackupDryRunsResponse = { service_id: string; runs: unknown[] }
 
 function hasObjectProperty<K extends string>(
   value: unknown,
@@ -1014,6 +1017,26 @@ export const listPullBundles = (
       return { status: 'unverified', message: 'Invalid pull bundle history response' }
     }
     return res.bundles as PullBundleRecord[]
+  })
+
+export const listPullBundleGithubBackupDryRuns = (
+  id: string,
+): Promise<ApiResult<PullBundleGithubBackupDryRun[]>> =>
+  apiFetch<GithubBackupDryRunsResponse>(`/services/${id}/github-backup-dry-runs`).then((res) => {
+    if (isApiError(res)) return res
+    if (!hasObjectProperty(res, 'runs') || !Array.isArray(res.runs)) {
+      return { status: 'unverified', message: 'Invalid GitHub backup dry-run response' }
+    }
+    return res.runs as PullBundleGithubBackupDryRun[]
+  })
+
+export const createPullBundleGithubBackupDryRun = (
+  id: string,
+  req: PullBundleGithubBackupDryRunRequest = {},
+): Promise<ApiResult<PullBundleGithubBackupDryRun>> =>
+  apiFetch<PullBundleGithubBackupDryRun>(`/services/${id}/github-backup-dry-runs`, {
+    method: 'POST',
+    body: JSON.stringify(req),
   })
 
 export function normalizeTaskLedgerEntry(entry: any): TaskLedgerEntry {

@@ -532,6 +532,10 @@ class GitHubBackupRequest(BaseModel):
     dry_run: bool = True
 
 
+class PullBundleBackupDryRunRequest(BaseModel):
+    bundle_id: str | None = None
+
+
 class ScanRootRequest(BaseModel):
     server_id: str
     root: str

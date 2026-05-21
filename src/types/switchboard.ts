@@ -804,6 +804,46 @@ export interface GitHubBackupResult {
   push_results?: Array<Record<string, unknown>>
 }
 
+export interface PullBundleGithubBackupDryRunRequest {
+  bundle_id?: string
+}
+
+export interface PullBundleGithubBackupDryRun {
+  run_id: string
+  generated_at: string
+  service_id: string
+  bundle_id: string
+  source_tree_path: string
+  source_policy?: string
+  target_repo: string
+  target_remote: string
+  target_branch: string
+  repo_head: string
+  repo_dirty: boolean
+  repo_status?: string
+  bundle_profile: string
+  backup_readiness_status: 'proof_only' | 'review_required' | 'not_backup_ready'
+  not_backup_ready: boolean
+  not_push_ready: boolean
+  status: 'blocked' | CollectStatus
+  included_file_count: number
+  skipped_entry_count: number
+  unresolved_exposure_count: number
+  review_state_counts: Record<ExposureReviewState, number>
+  authority_fresh: boolean
+  authority_updated_at: string
+  control_center_truth_as_of: string
+  blocked_reasons: string[]
+  would_stage_files: string[]
+  would_commit: boolean
+  would_push: boolean
+  push_performed: boolean
+  commit_performed: boolean
+  stage_performed: boolean
+  git_readonly_commands?: string[]
+  bundle_history_count?: number
+}
+
 export interface RepoStateResult extends RepoSummary {
   repo_path: string
 }

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-21T20:02:17+00:00",
+  "generated": "2026-05-21T20:37:33+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -5768,6 +5768,142 @@
         "expected_ports": [],
         "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/pull-bundles | rg -q \"exposure_review\"",
         "run_command_hint": "open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-22T02:01:37+05:30",
+      "title": "Add report-only GitHub backup dry run",
+      "tags": [
+        "task"
+      ],
+      "version": "",
+      "summary": "Added a service-level report-only GitHub backup dry-run path that uses the latest backup-clean pull bundle as source, persists blocked/not-push-ready reports, and surfaces why backup cannot proceed without pushing, staging, committing, or creating a new bundle.",
+      "changed_paths": [
+        "switchboard/storage.py",
+        "switchboard/collectors.py",
+        "switchboard/models.py",
+        "switchboard/api.py",
+        "switchboard/evidence/github-backup-dry-runs.json",
+        "src/types/switchboard.ts",
+        "src/api/client.ts",
+        "src/components/PullBundlePanel.tsx",
+        "tests_backend/test_backend_regressions.py",
+        "tests/freshness-contract.test.ts",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager",
+      "tool": "codex-desktop, Chrome extension backend",
+      "read_back": "The dry run is diagnostic only. It reports `blocked`, `not_push_ready: true`, `push_performed: false`, `commit_performed: false`, and `stage_performed: false`. It uses bundle `1__switch__local_mac__20260520T110201Z` as source, not the raw working tree, and keeps the latest bundle `review_required` / `not_backup_ready`.",
+      "scope_check": "Report-only dry run only; no push, no stage, no commit, no branch/checkout, no new bundle, no review-state mutation, no scanner stack, no .47, no project grouping repair, no Palimpsest, no deletion.",
+      "bootstrap_version": "",
+      "notes": [],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "artifact",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/github-backup-dry-runs.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/storage.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/models.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/api/client.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/PullBundlePanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/freshness-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q \"not_push_ready\"",
+        "run_command_hint": "open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run",
         "monitoring_mode": "manual",
         "notes": ""
       },

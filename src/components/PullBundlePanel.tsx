@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Archive, ChevronDown, ChevronRight, Download, LoaderCircle, PackagePlus, Settings2 } from 'lucide-react'
-import { createPullBundle, getActionLocks, listPullBundles, preflightPullBundle } from '../api/client'
-import type { DependencyComposition, PullBundlePreflight, PullBundleRecord, ScopeEntry, Service } from '../types/switchboard'
+import { createPullBundle, createPullBundleGithubBackupDryRun, getActionLocks, listPullBundleGithubBackupDryRuns, listPullBundles, preflightPullBundle } from '../api/client'
+import type { DependencyComposition, PullBundleGithubBackupDryRun, PullBundlePreflight, PullBundleRecord, ScopeEntry, Service } from '../types/switchboard'
 import { isApiError } from '../types/switchboard'
 import { StatusBadge } from './StatusBadge'
 import { ConfirmationModal, ACTION_EXPLAIN } from './ConfirmationModal'
@@ -91,6 +91,16 @@ function exposureReviewCountsLabel(bundle: PullBundleRecord) {
   return parts.join(' · ')
 }
 
+function dryRunReviewCountsLabel(report: PullBundleGithubBackupDryRun) {
+  const counts = report.review_state_counts ?? {}
+  return [
+    `unreviewed ${counts.unreviewed ?? 0}`,
+    `false_positive ${counts.false_positive ?? 0}`,
+    `needs_action ${counts.needs_action ?? 0}`,
+    `accepted_risk ${counts.accepted_risk ?? 0}`,
+  ].join(' · ')
+}
+
 function authorityBlockerCopy(preflight: PullBundlePreflight) {
   if (preflight.freshness?.stale_reason === 'manager_8020_unreachable' || preflight.freshness?.refresh_action === 'Check 8020') {
     return 'Manager truth is unavailable. Check 8020 before creating a bundle; 8009 only proves the Control Center API is alive.'
@@ -122,6 +132,9 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [leftOutOpen, setLeftOutOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [dryRuns, setDryRuns] = useState<PullBundleGithubBackupDryRun[]>([])
+  const [dryRunOpen, setDryRunOpen] = useState<Record<string, boolean>>({})
+  const [dryRunningBundleId, setDryRunningBundleId] = useState('')
   const defaultLocationId = useMemo(() => {
     if (service.locations.length === 1) return service.locations[0].location_id
     return service.locations.find((location) => location.is_primary)?.location_id ?? ''
@@ -237,6 +250,9 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     listPullBundles(service.service_id).then((result) => {
       if (!isApiError(result)) setHistory(result)
     })
+    listPullBundleGithubBackupDryRuns(service.service_id).then((result) => {
+      if (!isApiError(result)) setDryRuns(result)
+    })
   }, [disabled, refreshKey, service.service_id])
 
   useEffect(() => {
@@ -260,6 +276,10 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
     if (bundleResult?.files?.length) return bundleResult
     return history.find((bundle) => (bundle.files?.length ?? 0) > 0) ?? null
   }, [bundleResult, history])
+  const latestBackupCleanBundleId = useMemo(
+    () => history.find((bundle) => bundle.backup_clean || bundle.bundle_profile === 'backup-clean')?.bundle_id ?? '',
+    [history],
+  )
   const cachedPreflightChanged = Boolean(preflight && preflightContextKey && preflightContextKey !== preflightAuthorityContextKey)
   const cachedPreflightAuthorityStale = Boolean(
     preflight?.status === 'ok' &&
@@ -345,6 +365,27 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
       sessionStorage.removeItem(sessionKey)
       setPendingActions(prev => { const next = { ...prev }; delete next[sessionKey]; return next })
     }
+  }
+
+  async function runBackupDryRun(bundleId: string) {
+    setDryRunningBundleId(bundleId)
+    setMessage('')
+    try {
+      const result = await createPullBundleGithubBackupDryRun(service.service_id, { bundle_id: bundleId })
+      if (isApiError(result)) {
+        setMessage(result.message)
+        return
+      }
+      setDryRuns((current) => [result, ...current.filter((entry) => entry.run_id !== result.run_id)])
+      setDryRunOpen((current) => ({ ...current, [bundleId]: true }))
+      setMessage(`Dry run ${result.status}. No push, stage, or commit performed.`)
+    } finally {
+      setDryRunningBundleId('')
+    }
+  }
+
+  function latestDryRunForBundle(bundleId: string) {
+    return dryRuns.find((entry) => entry.bundle_id === bundleId) ?? null
   }
 
   function renderComposition(composition?: DependencyComposition) {
@@ -869,6 +910,65 @@ export function PullBundlePanel({ service, disabled, refreshKey = 0 }: Props) {
                                 <div className="text-xs text-yellow-100/70">Showing first 12 exposure findings.</div>
                               )}
                             </div>
+                          </div>
+                        )}
+                        {(bundle.bundle_id === latestBackupCleanBundleId || latestDryRunForBundle(bundle.bundle_id)) && (
+                          <div className="mt-3 rounded border border-blue-900/30 bg-blue-950/20 p-2 text-xs text-blue-100/90">
+                            <div className="flex items-center justify-between gap-3">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDryRunOpen((current) => ({
+                                    ...current,
+                                    [bundle.bundle_id]: !current[bundle.bundle_id],
+                                  }))
+                                }
+                                className="flex items-center gap-1 text-left"
+                              >
+                                {dryRunOpen[bundle.bundle_id] ? (
+                                  <ChevronDown className="h-3.5 w-3.5 text-blue-200/70" />
+                                ) : (
+                                  <ChevronRight className="h-3.5 w-3.5 text-blue-200/70" />
+                                )}
+                                <span className="text-[11px] uppercase tracking-[0.16em] text-blue-200/80">
+                                  GitHub backup dry run
+                                </span>
+                              </button>
+                              {bundle.bundle_id === latestBackupCleanBundleId && (
+                                <button
+                                  type="button"
+                                  onClick={() => void runBackupDryRun(bundle.bundle_id)}
+                                  disabled={disabled || dryRunningBundleId === bundle.bundle_id}
+                                  className="rounded border border-blue-800 px-2 py-1 text-[11px] text-blue-100 transition-colors hover:border-blue-500 disabled:opacity-50"
+                                >
+                                  {dryRunningBundleId === bundle.bundle_id ? 'Running' : 'Run report'}
+                                </button>
+                              )}
+                            </div>
+                            {latestDryRunForBundle(bundle.bundle_id) ? (
+                              <div className="mt-2 rounded border border-blue-900/30 bg-black/20 px-2 py-1">
+                                <div>
+                                  {latestDryRunForBundle(bundle.bundle_id)?.status} · not push ready · no push/stage/commit performed
+                                </div>
+                                {dryRunOpen[bundle.bundle_id] && latestDryRunForBundle(bundle.bundle_id) && (
+                                  <div className="mt-2 space-y-1 text-blue-100/80">
+                                    <div>Run: {latestDryRunForBundle(bundle.bundle_id)?.run_id}</div>
+                                    <div>Repo: {latestDryRunForBundle(bundle.bundle_id)?.target_repo || 'unknown'} · {latestDryRunForBundle(bundle.bundle_id)?.target_branch || 'no branch'}</div>
+                                    <div>Head: {latestDryRunForBundle(bundle.bundle_id)?.repo_head || 'unknown'}</div>
+                                    <div>Repo dirty: {latestDryRunForBundle(bundle.bundle_id)?.repo_dirty ? 'yes' : 'no'}</div>
+                                    <div>Unresolved exposures: {latestDryRunForBundle(bundle.bundle_id)?.unresolved_exposure_count ?? 0} · skipped: {latestDryRunForBundle(bundle.bundle_id)?.skipped_entry_count ?? 0}</div>
+                                    <div>Review: {dryRunReviewCountsLabel(latestDryRunForBundle(bundle.bundle_id) as PullBundleGithubBackupDryRun)}</div>
+                                    <div>Authority: {latestDryRunForBundle(bundle.bundle_id)?.authority_fresh ? 'fresh' : 'stale'}</div>
+                                    <div>Blocked: {(latestDryRunForBundle(bundle.bundle_id)?.blocked_reasons ?? []).join(' · ')}</div>
+                                    <div className="font-mono break-all">Source: {latestDryRunForBundle(bundle.bundle_id)?.source_tree_path}</div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="mt-2 text-blue-100/70">
+                                No dry-run report yet. This report is diagnostic only and will not push, stage, commit, or create a bundle.
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

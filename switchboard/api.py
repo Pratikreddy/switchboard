@@ -30,6 +30,7 @@ from .models import (
     ProjectEnvironmentCreateRequest,
     ProjectEnvironmentPatchRequest,
     ProjectPatchRequest,
+    PullBundleBackupDryRunRequest,
     PullBundleRequest,
     RepoActionRequest,
     RuntimeActionRequest,
@@ -718,6 +719,28 @@ def get_pull_bundle_exposure_review(service_id: str, bundle_id: str) -> dict[str
             normalized = coordinator.normalize_pull_bundle_record(bundle)
             return normalized.get("exposure_review", {"bundle_id": bundle_id, "groups": []})
     raise HTTPException(status_code=404, detail=f"bundle not found: {bundle_id}")
+
+
+@app.get("/api/services/{service_id}/github-backup-dry-runs")
+def list_service_github_backup_dry_runs(service_id: str) -> dict[str, object]:
+    try:
+        manifest_store.get_service(service_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {
+        "service_id": service_id,
+        "runs": snapshot_store.list_github_backup_dry_runs(service_id),
+    }
+
+
+@app.post("/api/services/{service_id}/github-backup-dry-runs")
+def create_service_github_backup_dry_run(service_id: str, request: PullBundleBackupDryRunRequest) -> dict[str, object]:
+    try:
+        result = coordinator.github_backup_dry_run_from_pull_bundle(service_id, request)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    _raise_for_action_result(result)
+    return result
 
 
 @app.post("/api/services/{service_id}/pull-bundles")

@@ -13,7 +13,7 @@ from switchboard.config import Settings
 from switchboard.collectors import CollectionCoordinator
 from switchboard.freshness import freshen_node_viewers, freshness_envelope
 from switchboard.manifests import ManifestStore, save_json
-from switchboard.models import CollectRequest, GitHubBackupRequest, GitPullRequest, NodeActionRequest, ProjectCreateRequest, ProjectPatchRequest, PullBundleRequest, ResolvedServer, ScopeEntry, LocationSpec, ServiceManifest
+from switchboard.models import CollectRequest, GitHubBackupRequest, GitPullRequest, NodeActionRequest, ProjectCreateRequest, ProjectPatchRequest, PullBundleBackupDryRunRequest, PullBundleRequest, ResolvedServer, ScopeEntry, LocationSpec, ServiceManifest
 from switchboard.storage import SnapshotStore, read_json
 
 
@@ -1446,6 +1446,164 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(review["review_state_counts"]["needs_action"], 1)
             stored_history = read_json(settings.evidence_dir / "pull-bundle-history.json", {"bundles": []})
             self.assertNotIn("exposure_review", stored_history["bundles"][0])
+
+    def test_pull_bundle_github_backup_dry_run_is_report_only_from_latest_bundle(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project_root = root / "repo"
+            source_tree = root / "downloads" / "ws" / "svc" / "bundle-1" / "source_tree"
+            project_root.mkdir(parents=True)
+            source_tree.mkdir(parents=True)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            save_json(
+                settings.manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "svc",
+                        "workspace_id": "ws",
+                        "display_name": "Svc",
+                        "locations": [
+                            {
+                                "location_id": "svc-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                                "role": "primary",
+                                "is_primary": True,
+                                "path_aliases": [],
+                            }
+                        ],
+                        "repo_paths": [str(project_root)],
+                    }
+                ],
+            )
+            bundle = {
+                "bundle_id": "bundle-1",
+                "created_at": "2026-05-20T00:00:00+00:00",
+                "workspace_id": "ws",
+                "service_id": "svc",
+                "server_id": "local_mac",
+                "bundle_profile": "backup-clean",
+                "backup_clean": True,
+                "location_root": str(project_root),
+                "source_tree_path": str(source_tree),
+                "manifest_path": str(source_tree.parent / "bundle-manifest.json"),
+                "authority": {"updated_at": "2026-05-20T00:00:00+00:00", "source": "node-local"},
+                "authority_fresh": True,
+                "file_count": 1,
+                "docs_count": 0,
+                "logs_count": 0,
+                "files": [{"relative_path": "app.py", "kind": "code"}],
+                "skipped_entry_count": 1,
+                "skipped_entries": [{"path": "/missing", "kind": "doc", "path_type": "file", "reason": "missing"}],
+                "exposure_findings": [
+                    {
+                        "relative_path": "app.py",
+                        "finding_kind": "generic_token",
+                        "variable_name": "API_TOKEN",
+                        "line_number": 1,
+                        "redacted": True,
+                    }
+                ],
+                "backup_readiness_status": "review_required",
+                "not_backup_ready": True,
+            }
+            save_json(
+                settings.evidence_dir / "pull-bundle-history.json",
+                {"generated": "2026-05-20T00:00:00+00:00", "bundles": [bundle]},
+            )
+            save_json(
+                settings.evidence_dir / "pull-bundle-exposure-reviews.json",
+                {"generated": "2026-05-20T00:00:00+00:00", "bundles": {}},
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+
+            with mock.patch.object(
+                coordinator,
+                "_readonly_git_summary",
+                return_value={
+                    "repo_status": "ok",
+                    "target_repo": "example/svc",
+                    "target_remote": "origin\thttps://github.com/example/svc.git (push)",
+                    "target_branch": "main",
+                    "repo_head": "abc123",
+                    "repo_dirty": True,
+                },
+            ):
+                report = coordinator.github_backup_dry_run_from_pull_bundle("svc", PullBundleBackupDryRunRequest())
+
+            self.assertEqual(report["status"], "blocked")
+            self.assertTrue(report["not_push_ready"])
+            self.assertFalse(report["push_performed"])
+            self.assertFalse(report["commit_performed"])
+            self.assertFalse(report["stage_performed"])
+            self.assertEqual(report["source_policy"], "latest_backup_clean_pull_bundle_only")
+            self.assertEqual(report["source_tree_path"], str(source_tree))
+            self.assertEqual(report["would_stage_files"], ["app.py"])
+            self.assertEqual(report["unresolved_exposure_count"], 1)
+            self.assertEqual(report["review_state_counts"]["unreviewed"], 1)
+            self.assertIn("unresolved_exposures", report["blocked_reasons"])
+            self.assertIn("skipped_entries_need_review", report["blocked_reasons"])
+            self.assertIn("repo_dirty", report["blocked_reasons"])
+            history = read_json(settings.manifest_dir.parent / "evidence" / "github-backup-dry-runs.json", {"runs": []})
+            self.assertEqual(history["runs"][0]["bundle_id"], "bundle-1")
+            bundles = read_json(settings.evidence_dir / "pull-bundle-history.json", {"bundles": []})
+            self.assertEqual(len(bundles["bundles"]), 1)
+            overlay = read_json(settings.evidence_dir / "pull-bundle-exposure-reviews.json", {})
+            self.assertEqual(overlay, {"generated": "2026-05-20T00:00:00+00:00", "bundles": {}})
+
+    def test_pull_bundle_github_backup_dry_run_prefers_origin_over_mirror(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            coordinator = CollectionCoordinator(settings, ManifestStore(settings), SnapshotStore(settings, ManifestStore(settings)))
+
+            def fake_run_local(command: list[str], **_kwargs: object) -> dict[str, object]:
+                joined = " ".join(command)
+                if "rev-parse --show-toplevel" in joined:
+                    return {"returncode": 0, "stdout": str(root), "stderr": ""}
+                if "status --short" in joined:
+                    return {"returncode": 0, "stdout": "", "stderr": ""}
+                if "remote -v" in joined:
+                    return {
+                        "returncode": 0,
+                        "stdout": "\n".join(
+                            [
+                                "mirror-pratikreddy\thttps://github.com/Pratikreddy/switchboard.git (fetch)",
+                                "mirror-pratikreddy\thttps://github.com/Pratikreddy/switchboard.git (push)",
+                                "origin\thttps://github.com/pratikreddy9/switchboard.git (fetch)",
+                                "origin\thttps://github.com/pratikreddy9/switchboard.git (push)",
+                            ]
+                        ),
+                        "stderr": "",
+                    }
+                if "rev-parse HEAD" in joined:
+                    return {"returncode": 0, "stdout": "abc123\n", "stderr": ""}
+                if "branch --show-current" in joined:
+                    return {"returncode": 0, "stdout": "main\n", "stderr": ""}
+                if "diff --name-only" in joined:
+                    return {"returncode": 0, "stdout": "", "stderr": ""}
+                return {"returncode": 1, "stdout": "", "stderr": "unexpected command"}
+
+            with mock.patch.object(coordinator, "_run_local", side_effect=fake_run_local):
+                summary = coordinator._readonly_git_summary(str(root))
+
+            self.assertEqual(summary["target_remote"], "origin\thttps://github.com/pratikreddy9/switchboard.git (push)")
+            self.assertEqual(summary["target_repo"], "pratikreddy9/switchboard")
 
     def test_pull_bundle_preflight_uses_check_8020_fix_for_manager_unreachable(self) -> None:
         with TemporaryDirectory() as tmpdir:

@@ -1,11 +1,11 @@
 {
-  "generated": "2026-05-21T20:02:54+00:00",
+  "generated": "2026-05-21T20:37:33+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-22T01:31:52+05:30",
-    "title": "Add pull-bundle exposure review classification",
+    "timestamp": "2026-05-22T02:01:37+05:30",
+    "title": "Add report-only GitHub backup dry run",
     "agent": "Codex manager",
     "tool": "codex-desktop, Chrome extension backend"
   },

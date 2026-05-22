@@ -1175,3 +1175,37 @@
   - healthcheck_command: curl -s http://127.0.0.1:8009/api/control-center/context | rg -q "data_sync_evidence_surface"
   - run_command_hint: open Switchboard main dashboard and verify Task-Ledger Activity Map, read-only Branch metadata, User Story Evidence, and Agent Usage Notes
   - monitoring_mode: manual
+
+## 2026-05-22T12:41:36+05:30 | Register dashboard panel registry and remove hero band
+- Tags: task, handoff, scope
+- Summary: Recorded the main dashboard cleanup that removes the large Switchboard Control Center hero/status band, keeps backend status as compact metadata, and routes Control Center data surfaces through one panel registry with group, priority, subgroup, and render function.
+- Changed Paths: src/pages/ControlCenterPage.tsx, src/components/controlCenterPanelRegistry.tsx, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Codex builder
+- Tool: codex-desktop
+- Read Back: The dashboard should stay compact. Tech Stack, How To Use, and Companies remain horizontally stacked on desktop, similar dashboard data surfaces are registered through a single registry, and product code is not changed beyond the existing registry/hero-removal patch.
+- Scope Check: Ledger and snapshot closeout only; no pull-bundle work, no Agent Ops files, no MISTAKES.md, no product-code edits beyond the existing dirty dashboard registry patch, no commit, and no push.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts | true
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json | true
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json | true
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json | true
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/doc-index.md | true
+  - artifact | file | /Users/p/Desktop/dashboard/switchboard/node.manifest.json | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static | true
+- Runtime:
+  - healthcheck_command: npm test -- --run tests/main-dashboard-product-sweep-contract.test.ts && npm run build
+  - run_command_hint: open Switchboard main dashboard and verify the hero band is gone, backend status is compact, and Tech Stack / How To Use / Companies remain horizontally stacked on desktop
+  - monitoring_mode: manual

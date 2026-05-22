@@ -1,17 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, FolderKanban, Server, Shield, ChevronDown, ChevronRight, BookOpen, HelpCircle } from 'lucide-react'
+import { ArrowRight, FolderKanban, Server, Shield } from 'lucide-react'
 import type { Workspace, WorkspaceLatest, ServerRecord } from '../types/switchboard'
 import { StatusBadge } from '../components/StatusBadge'
-import { ServerCRUDPanel } from '../components/ServerCRUDPanel'
-import { CompaniesPanel } from '../components/CompaniesPanel'
-import { GitHubBackupPanel } from '../components/GitHubBackupPanel'
-import {
-  ActivityMapPanel,
-  AgentUsageNotesPanel,
-  FeatureMapPanel,
-  HarnessSourceMapPanel,
-  UserStoryPanel,
-} from '../components/ControlCenterInsightPanels'
+import { CONTROL_CENTER_PANEL_GROUPS, type ControlCenterPanelRegistryContext } from '../components/controlCenterPanelRegistry'
 import { TECH_STACK_LINES, HOW_TO_USE_LINES } from '../App'
 import { getControlCenterContext, listServers } from '../api/client'
 import type { ControlCenterContext } from '../types/switchboard'
@@ -32,8 +23,6 @@ export function ControlCenterPage({
   onReloadCompanies,
 }: Props) {
   const [servers, setServers] = useState<ServerRecord[]>([])
-  const [techOpen, setTechOpen] = useState(false)
-  const [howToOpen, setHowToOpen] = useState(false)
   const [dashboardContext, setDashboardContext] = useState<ControlCenterContext | null>(null)
   const [selectedBranch, setSelectedBranch] = useState('')
 
@@ -67,87 +56,40 @@ export function ControlCenterPage({
     }
   }
 
+  const panelContext: ControlCenterPanelRegistryContext = {
+    dashboardContext,
+    selectedBranch,
+    online,
+    servers,
+    workspaces,
+    techStackLines: TECH_STACK_LINES,
+    howToUseLines: HOW_TO_USE_LINES,
+    onBranchChange: setSelectedBranch,
+    onReloadCompanies,
+    onReloadServers: loadServers,
+  }
+
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 via-gray-950 to-slate-900 p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold text-white">Switchboard Control Center</h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-400 mb-4">
-              Data sync, evidence, and handoff surface for companies, servers, nodes, pulls, and review workflows.
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-black/20 px-4 py-3 text-sm text-gray-300">
-            Backend: {online === null ? 'checking' : online ? 'live' : 'offline fallback'}
-          </div>
-        </div>
-      </section>
-
-      <ActivityMapPanel
-        context={dashboardContext}
-        selectedBranch={selectedBranch}
-        onBranchChange={setSelectedBranch}
-      />
-
-      <section className="grid gap-4 lg:grid-cols-3" data-testid="main-dashboard-panels">
-        {/* Tech Stack accordion */}
-        <section className="rounded-xl border border-gray-800 bg-gray-900">
-          <button
-            className="flex w-full items-center justify-between px-5 py-4 text-left"
-            onClick={() => setTechOpen((o) => !o)}
-          >
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-200">
-              <BookOpen className="h-4 w-4 text-cyan-400" />
-              Tech Stack
+      {CONTROL_CENTER_PANEL_GROUPS.map((group) => (
+        <section
+          key={group.id}
+          className={group.layoutClassName}
+          data-testid={`control-center-panel-group-${group.id}`}
+          aria-label={group.title}
+        >
+          {group.id === 'activity' && (
+            <div className="flex justify-end text-xs text-gray-500" data-testid="backend-status-compact">
+              Backend: {online === null ? 'checking' : online ? 'live' : 'offline fallback'}
             </div>
-            {techOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-          </button>
-          {techOpen && (
-            <ul className="space-y-2 border-t border-gray-800 px-5 py-4">
-              {TECH_STACK_LINES.map((line, i) => (
-                <li key={i} className="text-sm text-gray-400">{line}</li>
-              ))}
-            </ul>
           )}
-        </section>
-
-        {/* How To Use accordion */}
-        <section className="rounded-xl border border-gray-800 bg-gray-900">
-          <button
-            className="flex w-full items-center justify-between px-5 py-4 text-left"
-            onClick={() => setHowToOpen((o) => !o)}
-          >
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-200">
-              <HelpCircle className="h-4 w-4 text-cyan-400" />
-              How To Use
+          {group.panels.map((panel) => (
+            <div key={panel.id} data-panel-id={panel.id} data-panel-priority={panel.priority} data-panel-subgroup={panel.subgroup}>
+              {panel.render(panelContext)}
             </div>
-            {howToOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-          </button>
-          {howToOpen && (
-            <ul className="space-y-2 border-t border-gray-800 px-5 py-4">
-              {HOW_TO_USE_LINES.map((line, i) => (
-                <li key={i} className="text-sm text-gray-400">{line}</li>
-              ))}
-            </ul>
-          )}
+          ))}
         </section>
-
-        <CompaniesPanel companies={workspaces} offline={!online} onReload={onReloadCompanies} />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-2">
-        <FeatureMapPanel context={dashboardContext} />
-        <HarnessSourceMapPanel context={dashboardContext} />
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        <UserStoryPanel context={dashboardContext} />
-        <AgentUsageNotesPanel context={dashboardContext} />
-      </section>
-
-      <ServerCRUDPanel servers={servers} companies={workspaces} offline={!online} onReload={loadServers} />
-
-      <GitHubBackupPanel disabled={!online} />
+      ))}
 
       <section className="grid gap-4 md:grid-cols-2">
         {workspaces.map((workspace) => {

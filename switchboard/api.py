@@ -311,6 +311,11 @@ def export_palimpsest() -> dict[str, object]:
     return coordinator.export_palimpsest_state()
 
 
+@app.get("/api/control-center/context")
+def get_control_center_context(branch: str | None = None) -> dict[str, object]:
+    return coordinator.control_center_context(branch)
+
+
 @app.get("/api/workspaces")
 def list_workspaces() -> dict[str, object]:
     workspaces = manifest_store.load_workspaces()

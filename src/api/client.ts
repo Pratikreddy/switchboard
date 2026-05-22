@@ -25,6 +25,7 @@ import type {
   ApiResult,
   ApiError,
   CollectOptions,
+  ControlCenterContext,
   CreateServiceRequest,
   DiscoveryTreeRequest,
   DiscoveryTreeResult,
@@ -852,6 +853,13 @@ export const runGithubBackup = (
     method: 'POST',
     body: JSON.stringify({ ...req, dry_run: false }),
   })
+
+export const getControlCenterContext = (
+  branch?: string,
+): Promise<ApiResult<ControlCenterContext>> => {
+  const query = branch ? `?branch=${encodeURIComponent(branch)}` : ''
+  return apiFetch<ControlCenterContext>(`/control-center/context${query}`)
+}
 
 // Returns count only — never expose actual paths in the dashboard
 export const getSecretPathCount = (

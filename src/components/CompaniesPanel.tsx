@@ -89,7 +89,7 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900">
+    <div className="rounded-xl border border-gray-800 bg-gray-900">
       <button onClick={() => setExpanded((open) => !open)} className="flex w-full items-center justify-between p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
           <BriefcaseBusiness className="h-4 w-4 text-amber-300" />

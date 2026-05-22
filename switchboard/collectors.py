@@ -55,6 +55,7 @@ from .models import (
 from .node import (
     list_manager_roots,
     normalize_manager_root,
+    parse_tasks_completed,
 )
 from .node_runtime import manager_status, node_status
 from .storage import SnapshotStore, utc_now_iso
@@ -2522,6 +2523,436 @@ class CollectionCoordinator:
             wanted = set(service_ids)
             services = [service for service in services if service.service_id in wanted]
         return services
+
+    def control_center_context(self, branch: str | None = None) -> dict[str, Any]:
+        generated = utc_now_iso()
+        activity = self._work_activity()
+        repo_metadata = self._repo_metadata(branch)
+        harness = self._harness_context_map()
+        user_story = self._user_story_context()
+        agent_usage_notes = self._agent_usage_notes_context()
+        line_noise = self._codebase_line_count_summary()
+        return {
+            "generated": generated,
+            "activity_map": activity,
+            "branch_metadata": repo_metadata,
+            "feature_map": self._feature_map_context(),
+            "harness_source_map": harness,
+            "user_story": user_story,
+            "agent_usage_notes": agent_usage_notes,
+            "line_noise": line_noise,
+            "cleanup_note": "Activity is collected from task ledgers and managed-project work density. Git branch/head is metadata only; generated/runtime/private/download noise is excluded from active-source line totals.",
+        }
+
+    def _project_root(self) -> Path:
+        return self.settings.manifest_dir.parent.parent
+
+    def _repo_metadata(self, branch: str | None) -> dict[str, Any]:
+        root = self._project_root()
+        current_branch = self._run_local(["git", "-C", str(root), "branch", "--show-current"])
+        branches_result = self._run_local(["git", "-C", str(root), "branch", "--format=%(refname:short)"])
+        branches = [line.strip() for line in self._split_lines(branches_result["stdout"]) if line.strip()]
+        selected_branch = branch if branch in branches else current_branch["stdout"].strip()
+        if not selected_branch:
+            selected_branch = "HEAD"
+        head = self._run_local(["git", "-C", str(root), "rev-parse", selected_branch])
+        return {
+            "status": "ok" if head["returncode"] == 0 else "unverified",
+            "generated": utc_now_iso(),
+            "repo_path": str(root),
+            "branches": branches,
+            "active_branch": selected_branch,
+            "current_head": head["stdout"].strip() if head["returncode"] == 0 else "",
+            "metadata_only": True,
+            "note": "Branch/head data is read-only metadata; it is not the activity source.",
+        }
+
+    def _work_activity(self) -> dict[str, Any]:
+        root = self._project_root()
+        task_path = root / "switchboard" / "local" / "tasks-completed.md"
+        by_day: dict[str, dict[str, Any]] = {}
+        errors: list[str] = []
+        entries = parse_tasks_completed(task_path)
+        if not task_path.exists():
+            errors.append(f"{task_path}: missing")
+        for entry in entries:
+            day = str(entry.get("timestamp", ""))[:10]
+            if not re.match(r"\d{4}-\d{2}-\d{2}", day):
+                errors.append(f"{task_path}: unparseable timestamp {entry.get('timestamp', '')}")
+                continue
+            item = by_day.setdefault(
+                day,
+                {
+                    "date": day,
+                    "task_count": 0,
+                    "service_count": 1,
+                    "changed_path_count": 0,
+                    "scope_entry_count": 0,
+                    "latest_title": "",
+                },
+            )
+            item["task_count"] += 1
+            item["changed_path_count"] += len(entry.get("changed_paths", []) or [])
+            item["scope_entry_count"] += len(entry.get("scope_entries", []) or [])
+            item["latest_title"] = str(entry.get("title", "") or item["latest_title"])
+        days = []
+        total_scope_entries = 0
+        for item in sorted(by_day.values(), key=lambda row: str(row.get("date", ""))):
+            total_scope_entries += int(item.get("scope_entry_count", 0))
+            days.append(item)
+        return {
+            "status": "ok" if days else "unverified",
+            "generated": utc_now_iso(),
+            "source": "task_ledgers",
+            "primary_truth": "switchboard/local/tasks-completed.md",
+            "scope": "dashboard_local_task_ledger_only",
+            "days": days,
+            "projects": self._managed_project_activity_sources(root, entries),
+            "total_tasks": sum(int(day.get("task_count", 0)) for day in days),
+            "total_changed_paths": sum(int(day.get("changed_path_count", 0)) for day in days),
+            "total_scope_entries": total_scope_entries,
+            "service_count": 1 if entries else 0,
+            "git_metadata_role": "branch_head_metadata_only",
+            "errors": errors[:20],
+        }
+
+    def _managed_project_activity_sources(self, current_root: Path, current_tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        manifest_path = self.settings.manifest_dir.parent / "manager.manifest.json"
+        try:
+            payload = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+        except (OSError, json.JSONDecodeError) as exc:
+            return [{
+                "root_id": "manager_manifest",
+                "display_name": "manager manifest",
+                "project_root": str(manifest_path),
+                "status": "error",
+                "task_count": 0,
+                "last_task_at": "",
+                "error": str(exc),
+            }]
+        entries = payload.get("managed_roots", []) if isinstance(payload, dict) else []
+        projects: list[dict[str, Any]] = []
+        current_resolved = current_root.resolve()
+        for entry in entries if isinstance(entries, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            project_root = Path(str(entry.get("project_root", ""))).expanduser()
+            is_current = project_root.resolve() == current_resolved if project_root.exists() else str(project_root) == str(current_root)
+            projects.append({
+                "root_id": str(entry.get("root_id", "")),
+                "display_name": str(entry.get("display_name", entry.get("service_id", ""))),
+                "project_root": str(project_root),
+                "status": "ok" if is_current else "deferred_external_ledger",
+                "task_count": len(current_tasks) if is_current else 0,
+                "last_task_at": str(current_tasks[-1].get("timestamp", "")) if is_current and current_tasks else "",
+                "error": "" if is_current else "External project ledger read deferred for this Brick 8A local correction.",
+            })
+        if not projects:
+            projects.append({
+                "root_id": "dashboard_core",
+                "display_name": "switchboard",
+                "project_root": str(current_root),
+                "status": "ok",
+                "task_count": len(current_tasks),
+                "last_task_at": str(current_tasks[-1].get("timestamp", "")) if current_tasks else "",
+                "error": "",
+            })
+        return projects
+
+    def _harness_context_map(self) -> dict[str, Any]:
+        root = self._project_root()
+        generated = utc_now_iso()
+        manifest = self._read_node_manifest()
+        enabled: set[str] = set()
+        if isinstance(manifest.get("agent_contract"), dict):
+            enabled = {str(item) for item in manifest.get("agent_contract", {}).get("enabled_entrypoints", [])}
+        specs = [
+            ("AGENTS.md", "agents"),
+            ("CLAUDE.md", "claude"),
+            ("GEMINI.md", "gemini"),
+            ("QWEN.md", "qwen"),
+            ("opencode.json", "opencode"),
+        ]
+        entries = []
+        canonical = "switchboard/core/agent-contract.md"
+        for filename, entrypoint in specs:
+            path = root / filename
+            text = self._read_text(path)
+            points_to = canonical if canonical in text else ""
+            warnings: list[str] = []
+            if path.exists() and not points_to:
+                warnings.append("adapter does not point to canonical Switchboard contract")
+            if path.exists() and entrypoint not in enabled:
+                warnings.append("adapter file exists but entrypoint is not active in node manifest")
+            entries.append(
+                {
+                    "adapter_file": filename,
+                    "exists": path.exists(),
+                    "active": entrypoint in enabled,
+                    "byte_count": path.stat().st_size if path.exists() else 0,
+                    "line_count": self._text_line_count(path),
+                    "points_to": points_to,
+                    "injected_context_source": points_to or filename,
+                    "last_generated_at": self._file_mtime(path),
+                    "warnings": warnings,
+                }
+            )
+        return {
+            "generated": generated,
+            "canonical_source": canonical,
+            "active_count": sum(1 for entry in entries if entry["active"]),
+            "warning_count": sum(len(entry["warnings"]) for entry in entries),
+            "note": "Root harness adapters should stay tiny wrappers. Real context belongs in the canonical Switchboard contract.",
+            "entries": entries,
+        }
+
+    def _read_node_manifest(self) -> dict[str, Any]:
+        path = self.settings.manifest_dir.parent / "node.manifest.json"
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+        return payload if isinstance(payload, dict) else {}
+
+    def _feature_map_context(self) -> dict[str, Any]:
+        return {
+            "generated": utc_now_iso(),
+            "role": "data_sync_evidence_surface",
+            "handoff_role": "agent_handoff_surface",
+            "correction_note": "Switchboard records, syncs, verifies, and explains project data for handoff. Agents are not launched or commanded from this surface.",
+            "main_features": [
+                {
+                    "name": "Task-ledger activity map",
+                    "status": "collection_first",
+                    "note": "Uses managed project task ledgers for work density. Git commits are metadata only.",
+                },
+                {
+                    "name": "Company dashboard",
+                    "status": "dashboard",
+                    "note": "Keeps Tech Stack, How To Use, and Companies together on the main dash.",
+                },
+                {
+                    "name": "Harness adapter source map",
+                    "status": "evidence",
+                    "note": "Shows wrapper files, active entrypoints, and whether they point to the canonical Switchboard contract.",
+                },
+                {
+                    "name": "Line/noise taxonomy",
+                    "status": "evidence",
+                    "note": "Separates active source from generated evidence, manifests, runtime, private, downloads, archives, locks, tests, docs, and adapters.",
+                },
+            ],
+            "sidecar_features": [
+                {
+                    "name": "User story / intake evidence",
+                    "status": "local_evidence",
+                    "note": "Stores project-local raw asks and interpretation as evidence, not as agent commands.",
+                },
+                {
+                    "name": "Agent-authored usage notes",
+                    "status": "local_evidence",
+                    "note": "Agents leave notes about using Switchboard; the notes do not direct agent behavior.",
+                },
+            ],
+        }
+
+    def _user_story_context(self) -> dict[str, Any]:
+        path = self.settings.manifest_dir.parent / "local" / "user-story.md"
+        text = self._read_text(path)
+        return {
+            "path": "switchboard/local/user-story.md",
+            "exists": path.exists(),
+            "updated_at": self._field_value(text, "updated_at"),
+            "last_clarified_at": self._field_value(text, "last_clarified_at"),
+            "last_validated_at": self._field_value(text, "last_validated_at"),
+            "raw_asks": self._markdown_section_lines(text, "Raw Asks"),
+            "current_interpretation": " ".join(self._markdown_section_lines(text, "Current Interpretation")),
+            "open_ambiguities": self._markdown_section_lines(text, "Open Ambiguities"),
+            "linked_task_entries": self._markdown_section_lines(text, "Linked Task Entries"),
+        }
+
+    def _agent_usage_notes_context(self) -> dict[str, Any]:
+        path = self.settings.manifest_dir.parent / "local" / "agent-usage-notes.md"
+        text = self._read_text(path)
+        return {
+            "path": "switchboard/local/agent-usage-notes.md",
+            "exists": path.exists(),
+            "updated_at": self._field_value(text, "updated_at"),
+            "latest_note": " ".join(self._markdown_section_lines(text, "Latest Note")),
+            "useful": self._markdown_section_lines(text, "Useful"),
+            "confusing": self._markdown_section_lines(text, "Confusing"),
+            "suggested_features": self._markdown_section_lines(text, "Suggested Features"),
+        }
+
+    def _field_value(self, text: str, field: str) -> str:
+        match = re.search(rf"^{re.escape(field)}:\s*`?([^`\n]+)`?\s*$", text, flags=re.MULTILINE)
+        return match.group(1).strip() if match else ""
+
+    def _markdown_section_lines(self, text: str, heading: str) -> list[str]:
+        if not text:
+            return []
+        match = re.search(rf"^##\s+{re.escape(heading)}\s*$", text, flags=re.MULTILINE)
+        if not match:
+            return []
+        rest = text[match.end():]
+        next_heading = re.search(r"^##\s+", rest, flags=re.MULTILINE)
+        block = rest[:next_heading.start()] if next_heading else rest
+        lines: list[str] = []
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            if line:
+                lines.append(line.removeprefix("- ").strip())
+        return lines
+
+    def _doc_sync_context(self) -> dict[str, Any]:
+        return {
+            "tool": "watchexec",
+            "status": "deferred",
+            "docs_url": "https://watchexec.github.io/",
+            "source_url": "https://github.com/watchexec/watchexec",
+            "why": "Candidate only. Watcher automation is parked until collection, user-story, and agent-usage semantics are stable.",
+            "do_not_use_for": [
+                "secret sync",
+                "two-way conflict resolution",
+                "remote .47 mutation",
+                "GitHub push automation",
+            ],
+            "commands": [
+                {
+                    "label": "agent-ops",
+                    "cwd": "/Users/p/Desktop/agent-ops",
+                    "command": "deferred: collect first, automate later",
+                },
+                {
+                    "label": "switchboard",
+                    "cwd": "/Users/p/Desktop/dashboard",
+                    "command": "deferred: collect first, automate later",
+                },
+            ],
+        }
+
+    def _read_text(self, path: Path) -> str:
+        try:
+            return path.read_text(encoding="utf-8", errors="ignore") if path.exists() else ""
+        except OSError:
+            return ""
+
+    def _file_mtime(self, path: Path) -> str:
+        if not path.exists():
+            return ""
+        try:
+            return self._format_mtime(path.stat().st_mtime)
+        except OSError:
+            return ""
+
+    def _text_line_count(self, path: Path) -> int:
+        if not path.exists() or not path.is_file():
+            return 0
+        try:
+            return len(path.read_text(encoding="utf-8", errors="ignore").splitlines())
+        except OSError:
+            return 0
+
+    def _codebase_line_count_summary(self) -> dict[str, Any]:
+        root = self._project_root()
+        excluded_prefixes = (
+            "node_modules/",
+            "dist/",
+            "switchboard/static/app/",
+            "downloads/",
+            "release_static/",
+            ".git/",
+            ".venv/",
+            "__pycache__/",
+        )
+        git_files = self._run_local(["git", "-C", str(root), "ls-files"])
+        files = self._split_lines(git_files["stdout"]) if git_files["returncode"] == 0 else []
+        taxonomy = [
+            "active_source",
+            "generated_evidence",
+            "manifest_data",
+            "runtime_cache",
+            "private_state",
+            "downloads_bundles",
+            "archives",
+            "dependency_locks",
+            "tests",
+            "docs",
+            "harness_adapters",
+        ]
+        total = 0
+        active_source_total = 0
+        category_totals: dict[str, dict[str, int]] = {name: {"file_count": 0, "line_count": 0} for name in taxonomy}
+        entries: list[dict[str, Any]] = []
+        for relative in files:
+            if not relative or relative.startswith(excluded_prefixes):
+                continue
+            path = root / relative
+            if not path.exists() or not path.is_file():
+                continue
+            try:
+                line_count = len(path.read_text(encoding="utf-8", errors="ignore").splitlines())
+            except OSError:
+                continue
+            classification = self._line_count_classification(relative)
+            total += line_count
+            category_totals.setdefault(classification, {"file_count": 0, "line_count": 0})
+            category_totals[classification]["file_count"] += 1
+            category_totals[classification]["line_count"] += line_count
+            if classification == "active_source":
+                active_source_total += line_count
+            entries.append({"path": relative, "lines": line_count, "classification": classification})
+        entries.sort(key=lambda item: int(item["lines"]), reverse=True)
+        return {
+            "generated": utc_now_iso(),
+            "taxonomy": taxonomy,
+            "total_lines": total,
+            "active_source_lines": active_source_total,
+            "noise_line_count": total - active_source_total,
+            "tracked_file_count": len(entries),
+            "top_files": entries[:10],
+            "categories": category_totals,
+            "important_paths": [
+                "src/pages/ControlCenterPage.tsx",
+                "src/components",
+                "switchboard/collectors.py",
+                "switchboard/api.py",
+                "switchboard/core/agent-contract.md",
+            ],
+            "noise_paths": [
+                "switchboard/evidence/*.json",
+                "switchboard/manifests/services.json",
+                "package-lock.json",
+                "switchboard/static/app",
+                "downloads",
+            ],
+        }
+
+    def _line_count_classification(self, relative: str) -> str:
+        lowered = relative.lower()
+        if lowered.startswith("switchboard/evidence/"):
+            return "generated_evidence"
+        if lowered.startswith("switchboard/manifests/") or lowered in {"switchboard/manager.manifest.json", "switchboard/node.manifest.json", "package.json", "pyproject.toml"}:
+            return "manifest_data"
+        if lowered.startswith("docs/evidence/") or lowered.startswith("src/data/") or lowered.startswith("switchboard/static/app/"):
+            return "generated_evidence"
+        if lowered.startswith(("state/", "logs/", "switchboard/state/", "switchboard/runtime/", "switchboard/manager/runtime/")):
+            return "runtime_cache"
+        if lowered.startswith(("state/private/", "private/", "switchboard/private/", ".claude/")) or lowered in {".env", ".npmrc"}:
+            return "private_state"
+        if lowered.startswith(("downloads/", "release/", "dist/", "build/")):
+            return "downloads_bundles"
+        if "/archives/" in lowered or lowered.startswith(("_archive/", "archive/", "archives/")):
+            return "archives"
+        if lowered.endswith(("package-lock.json", "uv.lock", "poetry.lock", "pnpm-lock.yaml", "yarn.lock")):
+            return "dependency_locks"
+        if lowered.startswith(("tests", "tests_backend/")):
+            return "tests"
+        if relative in {"AGENTS.md", "CLAUDE.md", "GEMINI.md", "QWEN.md", "opencode.json"} or lowered == "switchboard/core/agent-contract.md":
+            return "harness_adapters"
+        if lowered.endswith((".md", ".mdx")) or lowered.startswith(("docs/", "documentation/")):
+            return "docs"
+        return "active_source"
 
     def _backup_repo_record(
         self,

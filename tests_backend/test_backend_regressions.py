@@ -148,6 +148,28 @@ class BackendRegressionTests(unittest.TestCase):
         for service in body["services"]:
             self.assertIn("status", service)
 
+    def test_control_center_context_includes_data_handoff_surfaces(self) -> None:
+        body = api_module.get_control_center_context()
+        self.assertIn("activity_map", body)
+        self.assertIn("branch_metadata", body)
+        self.assertIn("feature_map", body)
+        self.assertIn("harness_source_map", body)
+        self.assertIn("user_story", body)
+        self.assertIn("agent_usage_notes", body)
+        self.assertIn("line_noise", body)
+        self.assertIn("cleanup_note", body)
+        self.assertIn("days", body["activity_map"])
+        self.assertEqual(body["activity_map"]["source"], "task_ledgers")
+        self.assertEqual(body["activity_map"]["git_metadata_role"], "branch_head_metadata_only")
+        self.assertIn("branches", body["branch_metadata"])
+        self.assertTrue(body["branch_metadata"]["metadata_only"])
+        self.assertEqual(body["feature_map"]["role"], "data_sync_evidence_surface")
+        self.assertIn("entries", body["harness_source_map"])
+        self.assertGreaterEqual(body["line_noise"]["total_lines"], 1)
+        self.assertIn("active_source_lines", body["line_noise"])
+        self.assertIn("active_source", body["line_noise"]["taxonomy"])
+        self.assertIn("harness_adapters", body["line_noise"]["taxonomy"])
+
     def test_manual_consolidation_scope_source_loads_agent_ops_manifest(self) -> None:
         manifests = ManifestStore(Settings())
         agent_ops = next(

@@ -858,6 +858,133 @@ export interface PullBundleGithubBackupDryRun {
   bundle_history_count?: number
 }
 
+export interface ActivityMapDay {
+  date: string
+  task_count: number
+  changed_path_count: number
+  scope_entry_count: number
+  latest_title: string
+}
+
+export interface ManagedProjectActivity {
+  root_id: string
+  display_name: string
+  project_root: string
+  status: string
+  task_count: number
+  last_task_at: string
+  error: string
+}
+
+export interface ActivityMapSummary {
+  status: CollectStatus
+  generated: string
+  source: string
+  primary_truth: string
+  scope: string
+  days: ActivityMapDay[]
+  projects: ManagedProjectActivity[]
+  total_tasks: number
+  total_changed_paths: number
+  total_scope_entries: number
+  git_metadata_role: string
+  errors: string[]
+}
+
+export interface BranchMetadata {
+  status: CollectStatus
+  generated: string
+  repo_path: string
+  branches: string[]
+  active_branch: string
+  current_head: string
+  metadata_only: boolean
+  note: string
+}
+
+export interface FeatureMapItem {
+  name: string
+  status: string
+  note: string
+}
+
+export interface FeatureMapContext {
+  generated: string
+  role: string
+  handoff_role?: string
+  correction_note: string
+  main_features: FeatureMapItem[]
+  sidecar_features: FeatureMapItem[]
+}
+
+export interface HarnessSourceEntry {
+  adapter_file: string
+  exists: boolean
+  active: boolean
+  byte_count: number
+  line_count: number
+  points_to: string
+  injected_context_source: string
+  last_generated_at: string
+  warnings: string[]
+}
+
+export interface HarnessSourceMap {
+  generated: string
+  canonical_source: string
+  active_count: number
+  warning_count: number
+  note: string
+  entries: HarnessSourceEntry[]
+}
+
+export interface UserStoryContext {
+  path: string
+  exists: boolean
+  updated_at: string
+  last_clarified_at: string
+  last_validated_at: string
+  raw_asks: string[]
+  current_interpretation: string
+  open_ambiguities: string[]
+  linked_task_entries: string[]
+}
+
+export interface AgentUsageNotesContext {
+  path: string
+  exists: boolean
+  updated_at: string
+  latest_note: string
+  useful: string[]
+  confusing: string[]
+  suggested_features: string[]
+}
+
+export interface LineNoiseSummary {
+  generated: string
+  taxonomy: string[]
+  total_lines: number
+  active_source_lines: number
+  noise_line_count: number
+  tracked_file_count: number
+  top_files: Array<{ path: string; lines: number; classification: string }>
+  categories: Record<string, { file_count: number; line_count: number }>
+  important_paths: string[]
+  noise_paths: string[]
+}
+
+export interface ControlCenterContext {
+  generated: string
+  activity_map: ActivityMapSummary
+  branch_metadata: BranchMetadata
+  feature_map: FeatureMapContext
+  harness_source_map: HarnessSourceMap
+  user_story: UserStoryContext
+  agent_usage_notes: AgentUsageNotesContext
+  line_noise: LineNoiseSummary
+  cleanup_note: string
+}
+
 export interface RepoStateResult extends RepoSummary {
   repo_path: string
 }

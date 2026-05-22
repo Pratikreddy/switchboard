@@ -5,8 +5,16 @@ import { StatusBadge } from '../components/StatusBadge'
 import { ServerCRUDPanel } from '../components/ServerCRUDPanel'
 import { CompaniesPanel } from '../components/CompaniesPanel'
 import { GitHubBackupPanel } from '../components/GitHubBackupPanel'
+import {
+  ActivityMapPanel,
+  AgentUsageNotesPanel,
+  FeatureMapPanel,
+  HarnessSourceMapPanel,
+  UserStoryPanel,
+} from '../components/ControlCenterInsightPanels'
 import { TECH_STACK_LINES, HOW_TO_USE_LINES } from '../App'
-import { listServers } from '../api/client'
+import { getControlCenterContext, listServers } from '../api/client'
+import type { ControlCenterContext } from '../types/switchboard'
 
 interface Props {
   workspaces: Workspace[]
@@ -26,17 +34,36 @@ export function ControlCenterPage({
   const [servers, setServers] = useState<ServerRecord[]>([])
   const [techOpen, setTechOpen] = useState(false)
   const [howToOpen, setHowToOpen] = useState(false)
+  const [dashboardContext, setDashboardContext] = useState<ControlCenterContext | null>(null)
+  const [selectedBranch, setSelectedBranch] = useState('')
 
   useEffect(() => {
     if (online) {
       loadServers()
+      loadDashboardContext()
     }
   }, [online])
+
+  useEffect(() => {
+    if (online && selectedBranch) {
+      loadDashboardContext(selectedBranch)
+    }
+  }, [selectedBranch])
 
   async function loadServers() {
     const res = await listServers()
     if (Array.isArray(res)) {
       setServers(res)
+    }
+  }
+
+  async function loadDashboardContext(branch?: string) {
+    const res = await getControlCenterContext(branch)
+    if (!('status' in res && 'message' in res)) {
+      setDashboardContext(res)
+      if (!selectedBranch) {
+        setSelectedBranch(res.branch_metadata.active_branch)
+      }
     }
   }
 
@@ -47,7 +74,7 @@ export function ControlCenterPage({
           <div>
             <h1 className="text-3xl font-semibold text-white">Switchboard Control Center</h1>
             <p className="mt-2 max-w-2xl text-sm text-gray-400 mb-4">
-              Clean control surface for companies, servers, nodes, pulls, and review workflows.
+              Data sync, evidence, and handoff surface for companies, servers, nodes, pulls, and review workflows.
             </p>
           </div>
           <div className="rounded-xl border border-gray-800 bg-black/20 px-4 py-3 text-sm text-gray-300">
@@ -56,49 +83,67 @@ export function ControlCenterPage({
         </div>
       </section>
 
-      {/* Tech Stack accordion */}
-      <section className="rounded-2xl border border-gray-800 bg-gray-900">
-        <button
-          className="flex w-full items-center justify-between px-5 py-4 text-left"
-          onClick={() => setTechOpen((o) => !o)}
-        >
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-200">
-            <BookOpen className="h-4 w-4 text-cyan-400" />
-            Tech Stack
-          </div>
-          {techOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-        </button>
-        {techOpen && (
-          <ul className="border-t border-gray-800 px-5 py-4 space-y-2">
-            {TECH_STACK_LINES.map((line, i) => (
-              <li key={i} className="text-sm text-gray-400">{line}</li>
-            ))}
-          </ul>
-        )}
+      <ActivityMapPanel
+        context={dashboardContext}
+        selectedBranch={selectedBranch}
+        onBranchChange={setSelectedBranch}
+      />
+
+      <section className="grid gap-4 lg:grid-cols-3" data-testid="main-dashboard-panels">
+        {/* Tech Stack accordion */}
+        <section className="rounded-xl border border-gray-800 bg-gray-900">
+          <button
+            className="flex w-full items-center justify-between px-5 py-4 text-left"
+            onClick={() => setTechOpen((o) => !o)}
+          >
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-200">
+              <BookOpen className="h-4 w-4 text-cyan-400" />
+              Tech Stack
+            </div>
+            {techOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+          </button>
+          {techOpen && (
+            <ul className="space-y-2 border-t border-gray-800 px-5 py-4">
+              {TECH_STACK_LINES.map((line, i) => (
+                <li key={i} className="text-sm text-gray-400">{line}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* How To Use accordion */}
+        <section className="rounded-xl border border-gray-800 bg-gray-900">
+          <button
+            className="flex w-full items-center justify-between px-5 py-4 text-left"
+            onClick={() => setHowToOpen((o) => !o)}
+          >
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-200">
+              <HelpCircle className="h-4 w-4 text-cyan-400" />
+              How To Use
+            </div>
+            {howToOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+          </button>
+          {howToOpen && (
+            <ul className="space-y-2 border-t border-gray-800 px-5 py-4">
+              {HOW_TO_USE_LINES.map((line, i) => (
+                <li key={i} className="text-sm text-gray-400">{line}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <CompaniesPanel companies={workspaces} offline={!online} onReload={onReloadCompanies} />
       </section>
 
-      {/* How To Use accordion */}
-      <section className="rounded-2xl border border-gray-800 bg-gray-900">
-        <button
-          className="flex w-full items-center justify-between px-5 py-4 text-left"
-          onClick={() => setHowToOpen((o) => !o)}
-        >
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-200">
-            <HelpCircle className="h-4 w-4 text-cyan-400" />
-            How To Use
-          </div>
-          {howToOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-        </button>
-        {howToOpen && (
-          <ul className="border-t border-gray-800 px-5 py-4 space-y-2">
-            {HOW_TO_USE_LINES.map((line, i) => (
-              <li key={i} className="text-sm text-gray-400">{line}</li>
-            ))}
-          </ul>
-        )}
+      <section className="grid gap-4 xl:grid-cols-2">
+        <FeatureMapPanel context={dashboardContext} />
+        <HarnessSourceMapPanel context={dashboardContext} />
       </section>
 
-      <CompaniesPanel companies={workspaces} offline={!online} onReload={onReloadCompanies} />
+      <section className="grid gap-4 lg:grid-cols-2">
+        <UserStoryPanel context={dashboardContext} />
+        <AgentUsageNotesPanel context={dashboardContext} />
+      </section>
 
       <ServerCRUDPanel servers={servers} companies={workspaces} offline={!online} onReload={loadServers} />
 

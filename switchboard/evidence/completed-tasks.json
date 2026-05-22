@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-21T21:17:07+00:00",
+  "generated": "2026-05-22T05:53:04+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -6015,6 +6015,305 @@
         "expected_ports": [],
         "healthcheck_command": "curl -s http://127.0.0.1:8009/api/services/switch/github-backup-dry-runs | rg -q \"freshness_state\"",
         "run_command_hint": "open Switchboard UI, P workspace, switch service, Pull Bundles, Bundle History, latest bundle, GitHub backup dry run",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-22T09:18:15+05:30",
+      "title": "Park superseded main dashboard data-sync draft",
+      "tags": [
+        "task",
+        "handoff",
+        "scope"
+      ],
+      "version": "",
+      "summary": "Parked the first uncommitted dashboard sweep draft because it used the wrong framing: local git activity, input prompt control, and UI feedback form language. The active implementation record is `2026-05-22T11:12:51+05:30 | Correct dashboard data-handoff framing`.",
+      "changed_paths": [
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager",
+      "tool": "codex-desktop, apply_patch, local backend reload",
+      "read_back": "Switchboard is a data-sync and evidence surface, not an agent controller. Agent feedback is agent-written experience notes. Source/input prompts are raw evidence notes, not controls.",
+      "scope_check": "Local dashboard/product sweep only; no `.47`, no Palimpsest ingest, no GitHub backup push, no destructive cleanup, no Computer Use for GPT-Pro, and no generic Browser fallback for GPT-Pro.",
+      "bootstrap_version": "",
+      "notes": [
+        "- Superseded by the 11:12 corrected Brick 8A task entry.",
+        "- Do not treat this draft as the active scope source.",
+        "- Parked artifacts from this draft include root `CLAUDE.md` / `GEMINI.md` / `QWEN.md` / `opencode.json`, `switchboard/core/doc-sync.md`, `switchboard/local/input-prompts.md`, `switchboard/local/agent-feedback.md`, `switchboard/evidence/input-prompts.json`, and `switchboard/evidence/agent-feedback.json`.",
+        "- The corrected implementation uses task-ledger activity, read-only branch metadata, project-local user-story evidence, and agent-authored usage notes."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "curl -s http://127.0.0.1:8009/api/control-center/context | rg -q \"data_sync_evidence_surface\"",
+        "run_command_hint": "use the corrected 11:12 Brick 8A task entry instead",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-22T11:12:51+05:30",
+      "title": "Correct dashboard data-handoff framing",
+      "tags": [
+        "task",
+        "handoff",
+        "scope"
+      ],
+      "version": "",
+      "summary": "Corrected the Brick 8A dashboard sweep so activity is task-ledger first, branch data is read-only metadata, user-story and agent-usage artifacts are local evidence, and human-style input/feedback control endpoints are parked.",
+      "changed_paths": [
+        "switchboard/collectors.py",
+        "switchboard/api.py",
+        "src/api/client.ts",
+        "src/types/switchboard.ts",
+        "src/components/ControlCenterInsightPanels.tsx",
+        "src/components/CompaniesPanel.tsx",
+        "src/pages/ControlCenterPage.tsx",
+        "tests_backend/test_backend_regressions.py",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "switchboard/local/user-story.md",
+        "switchboard/local/agent-usage-notes.md",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex builder",
+      "tool": "codex-desktop",
+      "read_back": "Switchboard is a data sync, evidence, and agent handoff surface. It is not the agent command surface. Agent usage notes are agent-authored evidence, and activity comes from task ledgers and managed-project work density.",
+      "scope_check": "Narrow Brick 8A correction only; no Loop 10 exposure review, no new bundle, no backup dry run, no `.47`, no Palimpsest, no project grouping repair, no scanner stack, and no destructive cleanup.",
+      "bootstrap_version": "",
+      "notes": [
+        "- The main dashboard keeps the compact Tech Stack / How To Use / Companies row.",
+        "- The branch dropdown remains read-only metadata; it does not drive the activity map as primary truth.",
+        "- The activity map now reads the Switchboard task ledger and reports branch/head as metadata only.",
+        "- User-story and agent-usage artifacts live under `switchboard/local/` as evidence, not POST form controls.",
+        "- Legacy `input-prompts` and `agent-feedback` artifacts are parked for manager decision and are not wired to the Control Center API/UI."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/user-story.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/agent-usage-notes.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/api.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/api/client.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/ControlCenterInsightPanels.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/CompaniesPanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "curl -s http://127.0.0.1:8009/api/control-center/context | rg -q \"data_sync_evidence_surface\"",
+        "run_command_hint": "open Switchboard main dashboard and verify Task-Ledger Activity Map, read-only Branch metadata, User Story Evidence, and Agent Usage Notes",
         "monitoring_mode": "manual",
         "notes": ""
       },

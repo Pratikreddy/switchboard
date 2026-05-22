@@ -1107,3 +1107,71 @@
   - exclude | file | /Users/p/Desktop/dashboard/.env | true
   - exclude | file | /Users/p/Desktop/dashboard/.env.* | true
   - exclude | file | /Users/p/Desktop/dashboard/.npmrc | true
+
+## 2026-05-22T09:18:15+05:30 | Park superseded main dashboard data-sync draft
+- Tags: task, handoff, scope
+- Summary: Parked the first uncommitted dashboard sweep draft because it used the wrong framing: local git activity, input prompt control, and UI feedback form language. The active implementation record is `2026-05-22T11:12:51+05:30 | Correct dashboard data-handoff framing`.
+- Changed Paths: switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop, apply_patch, local backend reload
+- Read Back: Switchboard is a data-sync and evidence surface, not an agent controller. Agent feedback is agent-written experience notes. Source/input prompts are raw evidence notes, not controls.
+- Scope Check: Local dashboard/product sweep only; no `.47`, no Palimpsest ingest, no GitHub backup push, no destructive cleanup, no Computer Use for GPT-Pro, and no generic Browser fallback for GPT-Pro.
+- Notes:
+  - - Superseded by the 11:12 corrected Brick 8A task entry.
+  - - Do not treat this draft as the active scope source.
+  - - Parked artifacts from this draft include root `CLAUDE.md` / `GEMINI.md` / `QWEN.md` / `opencode.json`, `switchboard/core/doc-sync.md`, `switchboard/local/input-prompts.md`, `switchboard/local/agent-feedback.md`, `switchboard/evidence/input-prompts.json`, and `switchboard/evidence/agent-feedback.json`.
+  - - The corrected implementation uses task-ledger activity, read-only branch metadata, project-local user-story evidence, and agent-authored usage notes.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+- Runtime:
+  - healthcheck_command: curl -s http://127.0.0.1:8009/api/control-center/context | rg -q "data_sync_evidence_surface"
+  - run_command_hint: use the corrected 11:12 Brick 8A task entry instead
+  - monitoring_mode: manual
+
+## 2026-05-22T11:12:51+05:30 | Correct dashboard data-handoff framing
+- Tags: task, handoff, scope
+- Summary: Corrected the Brick 8A dashboard sweep so activity is task-ledger first, branch data is read-only metadata, user-story and agent-usage artifacts are local evidence, and human-style input/feedback control endpoints are parked.
+- Changed Paths: switchboard/collectors.py, switchboard/api.py, src/api/client.ts, src/types/switchboard.ts, src/components/ControlCenterInsightPanels.tsx, src/components/CompaniesPanel.tsx, src/pages/ControlCenterPage.tsx, tests_backend/test_backend_regressions.py, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/local/user-story.md, switchboard/local/agent-usage-notes.md, switchboard/local/tasks-completed.md
+- Agent: Codex builder
+- Tool: codex-desktop
+- Read Back: Switchboard is a data sync, evidence, and agent handoff surface. It is not the agent command surface. Agent usage notes are agent-authored evidence, and activity comes from task ledgers and managed-project work density.
+- Scope Check: Narrow Brick 8A correction only; no Loop 10 exposure review, no new bundle, no backup dry run, no `.47`, no Palimpsest, no project grouping repair, no scanner stack, and no destructive cleanup.
+- Notes:
+  - - The main dashboard keeps the compact Tech Stack / How To Use / Companies row.
+  - - The branch dropdown remains read-only metadata; it does not drive the activity map as primary truth.
+  - - The activity map now reads the Switchboard task ledger and reports branch/head as metadata only.
+  - - User-story and agent-usage artifacts live under `switchboard/local/` as evidence, not POST form controls.
+  - - Legacy `input-prompts` and `agent-feedback` artifacts are parked for manager decision and are not wired to the Control Center API/UI.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/user-story.md | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/agent-usage-notes.md | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/api.py | true
+  - code | file | /Users/p/Desktop/dashboard/src/api/client.ts | true
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts | true
+  - code | file | /Users/p/Desktop/dashboard/src/components/ControlCenterInsightPanels.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/src/components/CompaniesPanel.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+- Runtime:
+  - healthcheck_command: curl -s http://127.0.0.1:8009/api/control-center/context | rg -q "data_sync_evidence_surface"
+  - run_command_hint: open Switchboard main dashboard and verify Task-Ledger Activity Map, read-only Branch metadata, User Story Evidence, and Agent Usage Notes
+  - monitoring_mode: manual

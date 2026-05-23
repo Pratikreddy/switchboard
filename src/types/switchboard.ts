@@ -861,19 +861,65 @@ export interface PullBundleGithubBackupDryRun {
 export interface ActivityMapDay {
   date: string
   task_count: number
+  daily_task_count?: number
   changed_path_count: number
+  changed_paths_count?: number
   scope_entry_count: number
+  scope_entries_count?: number
+  summary_length?: number
+  daily_services_touched?: number
+  service_count?: number
+  services?: string[]
+  work_density_score_placeholder?: number
   latest_title: string
 }
 
 export interface ManagedProjectActivity {
   root_id: string
+  service_id?: string
   display_name: string
   project_root: string
+  node_connected?: boolean
+  source_file?: string
+  source_projection?: string
+  source_projection_state?: string
+  source_kind?: string
   status: string
+  collection_status?: string
   task_count: number
   last_task_at: string
+  daily_task_count?: number
+  daily_services_touched?: number
+  changed_paths_count?: number
+  scope_entries_count?: number
+  summary_length?: number
+  work_density_score_placeholder?: number
   error: string
+  errors?: string[]
+}
+
+export interface ActivityMapTaskRecord {
+  service_id: string
+  project_root: string
+  location_id: string
+  node_connected: boolean
+  source_file: string
+  source_projection: string
+  source_projection_state: string
+  source_kind: string
+  task_timestamp: string
+  task_title: string
+  task_tags: string[]
+  changed_paths_count: number
+  scope_entries_count: number
+  summary_length: number
+  agent: string
+  tool: string
+  daily_task_count: number
+  daily_services_touched: number
+  work_density_score_placeholder: number
+  collection_status: string
+  errors: string[]
 }
 
 export interface ActivityMapSummary {
@@ -881,12 +927,17 @@ export interface ActivityMapSummary {
   generated: string
   source: string
   primary_truth: string
+  projection_role?: string
   scope: string
   days: ActivityMapDay[]
   projects: ManagedProjectActivity[]
+  task_records?: ActivityMapTaskRecord[]
   total_tasks: number
   total_changed_paths: number
   total_scope_entries: number
+  total_summary_length?: number
+  service_count?: number
+  local_service_count?: number
   git_metadata_role: string
   errors: string[]
 }

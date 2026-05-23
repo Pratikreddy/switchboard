@@ -2568,96 +2568,277 @@ class CollectionCoordinator:
         }
 
     def _work_activity(self) -> dict[str, Any]:
-        root = self._project_root()
-        task_path = root / "switchboard" / "local" / "tasks-completed.md"
         by_day: dict[str, dict[str, Any]] = {}
-        errors: list[str] = []
-        entries = parse_tasks_completed(task_path)
-        if not task_path.exists():
-            errors.append(f"{task_path}: missing")
-        for entry in entries:
-            day = str(entry.get("timestamp", ""))[:10]
+        managed_activity = self._managed_project_activity_sources()
+        project_rows = managed_activity["projects"]
+        task_records = managed_activity["tasks"]
+        errors = managed_activity["errors"]
+        local_location_count = managed_activity["local_location_count"]
+
+        for record in task_records:
+            day = str(record.get("task_timestamp", ""))[:10]
             if not re.match(r"\d{4}-\d{2}-\d{2}", day):
-                errors.append(f"{task_path}: unparseable timestamp {entry.get('timestamp', '')}")
+                errors.append(
+                    f"{record.get('service_id', '')}:{record.get('source_file', '')}: "
+                    f"unparseable timestamp {record.get('task_timestamp', '')}"
+                )
                 continue
             item = by_day.setdefault(
                 day,
                 {
                     "date": day,
                     "task_count": 0,
+                    "daily_task_count": 0,
                     "service_count": 1,
+                    "daily_services_touched": 1,
                     "changed_path_count": 0,
+                    "changed_paths_count": 0,
                     "scope_entry_count": 0,
+                    "scope_entries_count": 0,
+                    "summary_length": 0,
+                    "work_density_score_placeholder": 0,
                     "latest_title": "",
+                    "services": [],
+                    "_service_ids": set(),
                 },
             )
             item["task_count"] += 1
-            item["changed_path_count"] += len(entry.get("changed_paths", []) or [])
-            item["scope_entry_count"] += len(entry.get("scope_entries", []) or [])
-            item["latest_title"] = str(entry.get("title", "") or item["latest_title"])
+            item["daily_task_count"] = item["task_count"]
+            item["changed_path_count"] += int(record.get("changed_paths_count", 0) or 0)
+            item["changed_paths_count"] = item["changed_path_count"]
+            item["scope_entry_count"] += int(record.get("scope_entries_count", 0) or 0)
+            item["scope_entries_count"] = item["scope_entry_count"]
+            item["summary_length"] += int(record.get("summary_length", 0) or 0)
+            item["work_density_score_placeholder"] = item["task_count"]
+            item["latest_title"] = str(record.get("task_title", "") or item["latest_title"])
+            service_ids = item["_service_ids"]
+            service_id = str(record.get("service_id", ""))
+            if service_id and service_id not in service_ids:
+                service_ids.add(service_id)
+                item["services"].append(service_id)
+            item["service_count"] = len(service_ids)
+            item["daily_services_touched"] = len(service_ids)
         days = []
         total_scope_entries = 0
         for item in sorted(by_day.values(), key=lambda row: str(row.get("date", ""))):
             total_scope_entries += int(item.get("scope_entry_count", 0))
+            item.pop("_service_ids", None)
+            item["services"] = sorted(item.get("services", []))
             days.append(item)
+        task_records.sort(key=lambda row: str(row.get("task_timestamp", "")), reverse=True)
+        project_rows.sort(key=lambda row: (str(row.get("collection_status", "")) != "ok", str(row.get("service_id", ""))))
+        local_services_touched = {str(record.get("service_id", "")) for record in task_records if record.get("service_id")}
+        status = "ok"
+        if errors and days:
+            status = "partial"
+        elif errors or local_location_count == 0 or not days:
+            status = "unverified"
         return {
-            "status": "ok" if days else "unverified",
+            "status": status,
             "generated": utc_now_iso(),
             "source": "task_ledgers",
-            "primary_truth": "switchboard/local/tasks-completed.md",
-            "scope": "dashboard_local_task_ledger_only",
+            "primary_truth": "registered_local_service_task_ledgers",
+            "projection_role": "switchboard/evidence/completed-tasks.json is a cache used only when fresh or when the ledger is unavailable.",
+            "scope": "registered_local_services_only",
             "days": days,
-            "projects": self._managed_project_activity_sources(root, entries),
+            "projects": project_rows,
+            "task_records": task_records,
             "total_tasks": sum(int(day.get("task_count", 0)) for day in days),
             "total_changed_paths": sum(int(day.get("changed_path_count", 0)) for day in days),
             "total_scope_entries": total_scope_entries,
-            "service_count": 1 if entries else 0,
+            "total_summary_length": sum(int(day.get("summary_length", 0)) for day in days),
+            "service_count": len(local_services_touched),
+            "local_service_count": local_location_count,
             "git_metadata_role": "branch_head_metadata_only",
             "errors": errors[:20],
         }
 
-    def _managed_project_activity_sources(self, current_root: Path, current_tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        manifest_path = self.settings.manifest_dir.parent / "manager.manifest.json"
+    def _collect_local_task_activity(self, service: ServiceManifest, location: Any) -> dict[str, Any]:
+        root = Path(str(location.root or "")).expanduser()
+        ledger_path = root / "switchboard" / "local" / "tasks-completed.md"
+        projection_path = root / "switchboard" / "evidence" / "completed-tasks.json"
+        node_manifest_path = root / "switchboard" / "node.manifest.json"
+        errors: list[str] = []
+        tasks: list[dict[str, Any]] = []
+        source_file = ""
+        source_kind = ""
+        source_projection_state = "missing"
+        collection_status = "ok"
+
+        root_exists = self._safe_path_exists(root)
+        node_connected = root_exists and self._safe_path_exists(node_manifest_path)
+        ledger_exists = root_exists and self._safe_path_exists(ledger_path)
+        projection_exists = root_exists and self._safe_path_exists(projection_path)
+        ledger_mtime = self._safe_path_mtime(ledger_path) if ledger_exists else None
+        projection_mtime = self._safe_path_mtime(projection_path) if projection_exists else None
+        projection_payload: dict[str, Any] = {}
+        projection_tasks: list[dict[str, Any]] = []
+
+        if not root_exists:
+            collection_status = "path_missing"
+            errors.append(f"{service.service_id}:{root}: project root missing")
+        else:
+            if projection_exists:
+                projection_payload = self._read_local_json(projection_path) or {}
+                raw_projection_tasks = projection_payload.get("tasks", []) if isinstance(projection_payload, dict) else []
+                if isinstance(raw_projection_tasks, list):
+                    projection_tasks = [task for task in raw_projection_tasks if isinstance(task, dict)]
+                else:
+                    errors.append(f"{service.service_id}:{projection_path}: tasks is not a list")
+                if ledger_exists and projection_mtime is not None and ledger_mtime is not None and projection_mtime < ledger_mtime:
+                    source_projection_state = "stale"
+                elif projection_tasks:
+                    source_projection_state = "fresh"
+                else:
+                    source_projection_state = "empty"
+            if ledger_exists:
+                try:
+                    ledger_tasks = parse_tasks_completed(ledger_path)
+                except (OSError, UnicodeDecodeError, ValueError) as exc:
+                    ledger_tasks = []
+                    errors.append(f"{service.service_id}:{ledger_path}: {exc}")
+                if (
+                    projection_tasks
+                    and source_projection_state == "fresh"
+                    and projection_mtime is not None
+                    and (ledger_mtime is None or projection_mtime >= ledger_mtime)
+                ):
+                    tasks = projection_tasks
+                    source_file = str(projection_path)
+                    source_kind = "completed_tasks_projection"
+                else:
+                    tasks = ledger_tasks
+                    source_file = str(ledger_path)
+                    source_kind = "task_ledger"
+                    if not tasks:
+                        errors.append(f"{service.service_id}:{ledger_path}: no parseable task entries")
+            elif projection_tasks:
+                tasks = projection_tasks
+                source_file = str(projection_path)
+                source_kind = "completed_tasks_projection"
+                collection_status = "projection_only"
+                errors.append(f"{service.service_id}:{ledger_path}: canonical ledger missing; projection cache used")
+            elif root_exists:
+                collection_status = "ledger_missing"
+                errors.append(f"{service.service_id}:{ledger_path}: missing")
+
+        normalized_tasks = [
+            self._task_activity_record(
+                service=service,
+                location=location,
+                task=task,
+                project_root=str(root),
+                node_connected=bool(node_connected),
+                source_file=source_file,
+                source_projection=str(projection_path),
+                source_projection_state=source_projection_state,
+                source_kind=source_kind,
+                collection_status=collection_status,
+                errors=errors,
+            )
+            for task in tasks
+        ]
+        latest_task_at = max((str(task.get("task_timestamp", "")) for task in normalized_tasks), default="")
+        if collection_status == "ok" and errors:
+            collection_status = "partial"
+        project = {
+            "root_id": service.service_id,
+            "service_id": service.service_id,
+            "display_name": service.display_name,
+            "project_root": str(root),
+            "node_connected": bool(node_connected),
+            "source_file": source_file,
+            "source_projection": str(projection_path),
+            "source_projection_state": source_projection_state,
+            "source_kind": source_kind,
+            "status": collection_status,
+            "collection_status": collection_status,
+            "task_count": len(normalized_tasks),
+            "last_task_at": latest_task_at,
+            "daily_task_count": len(normalized_tasks),
+            "daily_services_touched": 1 if normalized_tasks else 0,
+            "changed_paths_count": sum(int(task.get("changed_paths_count", 0)) for task in normalized_tasks),
+            "scope_entries_count": sum(int(task.get("scope_entries_count", 0)) for task in normalized_tasks),
+            "summary_length": sum(int(task.get("summary_length", 0)) for task in normalized_tasks),
+            "work_density_score_placeholder": len(normalized_tasks),
+            "error": "; ".join(errors[:3]),
+            "errors": errors[:10],
+        }
+        return {"project": project, "tasks": normalized_tasks, "errors": errors}
+
+    def _task_activity_record(
+        self,
+        *,
+        service: ServiceManifest,
+        location: Any,
+        task: dict[str, Any],
+        project_root: str,
+        node_connected: bool,
+        source_file: str,
+        source_projection: str,
+        source_projection_state: str,
+        source_kind: str,
+        collection_status: str,
+        errors: list[str],
+    ) -> dict[str, Any]:
+        changed_paths = task.get("changed_paths", [])
+        scope_entries = task.get("scope_entries", [])
+        summary = str(task.get("summary", "") or "")
+        return {
+            "service_id": service.service_id,
+            "project_root": project_root,
+            "location_id": str(getattr(location, "location_id", "")),
+            "node_connected": node_connected,
+            "source_file": source_file,
+            "source_projection": source_projection,
+            "source_projection_state": source_projection_state,
+            "source_kind": source_kind,
+            "task_timestamp": str(task.get("timestamp", "")),
+            "task_title": str(task.get("title", "")),
+            "task_tags": task.get("tags", []) if isinstance(task.get("tags", []), list) else [],
+            "changed_paths_count": len(changed_paths) if isinstance(changed_paths, list) else 0,
+            "scope_entries_count": len(scope_entries) if isinstance(scope_entries, list) else 0,
+            "summary_length": len(summary),
+            "agent": str(task.get("agent", "") or ""),
+            "tool": str(task.get("tool", "") or ""),
+            "daily_task_count": 1,
+            "daily_services_touched": 1,
+            "work_density_score_placeholder": 1,
+            "collection_status": collection_status,
+            "errors": errors[:5],
+        }
+
+    def _safe_path_exists(self, path: Path) -> bool:
         try:
-            payload = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
-        except (OSError, json.JSONDecodeError) as exc:
-            return [{
-                "root_id": "manager_manifest",
-                "display_name": "manager manifest",
-                "project_root": str(manifest_path),
-                "status": "error",
-                "task_count": 0,
-                "last_task_at": "",
-                "error": str(exc),
-            }]
-        entries = payload.get("managed_roots", []) if isinstance(payload, dict) else []
+            return path.exists()
+        except OSError:
+            return False
+
+    def _safe_path_mtime(self, path: Path) -> float | None:
+        try:
+            return path.stat().st_mtime
+        except OSError:
+            return None
+
+    def _managed_project_activity_sources(self) -> dict[str, Any]:
         projects: list[dict[str, Any]] = []
-        current_resolved = current_root.resolve()
-        for entry in entries if isinstance(entries, list) else []:
-            if not isinstance(entry, dict):
-                continue
-            project_root = Path(str(entry.get("project_root", ""))).expanduser()
-            is_current = project_root.resolve() == current_resolved if project_root.exists() else str(project_root) == str(current_root)
-            projects.append({
-                "root_id": str(entry.get("root_id", "")),
-                "display_name": str(entry.get("display_name", entry.get("service_id", ""))),
-                "project_root": str(project_root),
-                "status": "ok" if is_current else "deferred_external_ledger",
-                "task_count": len(current_tasks) if is_current else 0,
-                "last_task_at": str(current_tasks[-1].get("timestamp", "")) if is_current and current_tasks else "",
-                "error": "" if is_current else "External project ledger read deferred for this Brick 8A local correction.",
-            })
-        if not projects:
-            projects.append({
-                "root_id": "dashboard_core",
-                "display_name": "switchboard",
-                "project_root": str(current_root),
-                "status": "ok",
-                "task_count": len(current_tasks),
-                "last_task_at": str(current_tasks[-1].get("timestamp", "")) if current_tasks else "",
-                "error": "",
-            })
-        return projects
+        tasks: list[dict[str, Any]] = []
+        errors: list[str] = []
+        local_location_count = 0
+        for service in self.manifests.load_services():
+            local_locations = [location for location in service.locations if location.access_mode == "local"]
+            for location in local_locations:
+                local_location_count += 1
+                collected = self._collect_local_task_activity(service, location)
+                projects.append(collected["project"])
+                tasks.extend(collected["tasks"])
+                errors.extend(collected["errors"])
+        return {
+            "projects": projects,
+            "tasks": tasks,
+            "errors": errors,
+            "local_location_count": local_location_count,
+        }
 
     def _harness_context_map(self) -> dict[str, Any]:
         root = self._project_root()

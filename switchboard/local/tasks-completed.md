@@ -1601,3 +1601,28 @@ Example format:
   - healthcheck_command: npm test -- --run tests/main-dashboard-product-sweep-contract.test.ts && npm run build
   - run_command_hint: open Switchboard main dashboard and verify the hero band is gone, backend status is compact, and Tech Stack / How To Use / Companies remain horizontally stacked on desktop
   - monitoring_mode: manual
+
+## 2026-05-23T10:01:48+05:30 | Task-ledger activity collector across local services
+
+- Tags: task, scope
+- Summary: Strengthened the existing Control Center activity projection so it reads registered local service task ledgers and completed-task projections, with per-service collection status and errors.
+- Changed Paths: switchboard/collectors.py, src/types/switchboard.ts, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Codex builder
+- Tool: codex-desktop
+- Read Back: Build Brick 1 as a narrow read-only backend activity collector over project task ledgers/projections, not GitHub commits or final heatmap UI.
+- Scope Check: Scope did not change; this updates the existing `activity_map` collector shape only and does not mutate sibling projects, GitHub state, remote hosts, or Agent Ops manager records.
+- Notes:
+  - `_work_activity()` now uses `_managed_project_activity_sources()` for registered local service roots instead of the prior single-dashboard ledger-only view.
+  - Fresh `switchboard/evidence/completed-tasks.json` projections are used as cache/projection input when available; stale projections fall back to `switchboard/local/tasks-completed.md`.
+  - Missing roots, missing ledgers, empty ledgers, stale projections, and projection-only fallback are represented per service in `projects[].collection_status`, `projects[].errors`, and top-level `errors`.
+  - Git branch/head remains read-only metadata through `branch_metadata`; no commit log or GitHub commit map is used as the activity source.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist

@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -169,6 +170,245 @@ class BackendRegressionTests(unittest.TestCase):
         self.assertIn("active_source_lines", body["line_noise"])
         self.assertIn("active_source", body["line_noise"]["taxonomy"])
         self.assertIn("harness_adapters", body["line_noise"]["taxonomy"])
+
+    def test_activity_map_collects_registered_local_task_ledgers(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            manager_root = Path(tmpdir) / "manager"
+            manifest_dir = manager_root / "switchboard" / "manifests"
+            evidence_dir = manager_root / "docs" / "evidence"
+            archive_dir = evidence_dir / "archive"
+            private_state_dir = manager_root / "state" / "private"
+            downloads_dir = manager_root / "downloads"
+            alpha_root = Path(tmpdir) / "alpha"
+            beta_root = Path(tmpdir) / "beta"
+            missing_ledger_root = Path(tmpdir) / "missing-ledger"
+            absent_root = Path(tmpdir) / "absent"
+            remote_root = "/remote/not-read"
+            for root in (alpha_root, beta_root, missing_ledger_root):
+                (root / "switchboard" / "local").mkdir(parents=True)
+                (root / "switchboard" / "evidence").mkdir(parents=True)
+            (alpha_root / "switchboard" / "node.manifest.json").write_text("{}", encoding="utf-8")
+
+            def write_ledger(root: Path, title: str, changed_path: str) -> Path:
+                path = root / "switchboard" / "local" / "tasks-completed.md"
+                path.write_text(
+                    "\n".join(
+                        [
+                            f"## 2026-05-20T10:00:00+00:00 | {title}",
+                            "- Tags: task, scope",
+                            f"- Summary: {title} summary",
+                            f"- Changed Paths: {changed_path}",
+                            "- Agent: Codex",
+                            "- Tool: codex-desktop",
+                            "- Scope Entries:",
+                            f"  - code | file | {changed_path}",
+                            "",
+                        ]
+                    ),
+                    encoding="utf-8",
+                )
+                return path
+
+            alpha_ledger = write_ledger(alpha_root, "Alpha ledger task", "alpha.py")
+            alpha_projection = alpha_root / "switchboard" / "evidence" / "completed-tasks.json"
+            save_json(
+                alpha_projection,
+                {
+                    "generated": "2026-05-20T10:05:00+00:00",
+                    "tasks": [
+                        {
+                            "timestamp": "2026-05-20T10:05:00+00:00",
+                            "title": "Alpha projection task",
+                            "summary": "projection summary",
+                            "tags": ["task"],
+                            "changed_paths": ["alpha.py", "README.md"],
+                            "scope_entries": [{"kind": "code"}],
+                            "agent": "Codex",
+                            "tool": "codex-desktop",
+                        }
+                    ],
+                },
+            )
+            os.utime(alpha_ledger, (100, 100))
+            os.utime(alpha_projection, (200, 200))
+
+            beta_projection = beta_root / "switchboard" / "evidence" / "completed-tasks.json"
+            save_json(
+                beta_projection,
+                {
+                    "generated": "2026-05-19T10:00:00+00:00",
+                    "tasks": [
+                        {
+                            "timestamp": "2026-05-19T10:00:00+00:00",
+                            "title": "Stale beta projection",
+                            "summary": "stale",
+                            "changed_paths": [],
+                        }
+                    ],
+                },
+            )
+            beta_ledger = write_ledger(beta_root, "Beta ledger task", "beta.py")
+            os.utime(beta_projection, (100, 100))
+            os.utime(beta_ledger, (200, 200))
+
+            settings = Settings(
+                manifest_dir=manifest_dir,
+                evidence_dir=evidence_dir,
+                archive_dir=archive_dir,
+                private_state_dir=private_state_dir,
+                downloads_dir=downloads_dir,
+            )
+            save_json(
+                manifest_dir / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "ws",
+                        "name": "Workspace",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": ["local_mac", "remote"],
+                        "services": ["alpha", "beta", "missing-ledger", "absent", "remote-svc"],
+                        "notes": "",
+                    }
+                ],
+            )
+            save_json(
+                manifest_dir / "servers.json",
+                [
+                    {
+                        "server_id": "local_mac",
+                        "name": "Local",
+                        "connection_type": "local",
+                        "host": "127.0.0.1",
+                        "username": "p",
+                    },
+                    {
+                        "server_id": "remote",
+                        "name": "Remote",
+                        "connection_type": "ssh",
+                        "host": "example.invalid",
+                        "username": "p",
+                    },
+                ],
+            )
+            save_json(
+                manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "alpha",
+                        "workspace_id": "ws",
+                        "display_name": "Alpha",
+                        "locations": [
+                            {
+                                "location_id": "alpha-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(alpha_root),
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    },
+                    {
+                        "service_id": "beta",
+                        "workspace_id": "ws",
+                        "display_name": "Beta",
+                        "locations": [
+                            {
+                                "location_id": "beta-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(beta_root),
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    },
+                    {
+                        "service_id": "missing-ledger",
+                        "workspace_id": "ws",
+                        "display_name": "Missing Ledger",
+                        "locations": [
+                            {
+                                "location_id": "missing-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(missing_ledger_root),
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    },
+                    {
+                        "service_id": "absent",
+                        "workspace_id": "ws",
+                        "display_name": "Absent",
+                        "locations": [
+                            {
+                                "location_id": "absent-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(absent_root),
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    },
+                    {
+                        "service_id": "remote-svc",
+                        "workspace_id": "ws",
+                        "display_name": "Remote",
+                        "locations": [
+                            {
+                                "location_id": "remote-primary",
+                                "server_id": "remote",
+                                "access_mode": "ssh",
+                                "root": remote_root,
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    },
+                ],
+            )
+            save_json(manifest_dir / "projects.json", [])
+            save_json(manifest_dir / "project-environments.json", [])
+            save_json(manifest_dir / "api-flows.json", [])
+            save_json(manifest_dir.parent / "manager.manifest.json", {"managed_roots": []})
+
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+
+            activity = coordinator._work_activity()
+
+            self.assertEqual(activity["source"], "task_ledgers")
+            self.assertEqual(activity["primary_truth"], "registered_local_service_task_ledgers")
+            self.assertEqual(activity["git_metadata_role"], "branch_head_metadata_only")
+            self.assertEqual(activity["status"], "partial")
+            self.assertEqual(activity["total_tasks"], 2)
+            self.assertEqual(activity["total_changed_paths"], 3)
+            self.assertEqual(activity["total_scope_entries"], 2)
+            self.assertEqual(activity["service_count"], 2)
+            self.assertEqual(activity["local_service_count"], 4)
+            day = activity["days"][0]
+            self.assertEqual(day["date"], "2026-05-20")
+            self.assertEqual(day["daily_task_count"], 2)
+            self.assertEqual(day["daily_services_touched"], 2)
+            self.assertEqual(day["services"], ["alpha", "beta"])
+            records = {record["service_id"]: record for record in activity["task_records"]}
+            self.assertEqual(records["alpha"]["task_title"], "Alpha projection task")
+            self.assertTrue(records["alpha"]["source_file"].endswith("completed-tasks.json"))
+            self.assertEqual(records["alpha"]["source_projection_state"], "fresh")
+            self.assertEqual(records["alpha"]["source_kind"], "completed_tasks_projection")
+            self.assertEqual(records["beta"]["task_title"], "Beta ledger task")
+            self.assertTrue(records["beta"]["source_file"].endswith("tasks-completed.md"))
+            self.assertEqual(records["beta"]["source_projection_state"], "stale")
+            self.assertEqual(records["beta"]["source_kind"], "task_ledger")
+            projects = {project["service_id"]: project for project in activity["projects"]}
+            self.assertEqual(projects["missing-ledger"]["collection_status"], "ledger_missing")
+            self.assertEqual(projects["absent"]["collection_status"], "path_missing")
+            self.assertNotIn("remote-svc", projects)
 
     def test_manual_consolidation_scope_source_loads_agent_ops_manifest(self) -> None:
         manifests = ManifestStore(Settings())

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-22T07:14:11+00:00",
+  "generated": "2026-05-23T18:40:46+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -6494,6 +6494,113 @@
         "expected_ports": [],
         "healthcheck_command": "npm test -- --run tests/main-dashboard-product-sweep-contract.test.ts && npm run build",
         "run_command_hint": "open Switchboard main dashboard and verify the hero band is gone, backend status is compact, and Tech Stack / How To Use / Companies remain horizontally stacked on desktop",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-23T10:01:48+05:30",
+      "title": "Task-ledger activity collector across local services",
+      "tags": [
+        "task",
+        "scope"
+      ],
+      "version": "",
+      "summary": "Strengthened the existing Control Center activity projection so it reads registered local service task ledgers and completed-task projections, with per-service collection status and errors.",
+      "changed_paths": [
+        "switchboard/collectors.py",
+        "src/types/switchboard.ts",
+        "tests_backend/test_backend_regressions.py",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex builder",
+      "tool": "codex-desktop",
+      "read_back": "Build Brick 1 as a narrow read-only backend activity collector over project task ledgers/projections, not GitHub commits or final heatmap UI.",
+      "scope_check": "Scope did not change; this updates the existing `activity_map` collector shape only and does not mutate sibling projects, GitHub state, remote hosts, or Agent Ops manager records.",
+      "bootstrap_version": "",
+      "notes": [
+        "- `_work_activity()` now uses `_managed_project_activity_sources()` for registered local service roots instead of the prior single-dashboard ledger-only view.",
+        "- Fresh `switchboard/evidence/completed-tasks.json` projections are used as cache/projection input when available; stale projections fall back to `switchboard/local/tasks-completed.md`.",
+        "- Missing roots, missing ledgers, empty ledgers, stale projections, and projection-only fallback are represented per service in `projects[].collection_status`, `projects[].errors`, and top-level `errors`.",
+        "- Git branch/head remains read-only metadata through `branch_metadata`; no commit log or GitHub commit map is used as the activity source."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "",
+        "run_command_hint": "",
         "monitoring_mode": "manual",
         "notes": ""
       },

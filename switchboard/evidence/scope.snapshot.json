@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-22T07:14:11+00:00",
+  "generated": "2026-05-23T18:40:46+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -11,72 +11,30 @@
       "source": "tasks_completed"
     },
     {
-      "kind": "doc",
+      "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+      "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx",
+      "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "artifact",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/completed-tasks.json",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "artifact",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/doc-index.json",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "artifact",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/scope.snapshot.json",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "artifact",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/update-gate.json",
+      "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
       "kind": "doc",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/local/doc-index.md",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "artifact",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/node.manifest.json",
+      "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -105,41 +63,6 @@
       "kind": "exclude",
       "path_type": "dir",
       "path": "/Users/p/Desktop/dashboard/dist",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "exclude",
-      "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/downloads",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "exclude",
-      "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/logs",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "exclude",
-      "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/state",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "exclude",
-      "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "exclude",
-      "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/switchboard/static",
       "enabled": true,
       "source": "tasks_completed"
     }
@@ -5088,6 +5011,82 @@
           "kind": "exclude",
           "path_type": "dir",
           "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-23T10:01:48+05:30",
+      "title": "Task-ledger activity collector across local services",
+      "summary": "Strengthened the existing Control Center activity projection so it reads registered local service task ledgers and completed-task projections, with per-service collection status and errors.",
+      "changed_paths": [
+        "switchboard/collectors.py",
+        "src/types/switchboard.ts",
+        "tests_backend/test_backend_regressions.py",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/collectors.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
           "enabled": true,
           "source": "tasks_completed"
         }

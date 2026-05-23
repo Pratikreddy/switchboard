@@ -495,6 +495,18 @@ class SnapshotStore:
         write_json(path, history)
         return record
 
+    def persist_foundation_projection(self, projection: dict[str, Any]) -> dict[str, Any]:
+        generated = str(projection.get("generated") or utc_now_iso())
+        record = {**projection, "generated": generated}
+        write_json(self._switchboard_evidence_dir() / "foundation-projection.json", record)
+        return record
+
+    def get_foundation_projection(self) -> dict[str, Any]:
+        return read_json(
+            self._switchboard_evidence_dir() / "foundation-projection.json",
+            {"generated": "", "schema_version": "switchboard-pass1-foundation-v0", "status": "missing"},
+        )
+
     def list_github_backup_dry_runs(self, service_id: str) -> list[dict[str, Any]]:
         data = read_json(self._switchboard_evidence_dir() / "github-backup-dry-runs.json", {"runs": []})
         return [entry for entry in data.get("runs", []) if entry.get("service_id") == service_id]

@@ -1,0 +1,804 @@
+{
+  "generated": "2026-05-23T19:41:06+00:00",
+  "schema_version": "switchboard-pass1-foundation-v0",
+  "privacy": {
+    "classification": "git_safe_metadata",
+    "raw_payloads": "excluded",
+    "private_cost_payloads": "excluded",
+    "token_payloads": "count_only_if_explicitly_sanitized",
+    "forbidden_sources": [
+      "finance_rows",
+      "meeting_videos",
+      "meeting_transcripts",
+      "x_raw_text",
+      "secrets",
+      "credentials",
+      "personal_data",
+      "private_usage_cost_payloads"
+    ]
+  },
+  "line_noise": {
+    "generated": "2026-05-23T19:41:06+00:00",
+    "schema_version": "line-noise-v0",
+    "taxonomy": [
+      "active_source",
+      "generated_evidence",
+      "manifest_data",
+      "runtime_cache",
+      "private_state",
+      "downloads_bundles",
+      "archives",
+      "dependency_locks",
+      "tests",
+      "docs",
+      "harness_adapters"
+    ],
+    "total_lines": 61929,
+    "active_source_lines": 26991,
+    "noise_line_count": 34938,
+    "active_source_ratio": 0.4358,
+    "noise_ratio": 0.5642,
+    "tracked_file_count": 128,
+    "classified_category_count": 11,
+    "top_files": [
+      {
+        "path": "switchboard/evidence/completed-tasks.json",
+        "lines": 6796,
+        "classification": "generated_evidence"
+      },
+      {
+        "path": "switchboard/collectors.py",
+        "lines": 6505,
+        "classification": "active_source"
+      },
+      {
+        "path": "switchboard/manifests/services.json",
+        "lines": 6030,
+        "classification": "manifest_data"
+      },
+      {
+        "path": "switchboard/evidence/scope.snapshot.json",
+        "lines": 5286,
+        "classification": "generated_evidence"
+      },
+      {
+        "path": "package-lock.json",
+        "lines": 3813,
+        "classification": "dependency_locks"
+      },
+      {
+        "path": "src/pages/ServiceDetailPage.tsx",
+        "lines": 2854,
+        "classification": "active_source"
+      },
+      {
+        "path": "tests_backend/test_backend_regressions.py",
+        "lines": 2793,
+        "classification": "tests"
+      },
+      {
+        "path": "switchboard/node.py",
+        "lines": 2219,
+        "classification": "active_source"
+      },
+      {
+        "path": "switchboard/local/tasks-completed.md",
+        "lines": 1663,
+        "classification": "docs"
+      },
+      {
+        "path": "src/types/switchboard.ts",
+        "lines": 1450,
+        "classification": "active_source"
+      }
+    ],
+    "categories": {
+      "active_source": {
+        "file_count": 60,
+        "line_count": 26991
+      },
+      "generated_evidence": {
+        "file_count": 16,
+        "line_count": 13086
+      },
+      "manifest_data": {
+        "file_count": 10,
+        "line_count": 8490
+      },
+      "runtime_cache": {
+        "file_count": 0,
+        "line_count": 0
+      },
+      "private_state": {
+        "file_count": 1,
+        "line_count": 2
+      },
+      "downloads_bundles": {
+        "file_count": 0,
+        "line_count": 0
+      },
+      "archives": {
+        "file_count": 0,
+        "line_count": 0
+      },
+      "dependency_locks": {
+        "file_count": 1,
+        "line_count": 3813
+      },
+      "tests": {
+        "file_count": 15,
+        "line_count": 5081
+      },
+      "docs": {
+        "file_count": 23,
+        "line_count": 4415
+      },
+      "harness_adapters": {
+        "file_count": 2,
+        "line_count": 51
+      }
+    },
+    "excluded_prefixes": [
+      "node_modules/",
+      "dist/",
+      "switchboard/static/app/",
+      "downloads/",
+      "release_static/",
+      ".git/",
+      ".venv/",
+      "__pycache__/"
+    ],
+    "privacy": {
+      "raw_file_contents": "excluded",
+      "line_counts_only": true,
+      "git_tracked_files_only": true
+    },
+    "important_paths": [
+      "src/pages/ControlCenterPage.tsx",
+      "src/components",
+      "switchboard/collectors.py",
+      "switchboard/api.py",
+      "switchboard/core/agent-contract.md"
+    ],
+    "noise_paths": [
+      "switchboard/evidence/*.json",
+      "switchboard/manifests/services.json",
+      "package-lock.json",
+      "switchboard/static/app",
+      "downloads"
+    ]
+  },
+  "production_usage": {
+    "generated": "2026-05-23T19:41:06+00:00",
+    "schema_version": "production-usage-v0",
+    "privacy": {
+      "classification": "git_safe_metadata",
+      "raw_payloads": "excluded",
+      "private_cost_payloads": "excluded",
+      "token_payloads": "count_only_if_explicitly_sanitized",
+      "forbidden_sources": [
+        "finance_rows",
+        "meeting_videos",
+        "meeting_transcripts",
+        "x_raw_text",
+        "secrets",
+        "credentials",
+        "personal_data",
+        "private_usage_cost_payloads"
+      ]
+    },
+    "evidence_kinds": [
+      "model",
+      "tool",
+      "api",
+      "runtime",
+      "storage",
+      "manual",
+      "human_ui",
+      "tokens"
+    ],
+    "summary": {
+      "model": 36,
+      "tool": 211,
+      "api": 15,
+      "runtime": 19,
+      "storage": 241,
+      "manual": 224,
+      "human_ui": 2,
+      "tokens": 0
+    },
+    "entries": [
+      {
+        "entry_id": "manual-ec3d56ed32",
+        "evidence_kind": "manual",
+        "source": "task_ledgers",
+        "source_kind": "ledger_metadata",
+        "service_id": "",
+        "status": "observed",
+        "count": 224,
+        "latest_at": "2026-05-24T01:10:07+05:30",
+        "token_count": null,
+        "labels": [],
+        "private_payload": "excluded",
+        "notes": "Task-ledger update count; summaries and notes are excluded."
+      },
+      {
+        "entry_id": "tool-2aeae8a70f",
+        "evidence_kind": "tool",
+        "source": "task_ledgers.tool",
+        "source_kind": "ledger_metadata",
+        "service_id": "",
+        "status": "observed",
+        "count": 211,
+        "latest_at": "2026-05-24T01:10:07+05:30",
+        "token_count": null,
+        "labels": [
+          "codex-cli",
+          "codex-desktop",
+          "codex-desktop-Browser-Chrome-extension-backend",
+          "codex-desktop-Chrome-extension",
+          "codex-desktop-Chrome-extension-ChatGPT-Extended-Pro-apply_patch",
+          "codex-desktop-Chrome-extension-apply_patch",
+          "codex-desktop-Chrome-extension-backend",
+          "codex-desktop-Chrome-extension-backend-ChatGPT-GPT-5.5-Pro",
+          "codex-desktop-Chrome-extension-backend-ChatGPT-GitHub-connector-",
+          "codex-desktop-Chrome-extension-backend-GitHub-CLI"
+        ],
+        "private_payload": "excluded",
+        "notes": "Agent tool names only; no prompts or transcripts."
+      },
+      {
+        "entry_id": "model-c36f21ec26",
+        "evidence_kind": "model",
+        "source": "task_ledgers.model_markers",
+        "source_kind": "derived_metadata",
+        "service_id": "",
+        "status": "observed",
+        "count": 36,
+        "latest_at": "2026-05-24T01:10:07+05:30",
+        "token_count": null,
+        "labels": [],
+        "private_payload": "excluded",
+        "notes": "Derived from safe metadata markers, not model prompts or responses."
+      },
+      {
+        "entry_id": "api-ca944df49e",
+        "evidence_kind": "api",
+        "source": "api_flow_manifests",
+        "source_kind": "manifest_metadata",
+        "service_id": "",
+        "status": "observed",
+        "count": 15,
+        "latest_at": "",
+        "token_count": null,
+        "labels": [
+          "enabled:7",
+          "disabled:8"
+        ],
+        "private_payload": "excluded",
+        "notes": "Counts API flow manifests without request bodies, headers, URLs, or response payloads."
+      },
+      {
+        "entry_id": "runtime-32f778c2c7",
+        "evidence_kind": "runtime",
+        "source": "service_manifests",
+        "source_kind": "manifest_metadata",
+        "service_id": "",
+        "status": "observed",
+        "count": 19,
+        "latest_at": "",
+        "token_count": null,
+        "labels": [
+          "mode:batch:5",
+          "mode:docs_only:2",
+          "mode:lambda:2",
+          "mode:networked:10",
+          "monitor:detect:1",
+          "monitor:manual:18"
+        ],
+        "private_payload": "excluded",
+        "notes": "Service/runtime shape only; no live server access."
+      },
+      {
+        "entry_id": "storage-fef3054fbf",
+        "evidence_kind": "storage",
+        "source": "scope_and_bundle_metadata",
+        "source_kind": "metadata_summary",
+        "service_id": "",
+        "status": "observed",
+        "count": 241,
+        "latest_at": "",
+        "token_count": null,
+        "labels": [
+          "pull_bundles:101"
+        ],
+        "private_payload": "excluded",
+        "notes": "Repo/doc/log scope counts and bundle counts; file lists are excluded."
+      },
+      {
+        "entry_id": "human_ui-fb3163c3aa",
+        "evidence_kind": "human_ui",
+        "source": "local_story_and_usage_notes",
+        "source_kind": "local_metadata",
+        "service_id": "",
+        "status": "observed",
+        "count": 2,
+        "latest_at": "",
+        "token_count": null,
+        "labels": [],
+        "private_payload": "excluded",
+        "notes": "Presence of local story/usage-note evidence only."
+      },
+      {
+        "entry_id": "tokens-5b7a2549a9",
+        "evidence_kind": "tokens",
+        "source": "not_collected",
+        "source_kind": "explicit_absence",
+        "service_id": "",
+        "status": "not_collected",
+        "count": 0,
+        "latest_at": "",
+        "token_count": null,
+        "labels": [],
+        "private_payload": "excluded",
+        "notes": "Token counts are one optional usage field and are not collected in v0."
+      }
+    ],
+    "notes": [
+      "Private usage/cost payloads are not imported.",
+      "API evidence is manifest-level only.",
+      "Runtime evidence is saved metadata only unless a separate approved live check runs."
+    ]
+  },
+  "agent_handoff_quality": {
+    "generated": "2026-05-23T19:41:06+00:00",
+    "schema_version": "agent-handoff-quality-v0",
+    "source": "task_ledgers",
+    "task_count": 224,
+    "handoff_tag_count": 115,
+    "with_read_back": 211,
+    "with_scope_check": 211,
+    "with_changed_paths": 224,
+    "with_agent": 211,
+    "with_tool": 211,
+    "with_verification_hint": 63,
+    "quality_score": 95,
+    "missing": {
+      "read_back": 13,
+      "scope_check": 13,
+      "changed_paths": 0,
+      "agent": 13,
+      "tool": 13
+    },
+    "latest_records": [
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T01:10:07+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T01:01:33+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T01:00:21+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "switch",
+        "timestamp": "2026-05-24T00:57:31+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T00:56:39+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T00:56:39+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T00:51:05+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-24T00:50:24+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      }
+    ],
+    "privacy": {
+      "classification": "git_safe_metadata",
+      "raw_payloads": "excluded",
+      "private_cost_payloads": "excluded",
+      "token_payloads": "count_only_if_explicitly_sanitized",
+      "forbidden_sources": [
+        "finance_rows",
+        "meeting_videos",
+        "meeting_transcripts",
+        "x_raw_text",
+        "secrets",
+        "credentials",
+        "personal_data",
+        "private_usage_cost_payloads"
+      ]
+    }
+  },
+  "docs_relevance": {
+    "generated": "2026-05-23T19:41:06+00:00",
+    "schema_version": "docs-relevance-v0",
+    "source": "switchboard/evidence/doc-index.json",
+    "latest_task_at": "2026-05-24T01:10:07+05:30",
+    "doc_count": 8,
+    "enabled_count": 5,
+    "current_count": 4,
+    "stale_count": 0,
+    "docs": [
+      {
+        "doc_id": "readme",
+        "path": "README.md",
+        "enabled": false,
+        "generated_at": "",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 0,
+        "latest_contributor_at": "",
+        "lifecycle_state": "disabled",
+        "memory_role": "disabled_root_doc"
+      },
+      {
+        "doc_id": "api",
+        "path": "API.md",
+        "enabled": false,
+        "generated_at": "",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 1,
+        "latest_contributor_at": "2026-05-10T04:58:42+00:00",
+        "lifecycle_state": "disabled",
+        "memory_role": "disabled_root_doc"
+      },
+      {
+        "doc_id": "changelog",
+        "path": "CHANGELOG.md",
+        "enabled": false,
+        "generated_at": "",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 44,
+        "latest_contributor_at": "2026-05-24T00:57:31+05:30",
+        "lifecycle_state": "disabled",
+        "memory_role": "disabled_root_doc"
+      },
+      {
+        "doc_id": "handoff",
+        "path": "switchboard/local/control-center-handoff.md",
+        "enabled": true,
+        "generated_at": "2026-05-23T19:41:06+00:00",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 37,
+        "latest_contributor_at": "2026-05-24T00:57:31+05:30",
+        "lifecycle_state": "current",
+        "memory_role": "project_local_memory"
+      },
+      {
+        "doc_id": "runbook",
+        "path": "switchboard/local/runbook.md",
+        "enabled": true,
+        "generated_at": "2026-05-23T19:41:06+00:00",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 0,
+        "latest_contributor_at": "",
+        "lifecycle_state": "generated_no_contributors",
+        "memory_role": "project_local_memory"
+      },
+      {
+        "doc_id": "approach_history",
+        "path": "switchboard/local/approach-history.md",
+        "enabled": true,
+        "generated_at": "2026-05-23T19:41:06+00:00",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 5,
+        "latest_contributor_at": "2026-05-15T05:45:53+00:00",
+        "lifecycle_state": "current",
+        "memory_role": "project_local_memory"
+      },
+      {
+        "doc_id": "doc_index_md",
+        "path": "switchboard/local/doc-index.md",
+        "enabled": true,
+        "generated_at": "2026-05-23T19:41:06+00:00",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 44,
+        "latest_contributor_at": "2026-05-24T00:57:31+05:30",
+        "lifecycle_state": "current",
+        "memory_role": "project_local_memory"
+      },
+      {
+        "doc_id": "doc_index_json",
+        "path": "switchboard/evidence/doc-index.json",
+        "enabled": true,
+        "generated_at": "2026-05-23T19:41:06+00:00",
+        "generated_from": "switchboard/local/tasks-completed.md",
+        "contributor_count": 44,
+        "latest_contributor_at": "2026-05-24T00:57:31+05:30",
+        "lifecycle_state": "current",
+        "memory_role": "derived_git_safe_projection"
+      }
+    ],
+    "privacy": {
+      "classification": "git_safe_metadata",
+      "raw_payloads": "excluded",
+      "private_cost_payloads": "excluded",
+      "token_payloads": "count_only_if_explicitly_sanitized",
+      "forbidden_sources": [
+        "finance_rows",
+        "meeting_videos",
+        "meeting_transcripts",
+        "x_raw_text",
+        "secrets",
+        "credentials",
+        "personal_data",
+        "private_usage_cost_payloads"
+      ]
+    }
+  },
+  "harness_source_map": {
+    "generated": "2026-05-23T19:41:06+00:00",
+    "canonical_source": "switchboard/core/agent-contract.md",
+    "canonical_exists": true,
+    "canonical_line_count": 38,
+    "enabled_entrypoints": [
+      "agents"
+    ],
+    "active_count": 1,
+    "warning_count": 0,
+    "missing_active_entrypoints": [],
+    "inactive_existing_adapters": [],
+    "completion_state": "ok",
+    "note": "Root harness adapters should stay tiny wrappers. Real context belongs in the canonical Switchboard contract.",
+    "entries": [
+      {
+        "adapter_file": "AGENTS.md",
+        "entrypoint": "agents",
+        "exists": true,
+        "active": true,
+        "byte_count": 508,
+        "line_count": 13,
+        "points_to": "switchboard/core/agent-contract.md",
+        "contract_pointer_status": "canonical",
+        "injected_context_source": "switchboard/core/agent-contract.md",
+        "last_generated_at": "2026-05-23T19:41:06+00:00",
+        "warnings": []
+      },
+      {
+        "adapter_file": "CLAUDE.md",
+        "entrypoint": "claude",
+        "exists": false,
+        "active": false,
+        "byte_count": 0,
+        "line_count": 0,
+        "points_to": "",
+        "contract_pointer_status": "missing",
+        "injected_context_source": "CLAUDE.md",
+        "last_generated_at": "",
+        "warnings": []
+      },
+      {
+        "adapter_file": "GEMINI.md",
+        "entrypoint": "gemini",
+        "exists": false,
+        "active": false,
+        "byte_count": 0,
+        "line_count": 0,
+        "points_to": "",
+        "contract_pointer_status": "missing",
+        "injected_context_source": "GEMINI.md",
+        "last_generated_at": "",
+        "warnings": []
+      },
+      {
+        "adapter_file": "QWEN.md",
+        "entrypoint": "qwen",
+        "exists": false,
+        "active": false,
+        "byte_count": 0,
+        "line_count": 0,
+        "points_to": "",
+        "contract_pointer_status": "missing",
+        "injected_context_source": "QWEN.md",
+        "last_generated_at": "",
+        "warnings": []
+      },
+      {
+        "adapter_file": "opencode.json",
+        "entrypoint": "opencode",
+        "exists": false,
+        "active": false,
+        "byte_count": 0,
+        "line_count": 0,
+        "points_to": "",
+        "contract_pointer_status": "missing",
+        "injected_context_source": "opencode.json",
+        "last_generated_at": "",
+        "warnings": []
+      }
+    ]
+  },
+  "suite_boundaries": {
+    "generated": "2026-05-23T19:41:06+00:00",
+    "schema_version": "suite-boundaries-v0",
+    "source": "manifests_and_manager_rules",
+    "suites": [
+      {
+        "suite_id": "switchboard_control_plane",
+        "status": "active",
+        "service_count": 19,
+        "api_flow_count": 15
+      },
+      {
+        "suite_id": "pesu_47_saved_metadata",
+        "status": "deferred",
+        "project_count": 9,
+        "service_refs_count": 9
+      },
+      {
+        "suite_id": "palimpsest_source_registry",
+        "status": "deferred",
+        "project_count": 2,
+        "service_refs_count": 7
+      }
+    ],
+    "boundaries": [
+      {
+        "boundary_id": "switchboard_control_plane",
+        "status": "active",
+        "owner_system": "Switchboard",
+        "allowed": [
+          "metadata collection",
+          "task ledger projection",
+          "scope snapshot",
+          "read-only context"
+        ],
+        "forbidden": [
+          "raw private data storage",
+          "blind deletion",
+          "unapproved GitHub push automation"
+        ],
+        "evidence": {
+          "service_count": 19,
+          "project_count": 14
+        }
+      },
+      {
+        "boundary_id": "agent_ops_manager_memory",
+        "status": "projection_only",
+        "owner_system": "Agent Ops",
+        "allowed": [
+          "manager-memory references",
+          "clean implementation prompts",
+          "status projection"
+        ],
+        "forbidden": [
+          "raw credential storage",
+          "implementation from Agent Ops without approval"
+        ],
+        "evidence": {
+          "path_policy": "do_not_touch_from_pass1"
+        }
+      },
+      {
+        "boundary_id": "palimpsest_deferred_boundary",
+        "status": "deferred",
+        "owner_system": "Palimpsest",
+        "allowed": [
+          "metadata-only source registry",
+          "future evidence normalization"
+        ],
+        "forbidden": [
+          "raw finance rows",
+          "meeting videos",
+          "meeting transcripts",
+          "X raw text",
+          "personal source ingest"
+        ],
+        "evidence": {
+          "project_count": 2
+        }
+      },
+      {
+        "boundary_id": "client_server_47_deferred_boundary",
+        "status": "deferred",
+        "owner_system": "human-gated client server",
+        "allowed": [
+          "saved local metadata counts",
+          "human-provided command output"
+        ],
+        "forbidden": [
+          "SSH",
+          "SFTP",
+          "SCP",
+          "rsync",
+          "credential checks",
+          "remote cleanup",
+          "remote restart"
+        ],
+        "evidence": {
+          "project_count": 9,
+          "live_access": "not_performed"
+        }
+      }
+    ],
+    "privacy": {
+      "classification": "git_safe_metadata",
+      "raw_payloads": "excluded",
+      "private_cost_payloads": "excluded",
+      "token_payloads": "count_only_if_explicitly_sanitized",
+      "forbidden_sources": [
+        "finance_rows",
+        "meeting_videos",
+        "meeting_transcripts",
+        "x_raw_text",
+        "secrets",
+        "credentials",
+        "personal_data",
+        "private_usage_cost_payloads"
+      ]
+    }
+  },
+  "notes": [
+    "Pass 1 foundation is metadata-only.",
+    "Tokens are represented as one optional count field and are not treated as the whole usage story.",
+    "Palimpsest and .47 stay deferred boundaries in this pass."
+  ]
+}

@@ -15,6 +15,7 @@ from switchboard.collectors import CollectionCoordinator
 from switchboard.freshness import freshen_node_viewers, freshness_envelope
 from switchboard.manifests import ManifestStore, save_json
 from switchboard.models import CollectRequest, GitHubBackupRequest, GitPullRequest, NodeActionRequest, ProjectCreateRequest, ProjectPatchRequest, PullBundleBackupDryRunRequest, PullBundleRequest, ResolvedServer, ScopeEntry, LocationSpec, ServiceManifest
+from switchboard.node import snapshot_node
 from switchboard.storage import SnapshotStore, read_json
 
 
@@ -158,6 +159,11 @@ class BackendRegressionTests(unittest.TestCase):
         self.assertIn("user_story", body)
         self.assertIn("agent_usage_notes", body)
         self.assertIn("line_noise", body)
+        self.assertIn("production_usage", body)
+        self.assertIn("agent_handoff_quality", body)
+        self.assertIn("docs_relevance", body)
+        self.assertIn("suite_boundaries", body)
+        self.assertIn("foundation_projection", body)
         self.assertIn("cleanup_note", body)
         self.assertIn("days", body["activity_map"])
         self.assertEqual(body["activity_map"]["source"], "task_ledgers")
@@ -170,6 +176,17 @@ class BackendRegressionTests(unittest.TestCase):
         self.assertIn("active_source_lines", body["line_noise"])
         self.assertIn("active_source", body["line_noise"]["taxonomy"])
         self.assertIn("harness_adapters", body["line_noise"]["taxonomy"])
+        self.assertEqual(body["line_noise"]["schema_version"], "line-noise-v0")
+        self.assertEqual(body["production_usage"]["schema_version"], "production-usage-v0")
+        self.assertIn("tokens", body["production_usage"]["evidence_kinds"])
+        self.assertEqual(body["production_usage"]["privacy"]["raw_payloads"], "excluded")
+        self.assertEqual(body["agent_handoff_quality"]["schema_version"], "agent-handoff-quality-v0")
+        self.assertEqual(body["docs_relevance"]["schema_version"], "docs-relevance-v0")
+        self.assertEqual(body["suite_boundaries"]["schema_version"], "suite-boundaries-v0")
+        boundary_ids = {entry["boundary_id"] for entry in body["suite_boundaries"]["boundaries"]}
+        self.assertIn("palimpsest_deferred_boundary", boundary_ids)
+        self.assertIn("client_server_47_deferred_boundary", boundary_ids)
+        self.assertEqual(body["foundation_projection"]["schema_version"], "switchboard-pass1-foundation-v0")
 
     def test_activity_map_collects_registered_local_task_ledgers(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -409,6 +426,237 @@ class BackendRegressionTests(unittest.TestCase):
             self.assertEqual(projects["missing-ledger"]["collection_status"], "ledger_missing")
             self.assertEqual(projects["absent"]["collection_status"], "path_missing")
             self.assertNotIn("remote-svc", projects)
+
+    def test_pass1_foundation_projection_excludes_private_payload_text(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            manager_root = Path(tmpdir) / "manager"
+            manifest_dir = manager_root / "switchboard" / "manifests"
+            evidence_dir = manager_root / "docs" / "evidence"
+            archive_dir = evidence_dir / "archive"
+            private_state_dir = manager_root / "state" / "private"
+            downloads_dir = manager_root / "downloads"
+            project_root = Path(tmpdir) / "private-source"
+            (project_root / "switchboard" / "local").mkdir(parents=True)
+            (project_root / "switchboard" / "evidence").mkdir(parents=True)
+            save_json(project_root / "switchboard" / "node.manifest.json", {"service_id": "private-source"})
+            (project_root / "switchboard" / "local" / "tasks-completed.md").write_text(
+                "\n".join(
+                    [
+                        "## 2026-05-24T00:55:00+05:30 | Private payload test",
+                        "- Tags: task, handoff",
+                        "- Summary: SECRET_FINANCE_ROW zappinfobot@example.com raw private payload",
+                        "- Changed Paths: bank.csv, transcript.txt",
+                        "- Agent: Codex",
+                        "- Tool: codex-desktop",
+                        "- Read Back: Confirmed the task.",
+                        "- Scope Check: Scope stayed small.",
+                        "- Notes:",
+                        "  - personal-cost-payload should not leave metadata projection",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            save_json(
+                manifest_dir / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "ws",
+                        "name": "Workspace",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": ["local_mac"],
+                        "services": ["private-source"],
+                        "notes": "",
+                    }
+                ],
+            )
+            save_json(
+                manifest_dir / "servers.json",
+                [
+                    {
+                        "server_id": "local_mac",
+                        "name": "Local",
+                        "connection_type": "local",
+                        "host": "127.0.0.1",
+                        "username": "p",
+                    }
+                ],
+            )
+            save_json(
+                manifest_dir / "services.json",
+                [
+                    {
+                        "service_id": "private-source",
+                        "workspace_id": "ws",
+                        "display_name": "Private Source",
+                        "locations": [
+                            {
+                                "location_id": "private-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(project_root),
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    }
+                ],
+            )
+            save_json(manifest_dir / "projects.json", [])
+            save_json(manifest_dir / "project-environments.json", [])
+            save_json(manifest_dir / "api-flows.json", [])
+            settings = Settings(
+                manifest_dir=manifest_dir,
+                evidence_dir=evidence_dir,
+                archive_dir=archive_dir,
+                private_state_dir=private_state_dir,
+                downloads_dir=downloads_dir,
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+            coordinator = CollectionCoordinator(settings, manifests, snapshots)
+
+            projection = coordinator.control_center_context()["foundation_projection"]
+            serialized = json.dumps(projection)
+
+            self.assertEqual(projection["privacy"]["raw_payloads"], "excluded")
+            self.assertNotIn("SECRET_FINANCE_ROW", serialized)
+            self.assertNotIn("zappinfobot@example.com", serialized)
+            self.assertNotIn("personal-cost-payload", serialized)
+            self.assertNotIn("bank.csv", serialized)
+            self.assertNotIn("transcript.txt", serialized)
+            self.assertEqual(projection["agent_handoff_quality"]["task_count"], 1)
+            self.assertEqual(projection["agent_handoff_quality"]["with_read_back"], 1)
+            self.assertEqual(projection["agent_handoff_quality"]["with_scope_check"], 1)
+
+    def test_foundation_projection_persists_to_switchboard_evidence(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(
+                manifest_dir=root / "switchboard" / "manifests",
+                evidence_dir=root / "docs" / "evidence",
+                archive_dir=root / "docs" / "evidence" / "archive",
+                private_state_dir=root / "state" / "private",
+                downloads_dir=root / "downloads",
+            )
+            manifests = ManifestStore(settings)
+            snapshots = SnapshotStore(settings, manifests)
+
+            record = snapshots.persist_foundation_projection(
+                {
+                    "generated": "2026-05-24T00:55:00+05:30",
+                    "schema_version": "switchboard-pass1-foundation-v0",
+                    "privacy": {"raw_payloads": "excluded"},
+                }
+            )
+            loaded = snapshots.get_foundation_projection()
+
+            self.assertEqual(record["schema_version"], "switchboard-pass1-foundation-v0")
+            self.assertEqual(loaded["generated"], "2026-05-24T00:55:00+05:30")
+            self.assertEqual(
+                read_json(root / "switchboard" / "evidence" / "foundation-projection.json", {})["privacy"]["raw_payloads"],
+                "excluded",
+            )
+
+    def test_node_snapshot_generates_foundation_projection_for_manager_root(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "switchboard" / "local").mkdir(parents=True)
+            save_json(
+                root / "switchboard" / "node.manifest.json",
+                {
+                    "service_id": "switch",
+                    "display_name": "Switchboard",
+                    "project_root": str(root),
+                    "repo_paths": [str(root)],
+                    "agent_contract": {"enabled_entrypoints": ["agents"]},
+                },
+            )
+            (root / "switchboard" / "local" / "tasks-completed.md").write_text(
+                "\n".join(
+                    [
+                        "## 2026-05-24T01:10:00+05:30 | Snapshot foundation",
+                        "- Tags: task, handoff, scope",
+                        "- Summary: Add snapshot-generated foundation projection.",
+                        "- Changed Paths: switchboard/node.py, switchboard/evidence/foundation-projection.json, switchboard/local/tasks-completed.md",
+                        "- Agent: Codex",
+                        "- Tool: codex-desktop",
+                        "- Read Back: Confirmed snapshot must generate foundation evidence.",
+                        "- Scope Check: Snapshot integration only.",
+                        "- Scope Entries:",
+                        f"  - repo | dir | {root}",
+                        f"  - doc | file | {root / 'switchboard' / 'evidence' / 'foundation-projection.json'}",
+                        f"  - doc | file | {root / 'switchboard' / 'local' / 'tasks-completed.md'}",
+                        f"  - exclude | dir | {root / '.git'}",
+                        f"  - exclude | dir | {root / 'state'}",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            save_json(
+                root / "switchboard" / "manifests" / "workspaces.json",
+                [
+                    {
+                        "workspace_id": "ws",
+                        "name": "Workspace",
+                        "tags": [],
+                        "favorite_tier": "primary",
+                        "servers": ["local_mac"],
+                        "services": ["switch"],
+                        "notes": "",
+                    }
+                ],
+            )
+            save_json(
+                root / "switchboard" / "manifests" / "servers.json",
+                [
+                    {
+                        "server_id": "local_mac",
+                        "name": "Local",
+                        "connection_type": "local",
+                        "host": "127.0.0.1",
+                        "username": "p",
+                    }
+                ],
+            )
+            save_json(
+                root / "switchboard" / "manifests" / "services.json",
+                [
+                    {
+                        "service_id": "switch",
+                        "workspace_id": "ws",
+                        "display_name": "Switchboard",
+                        "locations": [
+                            {
+                                "location_id": "switch-local",
+                                "server_id": "local_mac",
+                                "access_mode": "local",
+                                "root": str(root),
+                                "role": "primary",
+                                "is_primary": True,
+                            }
+                        ],
+                    }
+                ],
+            )
+            save_json(root / "switchboard" / "manifests" / "projects.json", [])
+            save_json(root / "switchboard" / "manifests" / "project-environments.json", [])
+            save_json(root / "switchboard" / "manifests" / "api-flows.json", [])
+
+            result = snapshot_node(root)
+            projection = read_json(root / "switchboard" / "evidence" / "foundation-projection.json", {})
+            manifest = read_json(root / "switchboard" / "node.manifest.json", {})
+
+            self.assertEqual(result["foundation_projection"]["schema_version"], "switchboard-pass1-foundation-v0")
+            self.assertEqual(projection["schema_version"], "switchboard-pass1-foundation-v0")
+            self.assertEqual(projection["privacy"]["raw_payloads"], "excluded")
+            self.assertEqual(projection["agent_handoff_quality"]["task_count"], 1)
+            self.assertEqual(
+                manifest["evidence_paths"]["foundation_projection"],
+                "switchboard/evidence/foundation-projection.json",
+            )
 
     def test_manual_consolidation_scope_source_loads_agent_ops_manifest(self) -> None:
         manifests = ManifestStore(Settings())

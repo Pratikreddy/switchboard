@@ -1776,6 +1776,30 @@ def upgrade_node(project_root: str | Path, manager_root: str | Path | None = Non
     return install_node(project_root, existing.get("service_id"), existing.get("display_name"), manager_root=selected_manager_root)
 
 
+def _snapshot_foundation_projection(project_root: Path) -> dict[str, Any] | None:
+    manifest_dir = project_root / "switchboard" / "manifests"
+    required_manifests = ("workspaces.json", "servers.json", "services.json", "projects.json")
+    if not all((manifest_dir / name).exists() for name in required_manifests):
+        return None
+
+    from .collectors import CollectionCoordinator
+    from .config import Settings
+    from .manifests import ManifestStore
+    from .storage import SnapshotStore
+
+    settings = Settings(
+        manifest_dir=manifest_dir,
+        evidence_dir=project_root / "docs" / "evidence",
+        archive_dir=project_root / "docs" / "evidence" / "archive",
+        private_state_dir=project_root / "state" / "private",
+        downloads_dir=project_root / "downloads",
+    )
+    manifests = ManifestStore(settings)
+    snapshots = SnapshotStore(settings, manifests)
+    coordinator = CollectionCoordinator(settings, manifests, snapshots)
+    return snapshots.persist_foundation_projection(coordinator.control_center_context()["foundation_projection"])
+
+
 def snapshot_node(project_root: str | Path) -> dict[str, Any]:
     project_root = Path(project_root).resolve()
     paths = node_paths(project_root)
@@ -1825,6 +1849,7 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
+            "foundation_projection": str((paths["node_root"] / "evidence" / "foundation-projection.json").relative_to(project_root)),
         }
     )
     tasks = parse_tasks_completed(paths["tasks_completed"])
@@ -1986,11 +2011,13 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
     manifest["doc_index"] = doc_index
     manifest["updated_at"] = utc_now_iso()
     _write_json(paths["manifest"], manifest)
+    foundation_projection = _snapshot_foundation_projection(project_root)
     return {
         "manifest": manifest,
         "tasks": tasks,
         "scope_snapshot": scope_snapshot,
         "doc_index": doc_index,
+        "foundation_projection": foundation_projection,
     }
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -50,6 +50,16 @@ ServiceKind = Literal[
     "database",
     "deployment_host",
     "dependency_node",
+]
+UsageEvidenceKind = Literal["model", "tool", "api", "runtime", "storage", "manual", "human_ui", "tokens"]
+BoundaryStatus = Literal["active", "projection_only", "deferred", "parked"]
+DocLifecycleState = Literal[
+    "current",
+    "disabled",
+    "stale_after_latest_task",
+    "generated_no_contributors",
+    "manual_or_missing",
+    "unverified",
 ]
 DependencyKind = Literal[
     "service",
@@ -205,6 +215,113 @@ class TaskLedgerEntry(BaseModel):
     readme: str = ""
     api: str = ""
     changelog: str = ""
+
+
+class FoundationPrivacyPolicy(BaseModel):
+    classification: Literal["git_safe_metadata"] = "git_safe_metadata"
+    raw_payloads: Literal["excluded"] = "excluded"
+    private_cost_payloads: Literal["excluded"] = "excluded"
+    token_payloads: Literal["count_only_if_explicitly_sanitized"] = "count_only_if_explicitly_sanitized"
+    forbidden_sources: list[str] = Field(default_factory=list)
+
+
+class UsageEvidenceEntry(BaseModel):
+    entry_id: str
+    evidence_kind: UsageEvidenceKind
+    source: str
+    source_kind: str = ""
+    service_id: str = ""
+    status: str = "observed"
+    count: int = 0
+    latest_at: str = ""
+    token_count: int | None = None
+    labels: list[str] = Field(default_factory=list)
+    private_payload: Literal["excluded"] = "excluded"
+    notes: str = ""
+
+
+class ProductionUsageLedger(BaseModel):
+    generated: str
+    schema_version: Literal["production-usage-v0"] = "production-usage-v0"
+    privacy: FoundationPrivacyPolicy = Field(default_factory=FoundationPrivacyPolicy)
+    evidence_kinds: list[UsageEvidenceKind] = Field(default_factory=list)
+    summary: dict[str, int] = Field(default_factory=dict)
+    entries: list[UsageEvidenceEntry] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class AgentHandoffQualityProjection(BaseModel):
+    generated: str
+    schema_version: Literal["agent-handoff-quality-v0"] = "agent-handoff-quality-v0"
+    source: Literal["task_ledgers"] = "task_ledgers"
+    task_count: int = 0
+    handoff_tag_count: int = 0
+    with_read_back: int = 0
+    with_scope_check: int = 0
+    with_changed_paths: int = 0
+    with_agent: int = 0
+    with_tool: int = 0
+    with_verification_hint: int = 0
+    quality_score: int = 0
+    missing: dict[str, int] = Field(default_factory=dict)
+    latest_records: list[dict[str, Any]] = Field(default_factory=list)
+    privacy: FoundationPrivacyPolicy = Field(default_factory=FoundationPrivacyPolicy)
+
+
+class DocsLifecycleEntry(BaseModel):
+    doc_id: str
+    path: str
+    enabled: bool = False
+    generated_at: str = ""
+    generated_from: str = ""
+    contributor_count: int = 0
+    latest_contributor_at: str = ""
+    lifecycle_state: DocLifecycleState = "unverified"
+    memory_role: str = ""
+
+
+class DocsRelevanceProjection(BaseModel):
+    generated: str
+    schema_version: Literal["docs-relevance-v0"] = "docs-relevance-v0"
+    source: Literal["switchboard/evidence/doc-index.json"] = "switchboard/evidence/doc-index.json"
+    latest_task_at: str = ""
+    doc_count: int = 0
+    enabled_count: int = 0
+    current_count: int = 0
+    stale_count: int = 0
+    docs: list[DocsLifecycleEntry] = Field(default_factory=list)
+    privacy: FoundationPrivacyPolicy = Field(default_factory=FoundationPrivacyPolicy)
+
+
+class SuiteBoundary(BaseModel):
+    boundary_id: str
+    status: BoundaryStatus
+    owner_system: str
+    allowed: list[str] = Field(default_factory=list)
+    forbidden: list[str] = Field(default_factory=list)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class SuiteBoundaryRegistry(BaseModel):
+    generated: str
+    schema_version: Literal["suite-boundaries-v0"] = "suite-boundaries-v0"
+    source: Literal["manifests_and_manager_rules"] = "manifests_and_manager_rules"
+    suites: list[dict[str, Any]] = Field(default_factory=list)
+    boundaries: list[SuiteBoundary] = Field(default_factory=list)
+    privacy: FoundationPrivacyPolicy = Field(default_factory=FoundationPrivacyPolicy)
+
+
+class FoundationProjection(BaseModel):
+    generated: str
+    schema_version: Literal["switchboard-pass1-foundation-v0"] = "switchboard-pass1-foundation-v0"
+    privacy: FoundationPrivacyPolicy = Field(default_factory=FoundationPrivacyPolicy)
+    line_noise: dict[str, Any] = Field(default_factory=dict)
+    production_usage: ProductionUsageLedger
+    agent_handoff_quality: AgentHandoffQualityProjection
+    docs_relevance: DocsRelevanceProjection
+    harness_source_map: dict[str, Any] = Field(default_factory=dict)
+    suite_boundaries: SuiteBoundaryRegistry
+    notes: list[str] = Field(default_factory=list)
 
 
 class ProjectManifest(BaseModel):

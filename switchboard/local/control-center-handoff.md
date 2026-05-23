@@ -1209,3 +1209,33 @@
   - healthcheck_command: npm test -- --run tests/main-dashboard-product-sweep-contract.test.ts && npm run build
   - run_command_hint: open Switchboard main dashboard and verify the hero band is gone, backend status is compact, and Tech Stack / How To Use / Companies remain horizontally stacked on desktop
   - monitoring_mode: manual
+
+## 2026-05-24T00:57:31+05:30 | Add Pass 1 foundation projections
+- Tags: task, handoff, scope
+- Summary: Added compact backend schema and collector projections for line/noise, production usage, agent handoff quality, docs lifecycle relevance, harness adapter completion, and suite/deferred boundaries.
+- Changed Paths: switchboard/models.py, switchboard/collectors.py, switchboard/storage.py, tests_backend/test_backend_regressions.py, switchboard/evidence/foundation-projection.json, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Implement Switchboard Pass 1 foundation data scaffolding only, without spawning agents, touching Agent Ops, using raw private data, contacting .47, changing UI, or committing.
+- Scope Check: Backend/schema/evidence only. No UI, no Palimpsest ingest, no .47 access, no deletion cleanup, no GitHub automation, and no sibling project code changes.
+- Notes:
+  - - Production usage v0 treats tokens as one optional count field and also tracks model/tool/API/runtime/storage/manual/human UI evidence from safe metadata.
+  - - Foundation evidence is one compact git-safe JSON projection under `switchboard/evidence/foundation-projection.json`.
+  - - Privacy policy excludes finance rows, meeting videos/transcripts, X raw text, secrets, credentials, personal data, and private usage/cost payloads.
+  - - Palimpsest and .47 are represented only as deferred boundaries.
+- Scope Entries:
+  - code | file | /Users/p/Desktop/dashboard/switchboard/models.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/storage.py | true
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/foundation-projection.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static | true

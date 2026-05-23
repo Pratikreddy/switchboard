@@ -37,11 +37,17 @@ from .models import (
     DiscoveryTreeRequest,
     DownloadRequest,
     EnvironmentRuntimeSnapshotRequest,
+    AgentHandoffQualityProjection,
     GitHubBackupRequest,
     GitPushRequest,
     GitPullRequest,
+    DocsLifecycleEntry,
+    DocsRelevanceProjection,
+    FoundationPrivacyPolicy,
+    FoundationProjection,
     NodeActionRequest,
     NodeSyncRequest,
+    ProductionUsageLedger,
     ProjectEnvironmentManifest,
     PullBundleBackupDryRunRequest,
     PullBundleRequest,
@@ -51,6 +57,9 @@ from .models import (
     ScanRootRequest,
     ServicePatchRequest,
     ServiceManifest,
+    SuiteBoundary,
+    SuiteBoundaryRegistry,
+    UsageEvidenceEntry,
 )
 from .node import (
     list_manager_roots,
@@ -2532,6 +2541,12 @@ class CollectionCoordinator:
         user_story = self._user_story_context()
         agent_usage_notes = self._agent_usage_notes_context()
         line_noise = self._codebase_line_count_summary()
+        foundation = self._foundation_projection(
+            generated=generated,
+            activity=activity,
+            harness=harness,
+            line_noise=line_noise,
+        )
         return {
             "generated": generated,
             "activity_map": activity,
@@ -2541,6 +2556,11 @@ class CollectionCoordinator:
             "user_story": user_story,
             "agent_usage_notes": agent_usage_notes,
             "line_noise": line_noise,
+            "production_usage": foundation["production_usage"],
+            "agent_handoff_quality": foundation["agent_handoff_quality"],
+            "docs_relevance": foundation["docs_relevance"],
+            "suite_boundaries": foundation["suite_boundaries"],
+            "foundation_projection": foundation,
             "cleanup_note": "Activity is collected from task ledgers and managed-project work density. Git branch/head is metadata only; generated/runtime/private/download noise is excluded from active-source line totals.",
         }
 
@@ -2784,6 +2804,10 @@ class CollectionCoordinator:
         changed_paths = task.get("changed_paths", [])
         scope_entries = task.get("scope_entries", [])
         summary = str(task.get("summary", "") or "")
+        tags = task.get("tags", []) if isinstance(task.get("tags", []), list) else []
+        notes = task.get("notes", []) if isinstance(task.get("notes", []), list) else []
+        verification_text = " ".join(str(item) for item in notes[:5]).lower()
+        verification_text = f"{verification_text} {summary[:240].lower()}"
         return {
             "service_id": service.service_id,
             "project_root": project_root,
@@ -2795,12 +2819,19 @@ class CollectionCoordinator:
             "source_kind": source_kind,
             "task_timestamp": str(task.get("timestamp", "")),
             "task_title": str(task.get("title", "")),
-            "task_tags": task.get("tags", []) if isinstance(task.get("tags", []), list) else [],
+            "task_tags": tags,
             "changed_paths_count": len(changed_paths) if isinstance(changed_paths, list) else 0,
             "scope_entries_count": len(scope_entries) if isinstance(scope_entries, list) else 0,
             "summary_length": len(summary),
             "agent": str(task.get("agent", "") or ""),
             "tool": str(task.get("tool", "") or ""),
+            "has_read_back": bool(str(task.get("read_back", "") or "").strip()),
+            "has_scope_check": bool(str(task.get("scope_check", "") or "").strip()),
+            "has_changed_paths": bool(changed_paths) if isinstance(changed_paths, list) else False,
+            "has_agent": bool(str(task.get("agent", "") or "").strip()),
+            "has_tool": bool(str(task.get("tool", "") or "").strip()),
+            "has_handoff_tag": "handoff" in tags,
+            "has_verification_hint": any(token in verification_text for token in ("verified", "verification", "test", "pytest", "unittest", "npm")),
             "daily_task_count": 1,
             "daily_services_touched": 1,
             "work_density_score_placeholder": 1,
@@ -2856,6 +2887,7 @@ class CollectionCoordinator:
         ]
         entries = []
         canonical = "switchboard/core/agent-contract.md"
+        canonical_path = root / canonical
         for filename, entrypoint in specs:
             path = root / filename
             text = self._read_text(path)
@@ -2868,21 +2900,40 @@ class CollectionCoordinator:
             entries.append(
                 {
                     "adapter_file": filename,
+                    "entrypoint": entrypoint,
                     "exists": path.exists(),
                     "active": entrypoint in enabled,
                     "byte_count": path.stat().st_size if path.exists() else 0,
                     "line_count": self._text_line_count(path),
                     "points_to": points_to,
+                    "contract_pointer_status": "canonical" if points_to else "missing",
                     "injected_context_source": points_to or filename,
                     "last_generated_at": self._file_mtime(path),
                     "warnings": warnings,
                 }
             )
+        missing_active_entrypoints = sorted(
+            entrypoint
+            for entrypoint in enabled
+            if entrypoint not in {spec_entrypoint for _, spec_entrypoint in specs}
+        )
+        inactive_existing_adapters = sorted(
+            entry["adapter_file"]
+            for entry in entries
+            if entry["exists"] and not entry["active"]
+        )
+        warning_count = sum(len(entry["warnings"]) for entry in entries)
         return {
             "generated": generated,
             "canonical_source": canonical,
+            "canonical_exists": canonical_path.exists(),
+            "canonical_line_count": self._text_line_count(canonical_path),
+            "enabled_entrypoints": sorted(enabled),
             "active_count": sum(1 for entry in entries if entry["active"]),
-            "warning_count": sum(len(entry["warnings"]) for entry in entries),
+            "warning_count": warning_count,
+            "missing_active_entrypoints": missing_active_entrypoints,
+            "inactive_existing_adapters": inactive_existing_adapters,
+            "completion_state": "ok" if canonical_path.exists() and not warning_count and not missing_active_entrypoints else "partial",
             "note": "Root harness adapters should stay tiny wrappers. Real context belongs in the canonical Switchboard contract.",
             "entries": entries,
         }
@@ -2964,6 +3015,433 @@ class CollectionCoordinator:
             "confusing": self._markdown_section_lines(text, "Confusing"),
             "suggested_features": self._markdown_section_lines(text, "Suggested Features"),
         }
+
+    def _foundation_privacy_policy(self) -> FoundationPrivacyPolicy:
+        return FoundationPrivacyPolicy(
+            forbidden_sources=[
+                "finance_rows",
+                "meeting_videos",
+                "meeting_transcripts",
+                "x_raw_text",
+                "secrets",
+                "credentials",
+                "personal_data",
+                "private_usage_cost_payloads",
+            ]
+        )
+
+    def _foundation_projection(
+        self,
+        *,
+        generated: str,
+        activity: dict[str, Any],
+        harness: dict[str, Any],
+        line_noise: dict[str, Any],
+    ) -> dict[str, Any]:
+        privacy = self._foundation_privacy_policy()
+        projection = FoundationProjection(
+            generated=generated,
+            privacy=privacy,
+            line_noise=line_noise,
+            production_usage=self._production_usage_ledger(generated, activity, privacy),
+            agent_handoff_quality=self._agent_handoff_quality_projection(generated, activity, privacy),
+            docs_relevance=self._docs_relevance_projection(generated, activity, privacy),
+            harness_source_map=harness,
+            suite_boundaries=self._suite_boundary_registry(generated, privacy),
+            notes=[
+                "Pass 1 foundation is metadata-only.",
+                "Tokens are represented as one optional count field and are not treated as the whole usage story.",
+                "Palimpsest and .47 stay deferred boundaries in this pass.",
+            ],
+        )
+        return projection.model_dump(mode="json")
+
+    def _safe_usage_label(self, value: Any) -> str:
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        if "://" in text or "@" in text or "/" in text or "\\" in text:
+            return "redacted-label"
+        cleaned = re.sub(r"[^A-Za-z0-9_.:+-]+", "-", text).strip("-")
+        return cleaned[:64]
+
+    def _latest_iso(self, values: list[Any]) -> str:
+        candidates = [str(value or "").strip() for value in values if str(value or "").strip()]
+        if not candidates:
+            return ""
+        return max(
+            candidates,
+            key=lambda value: self._parse_timestamp(value) or datetime.min.replace(tzinfo=timezone.utc),
+        )
+
+    def _usage_entry(
+        self,
+        *,
+        evidence_kind: str,
+        source: str,
+        source_kind: str,
+        count: int,
+        latest_at: str = "",
+        service_id: str = "",
+        status: str = "observed",
+        labels: list[str] | None = None,
+        token_count: int | None = None,
+        notes: str = "",
+    ) -> UsageEvidenceEntry:
+        digest = hashlib.sha1(f"{evidence_kind}:{source}:{service_id}:{notes}".encode("utf-8")).hexdigest()[:10]
+        return UsageEvidenceEntry(
+            entry_id=f"{evidence_kind}-{digest}",
+            evidence_kind=evidence_kind,  # type: ignore[arg-type]
+            source=source,
+            source_kind=source_kind,
+            service_id=service_id,
+            status=status,
+            count=count,
+            latest_at=latest_at,
+            token_count=token_count,
+            labels=labels or [],
+            notes=notes,
+        )
+
+    def _production_usage_ledger(
+        self,
+        generated: str,
+        activity: dict[str, Any],
+        privacy: FoundationPrivacyPolicy,
+    ) -> ProductionUsageLedger:
+        task_records = activity.get("task_records", []) if isinstance(activity.get("task_records", []), list) else []
+        services = self.manifests.load_services()
+        api_flows = self.manifests.load_api_flows()
+        pull_bundles = self.snapshots.list_all_pull_bundles()
+        latest_task_at = self._latest_iso([record.get("task_timestamp", "") for record in task_records])
+
+        tool_labels = sorted(
+            {
+                label
+                for label in (self._safe_usage_label(record.get("tool", "")) for record in task_records)
+                if label
+            }
+        )[:10]
+        model_markers = ("openai", "gpt", "llm", "embedding", "model", "claude", "gemini")
+        model_hit_count = 0
+        for record in task_records:
+            haystack = " ".join(
+                [
+                    str(record.get("task_title", "")),
+                    " ".join(str(tag) for tag in record.get("task_tags", []) if isinstance(record.get("task_tags", []), list)),
+                    str(record.get("agent", "")),
+                    str(record.get("tool", "")),
+                ]
+            ).lower()
+            if any(marker in haystack for marker in model_markers):
+                model_hit_count += 1
+        execution_modes: dict[str, int] = {}
+        monitoring_modes: dict[str, int] = {}
+        location_count = 0
+        storage_scope_count = 0
+        for service in services:
+            execution_modes[service.execution_mode] = execution_modes.get(service.execution_mode, 0) + 1
+            storage_scope_count += len(service.repo_paths) + len(service.docs_paths) + len(service.log_paths)
+            for location in service.locations:
+                location_count += 1
+                monitoring_mode = location.runtime.monitoring_mode if location.runtime else "manual"
+                monitoring_modes[monitoring_mode] = monitoring_modes.get(monitoring_mode, 0) + 1
+
+        enabled_api_flows = [flow for flow in api_flows if flow.enabled]
+        disabled_api_flows = [flow for flow in api_flows if not flow.enabled]
+        user_story_path = self.settings.manifest_dir.parent / "local" / "user-story.md"
+        agent_notes_path = self.settings.manifest_dir.parent / "local" / "agent-usage-notes.md"
+        human_ui_evidence_count = int(user_story_path.exists()) + int(agent_notes_path.exists())
+
+        entries = [
+            self._usage_entry(
+                evidence_kind="manual",
+                source="task_ledgers",
+                source_kind="ledger_metadata",
+                count=len(task_records),
+                latest_at=latest_task_at,
+                notes="Task-ledger update count; summaries and notes are excluded.",
+            ),
+            self._usage_entry(
+                evidence_kind="tool",
+                source="task_ledgers.tool",
+                source_kind="ledger_metadata",
+                count=sum(1 for record in task_records if record.get("tool")),
+                latest_at=latest_task_at,
+                labels=tool_labels,
+                notes="Agent tool names only; no prompts or transcripts.",
+            ),
+            self._usage_entry(
+                evidence_kind="model",
+                source="task_ledgers.model_markers",
+                source_kind="derived_metadata",
+                count=model_hit_count,
+                latest_at=latest_task_at,
+                notes="Derived from safe metadata markers, not model prompts or responses.",
+            ),
+            self._usage_entry(
+                evidence_kind="api",
+                source="api_flow_manifests",
+                source_kind="manifest_metadata",
+                count=len(api_flows),
+                labels=[f"enabled:{len(enabled_api_flows)}", f"disabled:{len(disabled_api_flows)}"],
+                notes="Counts API flow manifests without request bodies, headers, URLs, or response payloads.",
+            ),
+            self._usage_entry(
+                evidence_kind="runtime",
+                source="service_manifests",
+                source_kind="manifest_metadata",
+                count=location_count,
+                labels=[
+                    *[f"mode:{key}:{value}" for key, value in sorted(execution_modes.items())],
+                    *[f"monitor:{key}:{value}" for key, value in sorted(monitoring_modes.items())],
+                ][:12],
+                notes="Service/runtime shape only; no live server access.",
+            ),
+            self._usage_entry(
+                evidence_kind="storage",
+                source="scope_and_bundle_metadata",
+                source_kind="metadata_summary",
+                count=storage_scope_count + len(pull_bundles),
+                labels=[f"pull_bundles:{len(pull_bundles)}"],
+                notes="Repo/doc/log scope counts and bundle counts; file lists are excluded.",
+            ),
+            self._usage_entry(
+                evidence_kind="human_ui",
+                source="local_story_and_usage_notes",
+                source_kind="local_metadata",
+                count=human_ui_evidence_count,
+                notes="Presence of local story/usage-note evidence only.",
+            ),
+            self._usage_entry(
+                evidence_kind="tokens",
+                source="not_collected",
+                source_kind="explicit_absence",
+                count=0,
+                status="not_collected",
+                token_count=None,
+                notes="Token counts are one optional usage field and are not collected in v0.",
+            ),
+        ]
+        summary = {kind: 0 for kind in ("model", "tool", "api", "runtime", "storage", "manual", "human_ui", "tokens")}
+        for entry in entries:
+            summary[entry.evidence_kind] = summary.get(entry.evidence_kind, 0) + entry.count
+        return ProductionUsageLedger(
+            generated=generated,
+            privacy=privacy,
+            evidence_kinds=["model", "tool", "api", "runtime", "storage", "manual", "human_ui", "tokens"],
+            summary=summary,
+            entries=entries,
+            notes=[
+                "Private usage/cost payloads are not imported.",
+                "API evidence is manifest-level only.",
+                "Runtime evidence is saved metadata only unless a separate approved live check runs.",
+            ],
+        )
+
+    def _agent_handoff_quality_projection(
+        self,
+        generated: str,
+        activity: dict[str, Any],
+        privacy: FoundationPrivacyPolicy,
+    ) -> AgentHandoffQualityProjection:
+        task_records = activity.get("task_records", []) if isinstance(activity.get("task_records", []), list) else []
+        task_count = len(task_records)
+        counts = {
+            "with_read_back": sum(1 for record in task_records if record.get("has_read_back")),
+            "with_scope_check": sum(1 for record in task_records if record.get("has_scope_check")),
+            "with_changed_paths": sum(1 for record in task_records if record.get("has_changed_paths")),
+            "with_agent": sum(1 for record in task_records if record.get("has_agent")),
+            "with_tool": sum(1 for record in task_records if record.get("has_tool")),
+            "with_verification_hint": sum(1 for record in task_records if record.get("has_verification_hint")),
+        }
+        denominator = max(task_count * 5, 1)
+        quality_score = round(
+            (
+                counts["with_read_back"]
+                + counts["with_scope_check"]
+                + counts["with_changed_paths"]
+                + counts["with_agent"]
+                + counts["with_tool"]
+            )
+            / denominator
+            * 100
+        )
+        latest = []
+        for record in sorted(task_records, key=lambda row: str(row.get("task_timestamp", "")), reverse=True)[:8]:
+            latest.append(
+                {
+                    "service_id": record.get("service_id", ""),
+                    "timestamp": record.get("task_timestamp", ""),
+                    "has_read_back": bool(record.get("has_read_back")),
+                    "has_scope_check": bool(record.get("has_scope_check")),
+                    "has_changed_paths": bool(record.get("has_changed_paths")),
+                    "has_agent": bool(record.get("has_agent")),
+                    "has_tool": bool(record.get("has_tool")),
+                    "has_handoff_tag": bool(record.get("has_handoff_tag")),
+                    "has_verification_hint": bool(record.get("has_verification_hint")),
+                }
+            )
+        return AgentHandoffQualityProjection(
+            generated=generated,
+            task_count=task_count,
+            handoff_tag_count=sum(1 for record in task_records if record.get("has_handoff_tag")),
+            **counts,
+            quality_score=quality_score,
+            missing={
+                "read_back": max(task_count - counts["with_read_back"], 0),
+                "scope_check": max(task_count - counts["with_scope_check"], 0),
+                "changed_paths": max(task_count - counts["with_changed_paths"], 0),
+                "agent": max(task_count - counts["with_agent"], 0),
+                "tool": max(task_count - counts["with_tool"], 0),
+            },
+            latest_records=latest,
+            privacy=privacy,
+        )
+
+    def _docs_relevance_projection(
+        self,
+        generated: str,
+        activity: dict[str, Any],
+        privacy: FoundationPrivacyPolicy,
+    ) -> DocsRelevanceProjection:
+        doc_index = self._read_local_json(self.settings.manifest_dir.parent / "evidence" / "doc-index.json") or {}
+        raw_docs = doc_index.get("docs", []) if isinstance(doc_index, dict) else []
+        docs = raw_docs if isinstance(raw_docs, list) else []
+        task_records = activity.get("task_records", []) if isinstance(activity.get("task_records", []), list) else []
+        latest_task_at = self._latest_iso([record.get("task_timestamp", "") for record in task_records])
+        entries: list[DocsLifecycleEntry] = []
+        for doc in docs:
+            if not isinstance(doc, dict):
+                continue
+            contributors = doc.get("contributor_timestamps", [])
+            contributor_timestamps = contributors if isinstance(contributors, list) else []
+            generated_at = str(doc.get("generated_at") or "")
+            latest_contributor_at = self._latest_iso(contributor_timestamps)
+            enabled = bool(doc.get("enabled"))
+            if not enabled:
+                lifecycle_state = "disabled"
+            elif generated_at and latest_task_at and self._timestamp_before(generated_at, latest_task_at):
+                lifecycle_state = "stale_after_latest_task"
+            elif generated_at and contributor_timestamps:
+                lifecycle_state = "current"
+            elif generated_at:
+                lifecycle_state = "generated_no_contributors"
+            elif not generated_at:
+                lifecycle_state = "manual_or_missing"
+            else:
+                lifecycle_state = "unverified"
+            path = str(doc.get("path", ""))
+            if path.startswith("switchboard/local/"):
+                memory_role = "project_local_memory"
+            elif path.startswith("switchboard/evidence/"):
+                memory_role = "derived_git_safe_projection"
+            elif not enabled:
+                memory_role = "disabled_root_doc"
+            else:
+                memory_role = "managed_doc"
+            entries.append(
+                DocsLifecycleEntry(
+                    doc_id=str(doc.get("doc_id", "")),
+                    path=path,
+                    enabled=enabled,
+                    generated_at=generated_at,
+                    generated_from=str(doc.get("generated_from", "")),
+                    contributor_count=len(contributor_timestamps),
+                    latest_contributor_at=latest_contributor_at,
+                    lifecycle_state=lifecycle_state,  # type: ignore[arg-type]
+                    memory_role=memory_role,
+                )
+            )
+        return DocsRelevanceProjection(
+            generated=generated,
+            latest_task_at=latest_task_at,
+            doc_count=len(entries),
+            enabled_count=sum(1 for entry in entries if entry.enabled),
+            current_count=sum(1 for entry in entries if entry.lifecycle_state == "current"),
+            stale_count=sum(1 for entry in entries if entry.lifecycle_state == "stale_after_latest_task"),
+            docs=entries,
+            privacy=privacy,
+        )
+
+    def _suite_boundary_registry(
+        self,
+        generated: str,
+        privacy: FoundationPrivacyPolicy,
+    ) -> SuiteBoundaryRegistry:
+        projects = self.manifests.load_projects()
+        services = self.manifests.load_services()
+        api_flows = self.manifests.load_api_flows()
+        project_tags = {
+            project.project_id: {tag.lower() for tag in project.tags}
+            for project in projects
+        }
+        p47_projects = [project for project in projects if ".47" in project_tags.get(project.project_id, set())]
+        palimpsest_projects = [
+            project for project in projects
+            if "palimpsest" in project_tags.get(project.project_id, set())
+            or any("palimpsest" in tag for tag in project_tags.get(project.project_id, set()))
+        ]
+        suites = [
+            {
+                "suite_id": "switchboard_control_plane",
+                "status": "active",
+                "service_count": len(services),
+                "api_flow_count": len(api_flows),
+            },
+            {
+                "suite_id": "pesu_47_saved_metadata",
+                "status": "deferred",
+                "project_count": len(p47_projects),
+                "service_refs_count": sum(len(project.service_ids) for project in p47_projects),
+            },
+            {
+                "suite_id": "palimpsest_source_registry",
+                "status": "deferred",
+                "project_count": len(palimpsest_projects),
+                "service_refs_count": sum(len(project.service_ids) for project in palimpsest_projects),
+            },
+        ]
+        boundaries = [
+            SuiteBoundary(
+                boundary_id="switchboard_control_plane",
+                status="active",
+                owner_system="Switchboard",
+                allowed=["metadata collection", "task ledger projection", "scope snapshot", "read-only context"],
+                forbidden=["raw private data storage", "blind deletion", "unapproved GitHub push automation"],
+                evidence={"service_count": len(services), "project_count": len(projects)},
+            ),
+            SuiteBoundary(
+                boundary_id="agent_ops_manager_memory",
+                status="projection_only",
+                owner_system="Agent Ops",
+                allowed=["manager-memory references", "clean implementation prompts", "status projection"],
+                forbidden=["raw credential storage", "implementation from Agent Ops without approval"],
+                evidence={"path_policy": "do_not_touch_from_pass1"},
+            ),
+            SuiteBoundary(
+                boundary_id="palimpsest_deferred_boundary",
+                status="deferred",
+                owner_system="Palimpsest",
+                allowed=["metadata-only source registry", "future evidence normalization"],
+                forbidden=["raw finance rows", "meeting videos", "meeting transcripts", "X raw text", "personal source ingest"],
+                evidence={"project_count": len(palimpsest_projects)},
+            ),
+            SuiteBoundary(
+                boundary_id="client_server_47_deferred_boundary",
+                status="deferred",
+                owner_system="human-gated client server",
+                allowed=["saved local metadata counts", "human-provided command output"],
+                forbidden=["SSH", "SFTP", "SCP", "rsync", "credential checks", "remote cleanup", "remote restart"],
+                evidence={"project_count": len(p47_projects), "live_access": "not_performed"},
+            ),
+        ]
+        return SuiteBoundaryRegistry(
+            generated=generated,
+            suites=suites,
+            boundaries=boundaries,
+            privacy=privacy,
+        )
 
     def _field_value(self, text: str, field: str) -> str:
         match = re.search(rf"^{re.escape(field)}:\s*`?([^`\n]+)`?\s*$", text, flags=re.MULTILINE)
@@ -3086,13 +3564,23 @@ class CollectionCoordinator:
         entries.sort(key=lambda item: int(item["lines"]), reverse=True)
         return {
             "generated": utc_now_iso(),
+            "schema_version": "line-noise-v0",
             "taxonomy": taxonomy,
             "total_lines": total,
             "active_source_lines": active_source_total,
             "noise_line_count": total - active_source_total,
+            "active_source_ratio": round(active_source_total / total, 4) if total else 0,
+            "noise_ratio": round((total - active_source_total) / total, 4) if total else 0,
             "tracked_file_count": len(entries),
+            "classified_category_count": len(category_totals),
             "top_files": entries[:10],
             "categories": category_totals,
+            "excluded_prefixes": list(excluded_prefixes),
+            "privacy": {
+                "raw_file_contents": "excluded",
+                "line_counts_only": True,
+                "git_tracked_files_only": True,
+            },
             "important_paths": [
                 "src/pages/ControlCenterPage.tsx",
                 "src/components",

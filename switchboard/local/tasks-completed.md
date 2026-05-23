@@ -409,7 +409,11 @@ Example format:
   - exclude | dir | /Users/p/Desktop/dashboard/.venv
   - exclude | dir | /Users/p/Desktop/dashboard/node_modules
   - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
   - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
 
 ## 2026-05-14T02:07:09+00:00 | Record Agent Ops manager presence
 - Tags: handoff, scope
@@ -1626,3 +1630,34 @@ Example format:
   - exclude | dir | /Users/p/Desktop/dashboard/.venv
   - exclude | dir | /Users/p/Desktop/dashboard/node_modules
   - exclude | dir | /Users/p/Desktop/dashboard/dist
+
+## 2026-05-24T00:57:31+05:30 | Add Pass 1 foundation projections
+
+- Tags: task, handoff, scope
+- Summary: Added compact backend schema and collector projections for line/noise, production usage, agent handoff quality, docs lifecycle relevance, harness adapter completion, and suite/deferred boundaries.
+- Changed Paths: switchboard/models.py, switchboard/collectors.py, switchboard/storage.py, tests_backend/test_backend_regressions.py, switchboard/evidence/foundation-projection.json, switchboard/local/tasks-completed.md
+- Agent: Codex
+- Tool: codex-desktop
+- Read Back: Implement Switchboard Pass 1 foundation data scaffolding only, without spawning agents, touching Agent Ops, using raw private data, contacting .47, changing UI, or committing.
+- Scope Check: Backend/schema/evidence only. No UI, no Palimpsest ingest, no .47 access, no deletion cleanup, no GitHub automation, and no sibling project code changes.
+- Notes:
+  - Production usage v0 treats tokens as one optional count field and also tracks model/tool/API/runtime/storage/manual/human UI evidence from safe metadata.
+  - Foundation evidence is one compact git-safe JSON projection under `switchboard/evidence/foundation-projection.json`.
+  - Privacy policy excludes finance rows, meeting videos/transcripts, X raw text, secrets, credentials, personal data, and private usage/cost payloads.
+  - Palimpsest and .47 are represented only as deferred boundaries.
+- Scope Entries:
+  - code | file | /Users/p/Desktop/dashboard/switchboard/models.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/collectors.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/storage.py
+  - code | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/evidence/foundation-projection.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static

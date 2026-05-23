@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-23T19:41:06+00:00",
+  "generated": "2026-05-23T20:13:37+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -6703,6 +6703,163 @@
           "kind": "doc",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/evidence/foundation-projection.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "",
+        "run_command_hint": "",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-24T01:30:31+05:30",
+      "title": "Add Pass 2 foundation compression panel",
+      "tags": [
+        "task",
+        "handoff",
+        "scope"
+      ],
+      "version": "",
+      "summary": "Added one compact Control Center evidence panel that renders the Pass 1 foundation projection as demo-safe compression metadata: line/noise ratio, top 5 noise targets, production usage counts, handoff score, docs relevance, and suite boundaries.",
+      "changed_paths": [
+        "src/types/switchboard.ts",
+        "src/components/ControlCenterInsightPanels.tsx",
+        "src/components/controlCenterPanelRegistry.tsx",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex builder",
+      "tool": "codex-desktop",
+      "read_back": "Finish only Switchboard Pass 2 in `/Users/p/Desktop/dashboard` from commit `9c3a96ae81b8ac3e2795299a25cdb6a410e688a6`: surface the existing Pass 1 foundation projection in the current Control Center evidence area, keep bulky/raw/private detail out, keep Palimpsest and `.47` deferred, add focused frontend coverage, update the Switchboard ledger, run checks, and do not commit or push.",
+      "scope_check": "Frontend typing/panel/test plus this ledger entry only. No Agent Ops writes, no Palimpsest repo changes, no `.47` or remote access, no raw private payloads, no deletion/move/archive work, no GitHub backup automation, no pull-bundle safety changes, no broad Control Center redesign, and no backend contract churn.",
+      "bootstrap_version": "",
+      "notes": [
+        "- The new panel reads `foundation_projection`, `line_noise`, `production_usage`, `agent_handoff_quality`, `docs_relevance`, and `suite_boundaries` from the existing Control Center context payload.",
+        "- Production usage renders summary counts only; entry labels, raw prompts, transcripts, finance rows, personal cost payloads, and other raw private detail are not rendered.",
+        "- Suite boundaries show Switchboard active/control, Agent Ops projection-only, Palimpsest deferred, and `.47` deferred.",
+        "- Registry change is only the tiny Evidence-group wire-up needed to make the panel visible.",
+        "- Verification:",
+        "- `npm test -- tests/main-dashboard-product-sweep-contract.test.ts` passed.",
+        "- `npm test` passed.",
+        "- `npm run build` passed.",
+        "- `npm run check:release-static` passed.",
+        "- `git diff --check` passed."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/ControlCenterInsightPanels.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
           "enabled": true,
           "source": "tasks_completed"
         },

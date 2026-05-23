@@ -8,6 +8,7 @@ import {
   ActivityMapPanel,
   AgentUsageNotesPanel,
   FeatureMapPanel,
+  FoundationCompressionPanel,
   HarnessSourceMapPanel,
   UserStoryPanel,
 } from './ControlCenterInsightPanels'
@@ -139,6 +140,14 @@ const CONTROL_CENTER_PANEL_GROUP_DEFINITIONS: ControlCenterPanelGroup[] = [
     priority: 30,
     layoutClassName: 'grid gap-4 xl:grid-cols-2',
     panels: [
+      {
+        id: 'foundation-compression',
+        title: 'Foundation / Compression',
+        priority: 5,
+        subgroup: 'foundation',
+        defaultOpen: true,
+        render: (context) => <FoundationCompressionPanel context={context.dashboardContext} />,
+      },
       {
         id: 'main-sidecar-features',
         title: 'Main And Sidecar Features',

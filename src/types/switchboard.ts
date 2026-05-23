@@ -1013,15 +1013,134 @@ export interface AgentUsageNotesContext {
 
 export interface LineNoiseSummary {
   generated: string
+  schema_version?: 'line-noise-v0' | string
   taxonomy: string[]
   total_lines: number
   active_source_lines: number
   noise_line_count: number
+  active_source_ratio?: number
+  noise_ratio?: number
   tracked_file_count: number
+  classified_category_count?: number
   top_files: Array<{ path: string; lines: number; classification: string }>
   categories: Record<string, { file_count: number; line_count: number }>
+  excluded_prefixes?: string[]
+  privacy?: {
+    raw_file_contents?: 'excluded' | string
+    line_counts_only?: boolean
+    git_tracked_files_only?: boolean
+  }
   important_paths: string[]
   noise_paths: string[]
+}
+
+export interface FoundationPrivacyPolicy {
+  classification: 'git_safe_metadata' | string
+  raw_payloads: 'excluded' | string
+  private_cost_payloads?: 'excluded' | string
+  token_payloads?: 'count_only_if_explicitly_sanitized' | string
+  forbidden_sources?: string[]
+}
+
+export type UsageEvidenceKind = 'model' | 'tool' | 'api' | 'runtime' | 'storage' | 'manual' | 'human_ui' | 'tokens' | string
+
+export interface UsageEvidenceEntry {
+  entry_id: string
+  evidence_kind: UsageEvidenceKind
+  source: string
+  source_kind?: string
+  service_id?: string
+  status: string
+  count: number
+  latest_at?: string
+  token_count?: number | null
+  labels?: string[]
+  private_payload?: 'excluded' | string
+  notes?: string
+}
+
+export interface ProductionUsageLedger {
+  generated: string
+  schema_version: 'production-usage-v0' | string
+  privacy: FoundationPrivacyPolicy
+  evidence_kinds: UsageEvidenceKind[]
+  summary: Record<string, number>
+  entries: UsageEvidenceEntry[]
+  notes: string[]
+}
+
+export interface AgentHandoffQualityProjection {
+  generated: string
+  schema_version: 'agent-handoff-quality-v0' | string
+  source: 'task_ledgers' | string
+  task_count: number
+  handoff_tag_count: number
+  with_read_back: number
+  with_scope_check: number
+  with_changed_paths: number
+  with_agent: number
+  with_tool: number
+  with_verification_hint: number
+  quality_score: number
+  missing: Record<string, number>
+  latest_records: Array<Record<string, string | number | boolean>>
+  privacy: FoundationPrivacyPolicy
+}
+
+export interface DocsLifecycleEntry {
+  doc_id: string
+  path: string
+  enabled: boolean
+  generated_at: string
+  generated_from: string
+  contributor_count: number
+  latest_contributor_at: string
+  lifecycle_state: string
+  memory_role: string
+}
+
+export interface DocsRelevanceProjection {
+  generated: string
+  schema_version: 'docs-relevance-v0' | string
+  source: string
+  latest_task_at: string
+  doc_count: number
+  enabled_count: number
+  current_count: number
+  stale_count: number
+  docs: DocsLifecycleEntry[]
+  privacy: FoundationPrivacyPolicy
+}
+
+export interface SuiteBoundary {
+  boundary_id: string
+  status: 'active' | 'projection_only' | 'deferred' | string
+  owner_system: string
+  allowed: string[]
+  forbidden: string[]
+  evidence: Record<string, string | number | boolean>
+}
+
+export interface SuiteBoundaryRegistry {
+  generated: string
+  schema_version: 'suite-boundaries-v0' | string
+  source: string
+  suites: Array<Record<string, string | number>>
+  boundaries: SuiteBoundary[]
+  privacy: FoundationPrivacyPolicy
+}
+
+export interface FoundationProjection {
+  generated: string
+  schema_version: 'switchboard-pass1-foundation-v0' | string
+  privacy: FoundationPrivacyPolicy
+  line_noise: LineNoiseSummary
+  production_usage: ProductionUsageLedger
+  agent_handoff_quality: AgentHandoffQualityProjection
+  docs_relevance: DocsRelevanceProjection
+  harness_source_map: HarnessSourceMap
+  suite_boundaries: SuiteBoundaryRegistry
+  notes: string[]
 }
 
 export interface ControlCenterContext {
@@ -1033,6 +1152,11 @@ export interface ControlCenterContext {
   user_story: UserStoryContext
   agent_usage_notes: AgentUsageNotesContext
   line_noise: LineNoiseSummary
+  production_usage: ProductionUsageLedger
+  agent_handoff_quality: AgentHandoffQualityProjection
+  docs_relevance: DocsRelevanceProjection
+  suite_boundaries: SuiteBoundaryRegistry
+  foundation_projection: FoundationProjection
   cleanup_note: string
 }
 

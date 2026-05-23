@@ -1661,3 +1661,40 @@ Example format:
   - exclude | dir | /Users/p/Desktop/dashboard/state
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+
+## 2026-05-24T01:30:31+05:30 | Add Pass 2 foundation compression panel
+
+- Tags: task, handoff, scope, ui, tests
+- Summary: Added one compact Control Center evidence panel that renders the Pass 1 foundation projection as demo-safe compression metadata: line/noise ratio, top 5 noise targets, production usage counts, handoff score, docs relevance, and suite boundaries.
+- Changed Paths: src/types/switchboard.ts, src/components/ControlCenterInsightPanels.tsx, src/components/controlCenterPanelRegistry.tsx, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/local/tasks-completed.md
+- Agent: Codex builder
+- Tool: codex-desktop
+- Read Back: Finish only Switchboard Pass 2 in `/Users/p/Desktop/dashboard` from commit `9c3a96ae81b8ac3e2795299a25cdb6a410e688a6`: surface the existing Pass 1 foundation projection in the current Control Center evidence area, keep bulky/raw/private detail out, keep Palimpsest and `.47` deferred, add focused frontend coverage, update the Switchboard ledger, run checks, and do not commit or push.
+- Scope Check: Frontend typing/panel/test plus this ledger entry only. No Agent Ops writes, no Palimpsest repo changes, no `.47` or remote access, no raw private payloads, no deletion/move/archive work, no GitHub backup automation, no pull-bundle safety changes, no broad Control Center redesign, and no backend contract churn.
+- Notes:
+  - The new panel reads `foundation_projection`, `line_noise`, `production_usage`, `agent_handoff_quality`, `docs_relevance`, and `suite_boundaries` from the existing Control Center context payload.
+  - Production usage renders summary counts only; entry labels, raw prompts, transcripts, finance rows, personal cost payloads, and other raw private detail are not rendered.
+  - Suite boundaries show Switchboard active/control, Agent Ops projection-only, Palimpsest deferred, and `.47` deferred.
+  - Registry change is only the tiny Evidence-group wire-up needed to make the panel visible.
+- Verification:
+  - `npm test -- tests/main-dashboard-product-sweep-contract.test.ts` passed.
+  - `npm test` passed.
+  - `npm run build` passed.
+  - `npm run check:release-static` passed.
+  - `git diff --check` passed.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/src/types/switchboard.ts
+  - code | file | /Users/p/Desktop/dashboard/src/components/ControlCenterInsightPanels.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx
+  - code | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static

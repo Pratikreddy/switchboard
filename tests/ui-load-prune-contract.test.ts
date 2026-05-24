@@ -8,13 +8,14 @@ const serviceDetailPage = readFileSync(resolve(process.cwd(), 'src/pages/Service
 describe('UI load prune contract', () => {
   it('keeps company CRUD hidden until it is tested end to end', () => {
     expect(companiesPanel).toContain('COMPANY_CRUD_ENABLED = false')
-    expect(companiesPanel).toContain('Company editing is hidden in this build')
-    expect(companiesPanel).toContain('read-only until add/edit/delete is tested end to end')
+    expect(companiesPanel).not.toContain('Company editing is hidden in this build')
+    expect(companiesPanel).not.toContain('read-only until add/edit/delete is tested end to end')
   })
 
   it('keeps service detail evidence collapsed and removes the API-lab dead end', () => {
     expect(serviceDetailPage).toContain("DEFAULT_OPEN_PANELS: ServicePanelKey[] = ['runtime']")
     expect(serviceDetailPage).not.toContain('No project environment is linked to this location yet. Add one in Projects')
-    expect(serviceDetailPage).toContain('apiLabEnvironment &&')
+    expect(serviceDetailPage).not.toContain('apiLabEnvironment &&')
+    expect(serviceDetailPage).not.toContain('Dedicated API Lab')
   })
 })

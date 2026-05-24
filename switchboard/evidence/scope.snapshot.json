@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-23T20:13:37+00:00",
+  "generated": "2026-05-24T03:25:35+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -13,7 +13,14 @@
     {
       "kind": "code",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/src/types/switchboard.ts",
+      "path": "/Users/p/Desktop/dashboard/src/App.tsx",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/src/components/CompaniesPanel.tsx",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -27,6 +34,13 @@
     {
       "kind": "code",
       "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/src/components/ProjectsPanel.tsx",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx",
       "enabled": true,
       "source": "tasks_completed"
@@ -34,7 +48,63 @@
     {
       "kind": "code",
       "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/src/pages/WorkspacePage.tsx",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/src/pages/EnvironmentApiLabPage.tsx",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "test",
+      "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "test",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/tests/stale-truth-contract.test.ts",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "test",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/tests/ui-load-prune-contract.test.ts",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "test",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "doc",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/README.md",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -42,6 +112,34 @@
       "kind": "doc",
       "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "config",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/package.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "config",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/package-lock.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "config",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/pyproject.toml",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -5333,6 +5431,237 @@
           "kind": "doc",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-24T08:49:35+05:30",
+      "title": "Clean 1.12.7 front page and remove API Lab surface",
+      "summary": "Cut the main dashboard back to the requested `1.12.7` shape: a task-ledger work activity map plus the horizontal Tech Stack, How To Use, and Companies panels, with API Lab and noisy side/evidence panels removed from the visible product surface.",
+      "changed_paths": [
+        "README.md",
+        "package.json",
+        "package-lock.json",
+        "pyproject.toml",
+        "switchboard/__init__.py",
+        "src/App.tsx",
+        "src/components/CompaniesPanel.tsx",
+        "src/components/ControlCenterInsightPanels.tsx",
+        "src/components/ProjectsPanel.tsx",
+        "src/components/controlCenterPanelRegistry.tsx",
+        "src/pages/ControlCenterPage.tsx",
+        "src/pages/EnvironmentApiLabPage.tsx",
+        "src/pages/ServiceDetailPage.tsx",
+        "src/pages/WorkspacePage.tsx",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "tests/stale-truth-contract.test.ts",
+        "tests/ui-load-prune-contract.test.ts",
+        "tests_backend/test_backend_regressions.py",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/App.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/CompaniesPanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/ControlCenterInsightPanels.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/ProjectsPanel.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/WorkspacePage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/src/pages/EnvironmentApiLabPage.tsx",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/stale-truth-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/ui-load-prune-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/README.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package-lock.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/pyproject.toml",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
           "enabled": true,
           "source": "tasks_completed"
         },

@@ -10,10 +10,11 @@ interface Props {
   companies: Workspace[]
   offline: boolean
   onReload: () => void
+  onOpenCompany?: (workspaceId: string) => void
 }
 
-export function CompaniesPanel({ companies, offline, onReload }: Props) {
-  const [expanded, setExpanded] = useState(false)
+export function CompaniesPanel({ companies, offline, onReload, onOpenCompany }: Props) {
+  const [expanded, setExpanded] = useState(true)
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftId, setDraftId] = useState('')
@@ -100,7 +101,6 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
       {expanded && (
         <div className="border-t border-gray-800 p-4">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs text-gray-500">Top-level companies you work for. Services and servers group under these.</p>
             {!offline && COMPANY_CRUD_ENABLED && !adding && !editingId && (
               <button onClick={startAdd} className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-100 transition-colors hover:bg-amber-400/20">
                 <Plus className="h-3 w-3" /> Add Company
@@ -108,11 +108,6 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
             )}
           </div>
           {error && <div className="mb-4 rounded bg-red-950/30 p-2 text-xs text-red-400">{error}</div>}
-          {!COMPANY_CRUD_ENABLED && (
-            <div className="mb-4 rounded-lg border border-amber-900/40 bg-amber-950/10 px-3 py-2 text-xs text-amber-100/80">
-              Company editing is hidden in this build. Keep the current company list read-only until add/edit/delete is tested end to end.
-            </div>
-          )}
           {COMPANY_CRUD_ENABLED && (adding || editingId) && (
             <div className="mb-6 rounded-xl border border-gray-800 bg-gray-950 p-4">
               <div className="grid gap-3 md:grid-cols-2">
@@ -139,7 +134,13 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
           )}
           <div className="grid gap-3 md:grid-cols-2">
             {companies.map((company) => (
-              <div key={company.workspace_id} className="rounded-xl border border-amber-400/20 bg-gray-950 p-4">
+              <button
+                key={company.workspace_id}
+                type="button"
+                onClick={() => onOpenCompany?.(company.workspace_id)}
+                className="rounded-xl border border-amber-400/20 bg-gray-950 p-4 text-left transition-colors hover:border-amber-300/50 disabled:cursor-default"
+                disabled={!onOpenCompany}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-medium text-white">{company.display_name}</div>
@@ -157,7 +158,7 @@ export function CompaniesPanel({ companies, offline, onReload }: Props) {
                   <span>{company.service_count ?? company.services.length} services</span>
                 </div>
                 {company.notes && <div className="mt-3 border-t border-gray-800 pt-3 text-xs text-gray-400">{company.notes}</div>}
-              </div>
+              </button>
             ))}
           </div>
         </div>

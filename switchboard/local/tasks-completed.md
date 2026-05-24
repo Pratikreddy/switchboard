@@ -1698,3 +1698,62 @@ Example format:
   - exclude | dir | /Users/p/Desktop/dashboard/state
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
   - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+
+## 2026-05-24T08:49:35+05:30 | Clean 1.12.7 front page and remove API Lab surface
+
+- Tags: task, handoff, scope, ui, cleanup, release, tests
+- Summary: Cut the main dashboard back to the requested `1.12.7` shape: a task-ledger work activity map plus the horizontal Tech Stack, How To Use, and Companies panels, with API Lab and noisy side/evidence panels removed from the visible product surface.
+- Changed Paths: README.md, package.json, package-lock.json, pyproject.toml, switchboard/__init__.py, src/App.tsx, src/components/CompaniesPanel.tsx, src/components/ControlCenterInsightPanels.tsx, src/components/ProjectsPanel.tsx, src/components/controlCenterPanelRegistry.tsx, src/pages/ControlCenterPage.tsx, src/pages/EnvironmentApiLabPage.tsx, src/pages/ServiceDetailPage.tsx, src/pages/WorkspacePage.tsx, tests/main-dashboard-product-sweep-contract.test.ts, tests/stale-truth-contract.test.ts, tests/ui-load-prune-contract.test.ts, tests_backend/test_backend_regressions.py, switchboard/local/tasks-completed.md
+- Agent: Codex manager
+- Tool: codex-desktop, apply_patch, npm, unittest, switchboard cli
+- Read Back: This release removes the dashboard bloat Pratik rejected. The default front page no longer mounts Foundation / Compression, Main And Sidecar Features, Harness Adapter Source Map, User Story Evidence, Agent Usage Notes, Servers Inventory, GitHub Backup, backend live intro text, or API Lab entry points. The activity grid is still task-ledger sourced, GitHub-style visually, and branch/head stays metadata only.
+- Scope Check: Switchboard cleanup only. No Palimpsest repo, `.47`, raw user data, private evidence deletion, generated evidence deletion, GitHub backup automation, new feature panels, or new side ledgers were touched. API Lab was removed from the visible frontend route/surface; backend runtime primitives were left intact where existing tests still cover them.
+- Notes:
+  - `ControlCenterPage` now renders only registered `activity` and `overview` panel groups.
+  - The overview row stays `Tech Stack / How To Use / Companies` on desktop and stacks on mobile.
+  - Duplicate company cards were removed; company navigation now lives in the Companies panel.
+  - The visible internal company-editing warning was removed from the front page.
+  - `EnvironmentApiLabPage.tsx` was deleted and app/workspace/service/project wiring was removed.
+  - Version metadata is bumped to `1.12.7`.
+- Verification:
+  - `npm test -- main-dashboard-product-sweep-contract.test.ts` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed.
+  - `npm test` passed: 12 files, 69 tests.
+  - `.venv/bin/python -m unittest discover tests_backend` passed: 73 tests, with existing dependency warnings.
+  - `npm run check:release-static` passed.
+  - Browser proof on `127.0.0.1:5173`: visible version `1.12.7`; visible panels are `task-ledger-activity`, `tech-stack`, `how-to-use`, and `companies`; activity metrics show task-ledger data; forbidden front-page labels are absent.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/src/App.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/CompaniesPanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/ControlCenterInsightPanels.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/ProjectsPanel.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/components/controlCenterPanelRegistry.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ControlCenterPage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/ServiceDetailPage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/WorkspacePage.tsx
+  - code | file | /Users/p/Desktop/dashboard/src/pages/EnvironmentApiLabPage.tsx
+  - test | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts
+  - test | file | /Users/p/Desktop/dashboard/tests/stale-truth-contract.test.ts
+  - test | file | /Users/p/Desktop/dashboard/tests/ui-load-prune-contract.test.ts
+  - test | file | /Users/p/Desktop/dashboard/tests_backend/test_backend_regressions.py
+  - doc | file | /Users/p/Desktop/dashboard/README.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - config | file | /Users/p/Desktop/dashboard/package.json
+  - config | file | /Users/p/Desktop/dashboard/package-lock.json
+  - config | file | /Users/p/Desktop/dashboard/pyproject.toml
+  - code | file | /Users/p/Desktop/dashboard/switchboard/__init__.py
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+- Runtime:
+  - healthcheck_command: npm test && npm run build && .venv/bin/python -m unittest discover tests_backend
+  - run_command_hint: open the main dashboard and verify only Work Activity Map plus Tech Stack / How To Use / Companies appear on the front page
+  - monitoring_mode: release cleanup verification

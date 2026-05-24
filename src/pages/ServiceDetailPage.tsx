@@ -4,7 +4,6 @@ import type {
   ActionLock,
   ManagedDocConfig,
   NodeActionResult,
-  ProjectEnvironmentView,
   RuntimeCheckResult,
   Service,
   ServiceLocationDraft,
@@ -25,7 +24,6 @@ import {
   listServers,
   getWorkspaceRuns,
   inspectNode,
-  listProjects,
   listPullBundles,
   restartNode,
   runRuntimeCheck,
@@ -53,7 +51,6 @@ interface Props {
   offline: boolean
   onBack: () => void
   onDeleted: (serviceId: string, workspaceId: string) => void
-  onOpenEnvironmentLab: (environmentId: string) => void
 }
 
 function parsePorts(value: string): number[] {
@@ -223,7 +220,7 @@ function isFrameworkMaintenanceTask(task?: TaskLedgerEntry) {
   return mentionsSwitchboard || (mentionsBootstrap && (tags.includes('handoff') || frameworkOnlyPaths))
 }
 
-export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDeleted, onOpenEnvironmentLab }: Props) {
+export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDeleted }: Props) {
   const [service, setService] = useState<Service | null>(null)
   const [runs, setRuns] = useState<RunRecord[]>([])
   const [scopeEntries, setScopeEntries] = useState<ScopeEntry[]>([])
@@ -265,7 +262,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
   const [locationActionEvents, setLocationActionEvents] = useState<Record<string, LocationActionEvent[]>>({})
   const [bundleHistoryMeta, setBundleHistoryMeta] = useState<{ count: number; latestCreatedAt: string }>({ count: 0, latestCreatedAt: '' })
   const [pullBundleRefreshKey, setPullBundleRefreshKey] = useState(0)
-  const [projectEnvironments, setProjectEnvironments] = useState<ProjectEnvironmentView[]>([])
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [docPreviewId, setDocPreviewId] = useState<string | null>(null)
 
@@ -305,13 +301,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
     if (offline || !service?.workspace_id) return
     getWorkspaceRuns(service.workspace_id).then((result) => {
       if (!isApiError(result)) setRuns(result)
-    })
-  }, [offline, service?.workspace_id])
-
-  useEffect(() => {
-    if (offline || !service?.workspace_id) return
-    listProjects(service.workspace_id).then((result) => {
-      if (!isApiError(result)) setProjectEnvironments(result.environments ?? [])
     })
   }, [offline, service?.workspace_id])
 
@@ -503,20 +492,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
     }
     return map
   }, [service?.node_viewer])
-
-  const environmentMatchesByLocation = useMemo(() => {
-    const map = new Map<string, ProjectEnvironmentView[]>()
-    for (const environment of projectEnvironments) {
-      for (const deployment of environment.deployments ?? []) {
-        if (deployment.service_id !== service?.service_id) continue
-        const key = deployment.location_id || '__service__'
-        const current = map.get(key) ?? []
-        current.push(environment)
-        map.set(key, current)
-      }
-    }
-    return map
-  }, [projectEnvironments, service?.service_id])
 
   const hasNodeScope = useMemo(
     () =>
@@ -1641,8 +1616,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
               const recentLocationEvents = locationActionEvents[location.location_id] ?? []
               const locationOpen = Boolean(locationPanels[location.location_id])
               const portsValue = location.runtime.expected_ports.join(', ')
-              const matchedEnvironments = environmentMatchesByLocation.get(location.location_id) ?? environmentMatchesByLocation.get('__service__') ?? []
-              const apiLabEnvironment = matchedEnvironments[0] ?? null
               const managerManaged = Boolean(nodeViewer?.manager_managed)
               const remoteNodeActionBlocked = serverMeta?.connection_type === 'ssh'
               const rootManifestVersion = nodeViewer?.installed_version || ''
@@ -1821,7 +1794,7 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                 commandPreview: syncToCommandPreview,
                 followUp: [
                   'Inspect the node again if you want to verify the written manifest and scope snapshot immediately.',
-                  'Use the dedicated API Lab page separately for environment-level runtime review and API flow runs.',
+                  'Use runtime checks here for environment-level review.',
                 ],
                 confirmLabel: 'Sync To Node',
               }
@@ -2088,29 +2061,6 @@ export function ServiceDetailPage({ serviceId, runResult, offline, onBack, onDel
                               <div className="text-gray-500">{new Date(event.timestamp).toLocaleTimeString()}</div>
                             </div>
                           ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {apiLabEnvironment && (
-                      <div className="rounded-xl border border-cyan-900/40 bg-cyan-950/20 p-3">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <div className="text-xs uppercase tracking-[0.16em] text-cyan-300">Dedicated API Lab</div>
-                            <div className="mt-1 text-sm text-cyan-100">
-                              {apiLabEnvironment.display_name} opens as its own full-page environment viewer.
-                            </div>
-                            <div className="mt-1 text-xs text-cyan-100/70">
-                              Use it for runtime snapshots, API flows, dependency review, and run history outside this runtime card.
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => onOpenEnvironmentLab(apiLabEnvironment.environment_id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-400 hover:text-white"
-                          >
-                            Open Full Page
-                          </button>
                         </div>
                       </div>
                     )}

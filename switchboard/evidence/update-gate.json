@@ -1,13 +1,13 @@
 {
-  "generated": "2026-05-23T20:13:38+00:00",
+  "generated": "2026-05-24T03:25:36+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-24T01:30:31+05:30",
-    "title": "Add Pass 2 foundation compression panel",
-    "agent": "Codex builder",
-    "tool": "codex-desktop"
+    "timestamp": "2026-05-24T08:49:35+05:30",
+    "title": "Clean 1.12.7 front page and remove API Lab surface",
+    "agent": "Codex manager",
+    "tool": "codex-desktop, apply_patch, npm, unittest, switchboard cli"
   },
   "checks": [
     {

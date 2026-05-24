@@ -2,31 +2,21 @@ import { useState } from 'react'
 import type { ReactElement } from 'react'
 import { BookOpen, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react'
 import { CompaniesPanel } from './CompaniesPanel'
-import { GitHubBackupPanel } from './GitHubBackupPanel'
-import { ServerCRUDPanel } from './ServerCRUDPanel'
-import {
-  ActivityMapPanel,
-  AgentUsageNotesPanel,
-  FeatureMapPanel,
-  FoundationCompressionPanel,
-  HarnessSourceMapPanel,
-  UserStoryPanel,
-} from './ControlCenterInsightPanels'
-import type { ControlCenterContext, ServerRecord, Workspace } from '../types/switchboard'
+import { ActivityMapPanel } from './ControlCenterInsightPanels'
+import type { ControlCenterContext, Workspace } from '../types/switchboard'
 
-export type ControlCenterPanelGroupId = 'activity' | 'overview' | 'evidence' | 'notes' | 'operations'
+export type ControlCenterPanelGroupId = 'activity' | 'overview'
 
 export interface ControlCenterPanelRegistryContext {
   dashboardContext: ControlCenterContext | null
   selectedBranch: string
   online: boolean | null
-  servers: ServerRecord[]
   workspaces: Workspace[]
   techStackLines: string[]
   howToUseLines: string[]
   onBranchChange: (branch: string) => void
   onReloadCompanies: () => void
-  onReloadServers: () => void
+  onOpenWorkspace: (workspaceId: string) => void
 }
 
 export interface ControlCenterPanelDefinition {
@@ -89,7 +79,7 @@ const CONTROL_CENTER_PANEL_GROUP_DEFINITIONS: ControlCenterPanelGroup[] = [
     panels: [
       {
         id: 'task-ledger-activity',
-        title: 'Task-Ledger Activity Map',
+        title: 'Work Activity Map',
         priority: 10,
         subgroup: 'work-density',
         defaultOpen: true,
@@ -129,89 +119,13 @@ const CONTROL_CENTER_PANEL_GROUP_DEFINITIONS: ControlCenterPanelGroup[] = [
         priority: 30,
         subgroup: 'managed-projects',
         render: (context) => (
-          <CompaniesPanel companies={context.workspaces} offline={!context.online} onReload={context.onReloadCompanies} />
-        ),
-      },
-    ],
-  },
-  {
-    id: 'evidence',
-    title: 'Evidence',
-    priority: 30,
-    layoutClassName: 'grid gap-4 xl:grid-cols-2',
-    panels: [
-      {
-        id: 'foundation-compression',
-        title: 'Foundation / Compression',
-        priority: 5,
-        subgroup: 'foundation',
-        defaultOpen: true,
-        render: (context) => <FoundationCompressionPanel context={context.dashboardContext} />,
-      },
-      {
-        id: 'main-sidecar-features',
-        title: 'Main And Sidecar Features',
-        priority: 10,
-        subgroup: 'feature-map',
-        render: (context) => <FeatureMapPanel context={context.dashboardContext} />,
-      },
-      {
-        id: 'harness-source-map',
-        title: 'Harness Adapter Source Map',
-        priority: 20,
-        subgroup: 'harness',
-        render: (context) => <HarnessSourceMapPanel context={context.dashboardContext} />,
-      },
-    ],
-  },
-  {
-    id: 'notes',
-    title: 'Notes',
-    priority: 40,
-    layoutClassName: 'grid gap-4 lg:grid-cols-2',
-    panels: [
-      {
-        id: 'user-story-evidence',
-        title: 'User Story Evidence',
-        priority: 10,
-        subgroup: 'human-source',
-        render: (context) => <UserStoryPanel context={context.dashboardContext} />,
-      },
-      {
-        id: 'agent-usage-notes',
-        title: 'Agent Usage Notes',
-        priority: 20,
-        subgroup: 'agent-source',
-        render: (context) => <AgentUsageNotesPanel context={context.dashboardContext} />,
-      },
-    ],
-  },
-  {
-    id: 'operations',
-    title: 'Operations',
-    priority: 50,
-    layoutClassName: 'space-y-4',
-    panels: [
-      {
-        id: 'server-registry',
-        title: 'Server Registry',
-        priority: 10,
-        subgroup: 'runtime',
-        render: (context) => (
-          <ServerCRUDPanel
-            servers={context.servers}
+          <CompaniesPanel
             companies={context.workspaces}
             offline={!context.online}
-            onReload={context.onReloadServers}
+            onReload={context.onReloadCompanies}
+            onOpenCompany={context.onOpenWorkspace}
           />
         ),
-      },
-      {
-        id: 'github-backup',
-        title: 'GitHub Backup',
-        priority: 20,
-        subgroup: 'backup',
-        render: (context) => <GitHubBackupPanel disabled={!context.online} />,
       },
     ],
   },

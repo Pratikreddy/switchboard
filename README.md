@@ -6,9 +6,16 @@ Switchboard is a project-first control center for tracking services, servers, pr
 switchboard/local/tasks-completed.md
 ```
 
-Current release: `1.12.6`
+Current release: `1.12.7`
 
-## What 1.12.6 Fixes
+## What 1.12.7 Fixes
+
+- The main dashboard is clean again: work activity map plus Tech Stack, How To Use, and Companies.
+- The work map uses task-ledger density as the source; branch/head is metadata only.
+- Front-page foundation, sidecar, harness, user-story, agent-note, server, and backup panels are no longer mounted by default.
+- API Lab is removed from the visible product surface.
+
+## What 1.12.6 Fixed
 
 - Collect is the primary company refresh action: node-managed locations sync from node first, then inventory refreshes.
 - Workspace/service freshness now flows back to the app-level latest cache after Collect.

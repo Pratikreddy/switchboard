@@ -6,6 +6,7 @@ const apiClient = readFileSync(resolve(process.cwd(), 'src/api/client.ts'), 'utf
 const types = readFileSync(resolve(process.cwd(), 'src/types/switchboard.ts'), 'utf-8')
 const serviceCard = readFileSync(resolve(process.cwd(), 'src/components/ServiceCard.tsx'), 'utf-8')
 const controlCenterPage = readFileSync(resolve(process.cwd(), 'src/pages/ControlCenterPage.tsx'), 'utf-8')
+const companiesPanel = readFileSync(resolve(process.cwd(), 'src/components/CompaniesPanel.tsx'), 'utf-8')
 const serviceDetailPage = readFileSync(resolve(process.cwd(), 'src/pages/ServiceDetailPage.tsx'), 'utf-8')
 const workspacePage = readFileSync(resolve(process.cwd(), 'src/pages/WorkspacePage.tsx'), 'utf-8')
 
@@ -57,9 +58,11 @@ describe('stale truth contract', () => {
     expect(workspacePage).toContain('Snapshot data as of:')
   })
 
-  it('marks company cards stale when latest snapshots are older than truth', () => {
-    expect(controlCenterPage).toContain('freshness_state')
-    expect(controlCenterPage).toContain('Needs Collect')
-    expect(controlCenterPage).toContain('border-amber')
+  it('keeps company navigation in the single Companies panel after duplicate card cleanup', () => {
+    expect(controlCenterPage).toContain('CONTROL_CENTER_PANEL_GROUPS.map')
+    expect(controlCenterPage).not.toContain('Needs Collect')
+    expect(controlCenterPage).not.toContain('freshness_state')
+    expect(companiesPanel).toContain('onOpenCompany')
+    expect(companiesPanel).toContain('border-amber')
   })
 })

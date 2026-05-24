@@ -33,7 +33,6 @@ interface Props {
   workspaceName?: string
   workspaceNotes?: string
   services: Service[]
-  onOpenEnvironmentLab: (environmentId: string) => void
 }
 
 type ProjectFormState = {
@@ -92,7 +91,7 @@ function normalizeParentProjectId(value: string): string | null {
   return trimmed ? trimmed : null
 }
 
-export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNotes, services, onOpenEnvironmentLab }: Props) {
+export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNotes, services }: Props) {
   const [projects, setProjects] = useState<ProjectManifest[]>([])
   const [environments, setEnvironments] = useState<ProjectEnvironmentView[]>([])
   const [expanded, setExpanded] = useState(false)
@@ -658,22 +657,6 @@ export function ProjectsPanel({ workspaceId, offline, workspaceName, workspaceNo
                   {summary.notes && <div className="mt-2 text-xs text-gray-400">{summary.notes}</div>}
                 </div>
               ))}
-            </div>
-            <div className="mt-3 rounded-lg border border-cyan-900/40 bg-cyan-950/20 p-3">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.16em] text-cyan-300">Dedicated API Lab</div>
-                  <div className="mt-1 text-sm text-cyan-100">
-                    Open the full environment viewer for runtime snapshots, API flows, dependencies, and run history.
-                  </div>
-                </div>
-                <button
-                  onClick={() => onOpenEnvironmentLab(environment.environment_id)}
-                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-100 hover:border-cyan-400 hover:text-white"
-                >
-                  Open Full Page
-                </button>
-              </div>
             </div>
             <div className="mt-3 flex justify-end gap-2">
               {!offline && (

@@ -678,8 +678,8 @@ class BackendRegressionTests(unittest.TestCase):
                 switchboard_root / "node.manifest.json",
                 {
                     "service_id": "switch",
-                    "installed_version": "1.12.6",
-                    "bootstrap_version": "1.12.6",
+                    "installed_version": "1.12.7",
+                    "bootstrap_version": "1.12.7",
                     "runtime_port": 8010,
                     "updated_at": "2026-05-15T00:00:00+00:00",
                 },
@@ -692,7 +692,7 @@ class BackendRegressionTests(unittest.TestCase):
                             "root_id": "switch",
                             "service_id": "switch",
                             "project_root": str(project_root),
-                            "last_seen_version": "1.12.6",
+                            "last_seen_version": "1.12.7",
                             "manifest_updated_at": "2026-05-15T00:00:00+00:00",
                         }
                     ]
@@ -722,10 +722,10 @@ class BackendRegressionTests(unittest.TestCase):
                             "manifest_updated_at": "2026-04-22T00:00:00+00:00",
                         }
                     ],
-                    control_center_version="1.12.6",
+                    control_center_version="1.12.7",
                 )
 
-            self.assertEqual(rows[0]["installed_version"], "1.12.6")
+            self.assertEqual(rows[0]["installed_version"], "1.12.7")
             self.assertEqual(rows[0]["target_manager_port"], 8020)
             self.assertEqual(rows[0]["legacy_runtime_port"], 8010)
             self.assertEqual(rows[0]["freshness_state"], "Manager unreachable")
@@ -751,7 +751,7 @@ class BackendRegressionTests(unittest.TestCase):
                 project_root / "switchboard" / "node.manifest.json",
                 {
                     "service_id": "switch",
-                    "installed_version": "1.12.6",
+                    "installed_version": "1.12.7",
                     "runtime_port": 8010,
                     "updated_at": "2026-05-15T00:00:00+00:00",
                 },
@@ -764,7 +764,7 @@ class BackendRegressionTests(unittest.TestCase):
                             "root_id": "switch",
                             "service_id": "switch",
                             "project_root": str(project_root),
-                            "last_seen_version": "1.12.6",
+                            "last_seen_version": "1.12.7",
                             "manifest_updated_at": "2026-05-15T00:00:00+00:00",
                         }
                     ]
@@ -802,7 +802,7 @@ class BackendRegressionTests(unittest.TestCase):
                             "runtime_port": 8010,
                         }
                     ],
-                    control_center_version="1.12.6",
+                    control_center_version="1.12.7",
                 )
 
             self.assertEqual(rows[0]["freshness_state"], "Fresh")
@@ -2351,7 +2351,7 @@ class BackendRegressionTests(unittest.TestCase):
                     "service_id": "svc",
                     "display_name": "Svc",
                     "project_root": str(project_root),
-                    "installed_version": "1.12.6",
+                    "installed_version": "1.12.7",
                     "updated_at": "2026-05-20T00:00:00+00:00",
                 },
             )
@@ -2363,7 +2363,7 @@ class BackendRegressionTests(unittest.TestCase):
                             "root_id": "svc-local",
                             "project_root": str(project_root),
                             "manifest_updated_at": "2026-05-20T00:00:00+00:00",
-                            "last_seen_version": "1.12.6",
+                            "last_seen_version": "1.12.7",
                         }
                     ]
                 },
@@ -2433,7 +2433,7 @@ class BackendRegressionTests(unittest.TestCase):
                     "service_id": "svc",
                     "display_name": "Svc",
                     "project_root": str(project_root),
-                    "installed_version": "1.12.6",
+                    "installed_version": "1.12.7",
                     "updated_at": "2026-05-20T00:00:00+00:00",
                 },
             )
@@ -2445,7 +2445,7 @@ class BackendRegressionTests(unittest.TestCase):
                             "root_id": "svc-local",
                             "project_root": str(project_root),
                             "manifest_updated_at": "2026-05-20T00:00:00+00:00",
-                            "last_seen_version": "1.12.6",
+                            "last_seen_version": "1.12.7",
                         }
                     ]
                 },

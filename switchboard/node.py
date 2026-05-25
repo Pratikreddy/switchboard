@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .bricks import BENCHMARK_KEYWORD_CONTRACT, BENCHMARK_KEYWORD_RULES, SUITE_BRICK_RULES, build_brick_registry, normalize_brick_lines
 from .config import ROOT_DIR
 from .defaults import DEFAULT_NODE_PORT
 
@@ -20,7 +21,7 @@ CORE_DIR_NAME = "core"
 LOCAL_DIR_NAME = "local"
 EVIDENCE_DIR_NAME = "evidence"
 ROUTING_TAGS = ("task", "handoff", "runbook", "decision", "scope")
-AGENT_CONTRACT_VERSION = "2026-04-29"
+AGENT_CONTRACT_VERSION = "2026-05-24"
 AGENT_CONTRACT_MARKER = "switchboard-managed-agent-contract"
 DEFAULT_AGENT_ENTRYPOINTS = ("agents",)
 VALID_AGENT_ENTRYPOINTS = ("agents", "claude", "gemini", "qwen", "opencode")
@@ -84,6 +85,7 @@ def node_paths(project_root: Path) -> dict[str, Path]:
         "doc_index_json": root / EVIDENCE_DIR_NAME / "doc-index.json",
         "repo_safety_history": root / EVIDENCE_DIR_NAME / "repo-safety-history.json",
         "pull_bundle_history": root / EVIDENCE_DIR_NAME / "pull-bundle-history.json",
+        "brick_registry": root / EVIDENCE_DIR_NAME / "brick-registry.json",
         "scope_snapshot": root / EVIDENCE_DIR_NAME / "scope.snapshot.json",
         "update_gate": root / EVIDENCE_DIR_NAME / "update-gate.json",
         "runtime": root / "runtime",
@@ -281,6 +283,17 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "- `Notes:` general details that do not belong in the other routed blocks\n"
             "- `Scope Entries:` lines in `kind | path_type | path | enabled` format\n"
             "- `Runtime:` lines for `expected_ports`, `healthcheck_command`, `run_command_hint`, `monitoring_mode`, and `notes`\n\n"
+            "## Brick Entries\n\n"
+            "- Add `Brick Entries:` only when the work is a real build brick.\n"
+            "- Format each line as `brick_id | family | mode | status | source_record | next_action`.\n"
+            "- Do not hand-write serial numbers, dates, timestamps, versions, commits, file counts, insertions, deletions, or line totals; Switchboard computes those into `switchboard/evidence/brick-registry.json`.\n"
+            "- The reusable Python tool is the installed `switchboard.bricks` package plus `switchboard brics registry --project-root <path>`.\n"
+            "- Bricks are suite-wide agent/manager accounting, not Control Center UI panels.\n\n"
+            "## Benchmark Keyword Bricks\n\n"
+            "- Use this only when the task needs a benchmark set for transferring expensive-agent judgment to smaller models.\n"
+            "- Expensive Pro agent suggests keyword labels; each keyword gets a stable ID and bucket relation before reuse.\n"
+            "- Existing tags are candidate evidence, not automatic truth. New suggestions stay pending until human quick verify.\n"
+            "- Human-facing PDF output must stay simple and nontechnical: keyword, plain meaning, count, similar buckets, and verification state.\n\n"
             "## Canonical Workflow\n\n"
             "1. Read this playbook.\n"
             "2. Read back the request before changing files.\n"
@@ -322,6 +335,9 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "- Put the actual structured update in `switchboard/local/tasks-completed.md`, not directly into derived docs.\n"
             "- If the project has known ports, health checks, or run command hints, include them in the latest `tasks-completed.md` entry under a `Runtime:` block.\n"
             "- If project root docs should be framework-owned, record the needed `Readme`, `API`, `Changelog`, and `Version` blocks in `tasks-completed.md` and enable those docs through the node managed-doc config.\n"
+            "- If the work is a real build brick, include a compact `Brick Entries:` block. Do not hand-write computed brick facts.\n"
+            "- `switchboard.bricks` is the reusable tool package for brick parsing, contracts, serial numbers, versioning, and registry output; `switchboard brics registry` is the CLI surface.\n"
+            "- For benchmark keyword work, keep expensive-agent suggestions pending until human quick verify; smaller models should only receive verified keyword IDs, simple meanings, and examples.\n"
             "- Record the standardization work in `switchboard/local/tasks-completed.md` using the required entry format.\n"
             "- Finish by running `switchboard node snapshot --project-root <path>`.\n"
         ),
@@ -338,6 +354,9 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "- If project-facing docs changed, add `Version`, `Readme`, `API`, and `Changelog` blocks as needed.\n"
             "- If scope changed, include a `Scope Entries` block in the entry.\n"
             "- If runtime config changed, include a `Runtime:` block in the entry.\n"
+            "- If the work is a real build brick, include `Brick Entries:` lines in `brick_id | family | mode | status | source_record | next_action` format.\n"
+            "- Never hand-write computed brick facts; Switchboard generates serial number, date created, version, commit, and line statistics into `switchboard/evidence/brick-registry.json`.\n"
+            "- If the work is benchmark keywording, use stable keyword IDs, bucket IDs, similar-bucket counts, and human quick verify before smaller-model reuse.\n"
             "- Finish by running `switchboard node snapshot --project-root <path>` and `switchboard node verify-update --project-root <path>`.\n\n"
             "Entry format:\n"
             "## 2026-04-01T12:00:00+00:00 | Example title\n"
@@ -359,6 +378,8 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "  - Added health endpoint.\n"
             "- Notes:\n"
             "  - Optional detail line.\n"
+            "- Brick Entries:\n"
+            "  - example-brick | runtime | programmatic | done | current task | no next action\n"
             "- Scope Entries:\n"
             "  - doc | file | /abs/path/to/file.md\n"
             "  - exclude | glob | venv\n"
@@ -449,6 +470,9 @@ def _agent_contract_payload(
             "Run switchboard node verify-update --project-root <path>.",
             "Verify manifest, scope snapshot, and Control Center view.",
         ],
+        "suite_brick_rules": SUITE_BRICK_RULES,
+        "benchmark_keyword_contract": BENCHMARK_KEYWORD_CONTRACT,
+        "benchmark_keyword_rules": BENCHMARK_KEYWORD_RULES,
         "pull_scope": {
             "include": ["source", "config", "docs", "ui", "backend"],
             "exclude": ["secrets", "virtualenvs", "logs", "runtime files", "caches", "removed tech"],
@@ -474,6 +498,21 @@ def _agent_contract_markdown(payload: dict[str, Any]) -> str:
     lines.extend(f"- {item}" for item in payload["principles"])
     lines.extend(["", "## Canonical Update Gate", ""])
     lines.extend(f"- {item}" for item in payload["canonical_update_gate"])
+    lines.extend(["", "## Suite Brick Rules", ""])
+    lines.extend(f"- {item}" for item in payload.get("suite_brick_rules", []))
+    lines.extend(["", "## Benchmark Keyword Brick Rules", ""])
+    lines.extend(f"- {item}" for item in payload.get("benchmark_keyword_rules", []))
+    benchmark_contract = payload.get("benchmark_keyword_contract", {})
+    if isinstance(benchmark_contract, dict):
+        lines.extend(
+            [
+                "",
+                "Benchmark keyword contract:",
+                f"- Keyword id format: `{benchmark_contract.get('keyword_id_format', '')}`",
+                f"- Bucket id format: `{benchmark_contract.get('bucket_id_format', '')}`",
+                f"- PDF rule: {benchmark_contract.get('pdf_rule', '')}",
+            ]
+        )
     lines.extend(
         [
             "",
@@ -502,6 +541,7 @@ def _agent_entrypoint_text(tool_name: str, contract_path: str = "switchboard/cor
         "- Keep output short; no ceremony.\n"
         "- Never delete for cleanup; move or zip instead.\n"
         "- A Switchboard update is incomplete until task ledger, scope check, snapshot, and `verify-update` are done.\n"
+        "- If work is a real build brick, add a compact `Brick Entries:` block; computed brick facts come from `switchboard.bricks` into `switchboard/evidence/brick-registry.json`, not hand-written notes.\n"
     )
 
 
@@ -656,6 +696,7 @@ def _tasks_completed_template() -> str:
         "- optional `API:` markdown block\n"
         "- optional `Changelog:` markdown block\n"
         "- optional `Notes:` lines\n"
+        "- optional `Brick Entries:` lines in `brick_id | family | mode | status | source_record | next_action` format\n"
         "- optional `Scope Entries:` lines in `kind | path_type | path` format\n"
         "- optional `Runtime:` lines for ports, health check, and run command hint\n\n"
         "Example format:\n\n"
@@ -679,6 +720,8 @@ def _tasks_completed_template() -> str:
         "      - Standardized the project docs.\n"
         "    - Notes:\n"
         "      - Added the first standard handoff.\n"
+        "    - Brick Entries:\n"
+        "      - example-brick | docs | hybrid | done | current task | no next action\n"
         "    - Runtime:\n"
         f"      - expected_ports: {DEFAULT_NODE_PORT}\n"
         f"      - healthcheck_command: curl http://127.0.0.1:{DEFAULT_NODE_PORT}/api/health\n"
@@ -1224,6 +1267,7 @@ def _manifest_payload(
             "doc_index": str(paths["doc_index_json"].relative_to(project_root)),
             "repo_safety_history": str(paths["repo_safety_history"].relative_to(project_root)),
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
+            "brick_registry": str(paths["brick_registry"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
         },
@@ -1383,6 +1427,7 @@ def parse_tasks_completed(path: Path) -> list[dict[str, Any]]:
             "runtime_services": [],
             "dependencies": [],
             "cross_dependencies": [],
+            "brick_entries": [],
             "diagram": [],
         }
         current_section: str | None = None
@@ -1457,6 +1502,8 @@ def parse_tasks_completed(path: Path) -> list[dict[str, Any]]:
                 next_section = "dependencies"
             elif line.startswith("- Cross Dependencies:"):
                 next_section = "cross_dependencies"
+            elif line.startswith("- Brick Entries:"):
+                next_section = "brick_entries"
             elif line.startswith("- Diagram:"):
                 next_section = "diagram"
 
@@ -1490,6 +1537,7 @@ def parse_tasks_completed(path: Path) -> list[dict[str, Any]]:
                 "runtime_services": _normalize_runtime_service_lines(sections["runtime_services"]),
                 "dependencies": _normalize_dependency_lines(sections["dependencies"]),
                 "cross_dependencies": _normalize_dependency_lines(sections["cross_dependencies"]),
+                "brick_entries": normalize_brick_lines(sections["brick_entries"]),
                 "diagram": _join_markdown_lines(sections["diagram"]),
                 "readme": _join_markdown_lines(sections["readme"]),
                 "api": _join_markdown_lines(sections["api"]),
@@ -1569,6 +1617,22 @@ def _render_entry(entry: dict[str, Any]) -> str:
         for dep in entry["cross_dependencies"]:
             port_str = str(dep.get("port", "")) if dep.get("port") is not None else "null"
             lines.append(f"  - {dep.get('kind', 'service')} | {dep['name']} | {dep.get('host', '')} | {port_str} | {dep.get('notes', '')}")
+    if entry.get("brick_entries"):
+        lines.append("- Brick Entries:")
+        for brick in entry["brick_entries"]:
+            lines.append(
+                "  - "
+                + " | ".join(
+                    [
+                        str(brick.get("brick_id", "")),
+                        str(brick.get("family", "")),
+                        str(brick.get("mode", "")),
+                        str(brick.get("status", "")),
+                        str(brick.get("source_record", "")),
+                        str(brick.get("next_action", "")),
+                    ]
+                )
+            )
     if entry.get("diagram"):
         lines.append("- Diagram:")
         for diagram_line in entry["diagram"].splitlines():
@@ -1757,6 +1821,8 @@ def install_node(
         _write_json(paths["repo_safety_history"], {"generated": "", "checks": []})
     if not paths["pull_bundle_history"].exists():
         _write_json(paths["pull_bundle_history"], {"generated": "", "bundles": []})
+    if not paths["brick_registry"].exists():
+        _write_json(paths["brick_registry"], {"generated": "", "schema_version": "switchboard-brick-registry-v0", "bricks": []})
     if not paths["scope_snapshot"].exists():
         _write_json(paths["scope_snapshot"], _evidence_defaults(service_id, project_root, manifest))
     if not paths["update_gate"].exists():
@@ -1847,6 +1913,7 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
             "doc_index": str(paths["doc_index_json"].relative_to(project_root)),
             "repo_safety_history": str(paths["repo_safety_history"].relative_to(project_root)),
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
+            "brick_registry": str(paths["brick_registry"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
             "foundation_projection": str((paths["node_root"] / "evidence" / "foundation-projection.json").relative_to(project_root)),
@@ -2012,12 +2079,15 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
     manifest["updated_at"] = utc_now_iso()
     _write_json(paths["manifest"], manifest)
     foundation_projection = _snapshot_foundation_projection(project_root)
+    brick_registry = build_brick_registry(project_root, manifest["service_id"], tasks, foundation_projection)
+    _write_json(paths["brick_registry"], brick_registry)
     return {
         "manifest": manifest,
         "tasks": tasks,
         "scope_snapshot": scope_snapshot,
         "doc_index": doc_index,
         "foundation_projection": foundation_projection,
+        "brick_registry": brick_registry,
     }
 
 
@@ -2107,6 +2177,7 @@ def verify_node_update(project_root: str | Path, write: bool = True) -> dict[str
     for check_id, path in (
         ("manifest_exists", paths["manifest"]),
         ("completed_tasks_json_exists", paths["completed_tasks_json"]),
+        ("brick_registry_json_exists", paths["brick_registry"]),
         ("scope_snapshot_exists", paths["scope_snapshot"]),
     ):
         add_check(check_id, path.exists(), f"{path.relative_to(project_root)} exists.")
@@ -2118,6 +2189,7 @@ def verify_node_update(project_root: str | Path, write: bool = True) -> dict[str
         freshness_sources = (
             ("manifest_fresh", paths["manifest"], "updated_at"),
             ("completed_tasks_json_fresh", paths["completed_tasks_json"], "generated"),
+            ("brick_registry_json_fresh", paths["brick_registry"], "generated"),
             ("scope_snapshot_fresh", paths["scope_snapshot"], "generated"),
         )
         for check_id, path, field in freshness_sources:

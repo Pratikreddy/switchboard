@@ -208,6 +208,7 @@ class TaskLedgerEntry(BaseModel):
     runtime_services: list[RuntimeService] = Field(default_factory=list)
     dependencies: list[DependencyNode] = Field(default_factory=list)
     cross_dependencies: list[DependencyNode] = Field(default_factory=list)
+    brick_entries: list[dict[str, Any]] = Field(default_factory=list)
     diagram: str = ""
     notes: list[str] = Field(default_factory=list)
     scope_entries: list[dict] = Field(default_factory=list)

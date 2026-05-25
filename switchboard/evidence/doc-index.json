@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-24T03:25:35+00:00",
+  "generated": "2026-05-25T07:59:59+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "docs": [
@@ -76,7 +76,8 @@
         "2026-05-23T10:01:48+05:30",
         "2026-05-24T00:57:31+05:30",
         "2026-05-24T01:30:31+05:30",
-        "2026-05-24T08:49:35+05:30"
+        "2026-05-24T08:49:35+05:30",
+        "2026-05-25T13:11:23+05:30"
       ]
     },
     {
@@ -84,7 +85,7 @@
       "label": "Control Center Handoff",
       "path": "switchboard/local/control-center-handoff.md",
       "enabled": true,
-      "generated_at": "2026-05-24T03:25:35+00:00",
+      "generated_at": "2026-05-25T07:59:59+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-04-06T15:30:38+00:00",
@@ -125,7 +126,8 @@
         "2026-05-22T12:41:36+05:30",
         "2026-05-24T00:57:31+05:30",
         "2026-05-24T01:30:31+05:30",
-        "2026-05-24T08:49:35+05:30"
+        "2026-05-24T08:49:35+05:30",
+        "2026-05-25T13:11:23+05:30"
       ]
     },
     {
@@ -133,7 +135,7 @@
       "label": "Runbook",
       "path": "switchboard/local/runbook.md",
       "enabled": true,
-      "generated_at": "2026-05-24T03:25:35+00:00",
+      "generated_at": "2026-05-25T07:59:59+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": []
     },
@@ -142,7 +144,7 @@
       "label": "Approach History",
       "path": "switchboard/local/approach-history.md",
       "enabled": true,
-      "generated_at": "2026-05-24T03:25:35+00:00",
+      "generated_at": "2026-05-25T07:59:59+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-05-14T01:34:00+00:00",
@@ -157,7 +159,7 @@
       "label": "Doc Index Markdown",
       "path": "switchboard/local/doc-index.md",
       "enabled": true,
-      "generated_at": "2026-05-24T03:25:35+00:00",
+      "generated_at": "2026-05-25T07:59:59+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-04-06T15:30:38+00:00",
@@ -205,7 +207,8 @@
         "2026-05-23T10:01:48+05:30",
         "2026-05-24T00:57:31+05:30",
         "2026-05-24T01:30:31+05:30",
-        "2026-05-24T08:49:35+05:30"
+        "2026-05-24T08:49:35+05:30",
+        "2026-05-25T13:11:23+05:30"
       ]
     },
     {
@@ -213,7 +216,7 @@
       "label": "Doc Index JSON",
       "path": "switchboard/evidence/doc-index.json",
       "enabled": true,
-      "generated_at": "2026-05-24T03:25:35+00:00",
+      "generated_at": "2026-05-25T07:59:59+00:00",
       "generated_from": "switchboard/local/tasks-completed.md",
       "contributor_timestamps": [
         "2026-04-06T15:30:38+00:00",
@@ -261,7 +264,8 @@
         "2026-05-23T10:01:48+05:30",
         "2026-05-24T00:57:31+05:30",
         "2026-05-24T01:30:31+05:30",
-        "2026-05-24T08:49:35+05:30"
+        "2026-05-24T08:49:35+05:30",
+        "2026-05-25T13:11:23+05:30"
       ]
     }
   ]

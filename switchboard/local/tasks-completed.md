@@ -1757,3 +1757,53 @@ Example format:
   - healthcheck_command: npm test && npm run build && .venv/bin/python -m unittest discover tests_backend
   - run_command_hint: open the main dashboard and verify only Work Activity Map plus Tech Stack / How To Use / Companies appear on the front page
   - monitoring_mode: release cleanup verification
+
+## 2026-05-25T13:11:23+05:30 | Add suite brics package, registry evidence, and benchmark keyword contract
+
+- Tags: task, handoff, scope
+- Summary: Added the internal suite brick accounting tool for Switchboard agents and managers. Brick labels stay in compact task-ledger entries, while serial number, date created, commit, version, file count, insertion, deletion, net-line, and active/stale line facts are computed by the `switchboard.bricks` package into generated evidence.
+- Changed Paths: switchboard/bricks/__init__.py, switchboard/bricks/registry.py, switchboard/brics/__init__.py, switchboard/cli.py, switchboard/node.py, switchboard/models.py, tests_backend/test_node_mode.py, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/local/tasks-completed.md, switchboard/evidence/brick-registry.json
+- Version: 1.12.7
+- Agent: Codex manager
+- Tool: codex-desktop, apply_patch, python unittest, npm, switchboard cli
+- Read Back: Switchboard should make agents across the suite record real build work as bricks, but those bricks are manager/agent evidence only. Brics is a reusable Switchboard-owned Python package and CLI tool for brick contracts, serial numbers, dates, versioning, input/output schema, and generated registry checks. The clean `1.12.7` Control Center must not get project-brick cards, routes, or front-page text.
+- Scope Check: Switchboard evidence and generated agent contracts only. No Control Center brick UI, no project-brick dashboard dump, no Palimpsest repo, no `.47` work, no raw private data, no side ledger, and no deletion cleanup.
+- Notes:
+  - Added the reusable `switchboard.bricks` package for brick parsing, contracts, serial numbers, date creation, versioning, and registry output.
+  - Added `switchboard brics registry --project-root <path>` as the non-UI tool surface, with `switchboard bricks registry` kept as an alias.
+  - Added deterministic `switchboard/evidence/brick-registry.json` generation during node snapshot.
+  - Added `Brick Entries:` parsing with only semantic human fields: `brick_id`, `family`, `mode`, `status`, `source_record`, and `next_action`.
+  - Added suite-aware brick rules to generated contracts and prompts for Agent Ops, Switchboard, Palimpsest, Union Bank, X, meeting, sysdocs, and future lanes.
+  - Added the benchmark keyword brick contract: expensive Pro agent suggestions, human quick verify, stable keyword IDs, bucket IDs, similar-bucket counts, and smaller-model reuse.
+  - Locked the nontechnical PDF rule for benchmark summaries: keyword, plain meaning, count, similar buckets, and verification state.
+  - Protected uncommitted work from being falsely assigned to the previous git commit.
+  - Focused backend brick tests passed.
+  - Focused dashboard no-brick-UI contract passed.
+- Brick Entries:
+  - switchboard-suite-brick-registry | manager-evidence | programmatic | done | current task | keep bricks internal and generated
+  - switchboard-brics-benchmark-keywords | benchmark-transfer | hybrid | done | current task | use expensive-agent suggestions with human verify before small-model reuse
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/__init__.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/registry.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/brics/__init__.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/cli.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/node.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/models.py
+  - test | file | /Users/p/Desktop/dashboard/tests_backend/test_node_mode.py
+  - test | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts
+  - evidence | file | /Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+- Runtime:
+  - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
+  - run_command_hint: switchboard node snapshot --project-root /Users/p/Desktop/dashboard && switchboard node verify-update --project-root /Users/p/Desktop/dashboard
+  - monitoring_mode: generated evidence verification

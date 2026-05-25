@@ -1,0 +1,298 @@
+{
+  "generated": "2026-05-25T08:00:00Z",
+  "schema_version": "switchboard-brick-registry-v0",
+  "tool": {
+    "name": "switchboard-brics",
+    "version": "2026-05-25",
+    "package": "switchboard.bricks",
+    "package_alias": "switchboard.brics",
+    "type": "programmatic_python_package"
+  },
+  "role": "agent_manager_evidence_only",
+  "ui_surface": "none",
+  "source": "switchboard/local/tasks-completed.md + git metadata",
+  "contract": {
+    "name": "switchboard-brics",
+    "contract_version": "2026-05-25",
+    "schema_version": "switchboard-brick-registry-v0",
+    "input_format": "brick_id | family | mode | status | source_record | next_action",
+    "human_fields": [
+      "brick_id",
+      "family",
+      "mode",
+      "status",
+      "source_record",
+      "next_action"
+    ],
+    "computed_fields": [
+      "contract_version",
+      "serial_number",
+      "date_created",
+      "generated",
+      "commit",
+      "commit_subject",
+      "version_introduced",
+      "files_changed",
+      "insertions",
+      "deletions",
+      "net_lines",
+      "active_lines_after",
+      "stale_lines_after"
+    ],
+    "function_contracts": {
+      "normalize_brick_lines": {
+        "input": "list[str] from `Brick Entries:` ledger lines",
+        "output": "list[dict] with only sanitized semantic brick fields"
+      },
+      "build_brick_registry": {
+        "input": "project_root, service_id, parsed task ledger rows, optional foundation projection",
+        "output": "`switchboard/evidence/brick-registry.json` payload"
+      }
+    }
+  },
+  "benchmark_keyword_contract": {
+    "name": "benchmark-keywords",
+    "role": "expensive_agent_to_small_model_transfer",
+    "keyword_id_format": "kw_<slug>_<4_digit_serial>",
+    "bucket_id_format": "bucket_<slug>_<4_digit_serial>",
+    "human_fields": [
+      "keyword_id",
+      "label",
+      "plain_meaning",
+      "bucket_id",
+      "similar_bucket_ids",
+      "status",
+      "human_verified"
+    ],
+    "computed_fields": [
+      "keyword_count",
+      "bucket_count",
+      "similar_bucket_count",
+      "created_at",
+      "updated_at",
+      "source_benchmark_ids"
+    ],
+    "workflow": [
+      "Expensive Pro agent keywords a benchmark set first.",
+      "Human performs quick verification before labels become active.",
+      "Smaller model receives only the verified keyword ID map, simple prompt, and examples.",
+      "Existing tags are candidate evidence, not automatic truth.",
+      "New suggestions stay pending until human verification promotes them."
+    ],
+    "pdf_rule": "PDF or human-facing output must be simple, nontechnical, and grouped by verified keyword IDs and bucket counts."
+  },
+  "benchmark_keyword_rules": [
+    "Benchmark keywording is a separate semantic brick: expensive Pro agent suggests labels, but stable IDs and counts are managed programmatically.",
+    "Each keyword needs a stable ID, bucket ID, count, and similar-bucket relation before it is reused by smaller models.",
+    "Existing tags can seed candidates, but they are not dumped blindly into the benchmark. The expensive agent may suggest new pending keywords as the benchmark grows.",
+    "Human quick verify is the promotion gate from pending suggestion to active benchmark keyword.",
+    "Small models should receive verified IDs, simple meanings, and examples only; do not pass annotation bloat or raw expensive-agent reasoning forward.",
+    "PDF summaries for nontechnical users must stay simple: keyword, plain meaning, count, similar buckets, and verification state."
+  ],
+  "privacy": {
+    "classification": "git_safe_metadata",
+    "raw_payloads": "excluded",
+    "computed_fields": "programmatic",
+    "semantic_fields": "agentic"
+  },
+  "summary": {
+    "brick_count": 6,
+    "seeded_count": 4,
+    "task_ledger_count": 2,
+    "done_count": 6,
+    "active_count": 0,
+    "blocked_count": 0
+  },
+  "bricks": [
+    {
+      "brick_id": "switchboard-task-ledger-activity",
+      "contract_version": "2026-05-25",
+      "project": "switchboard",
+      "family": "work-evidence",
+      "mode": "programmatic",
+      "status": "done",
+      "source_record": "record 116",
+      "next_action": "laid",
+      "source_task_timestamp": "",
+      "source_task_title": "",
+      "seeded": true,
+      "input_format": "brick_id | family | mode | status | source_record | next_action",
+      "output_schema": "switchboard-brick-registry-v0",
+      "evidence_refs": [
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/brick-registry.json"
+      ],
+      "date_created": "2026-05-24T00:12:44+05:30",
+      "commit": "7e7c7f2ad24ea571b43c9b7e643230e0a74cfd81",
+      "commit_subject": "Collect task-ledger activity across local services",
+      "version_introduced": "1.12.6",
+      "files_changed": 10,
+      "insertions": 783,
+      "deletions": 174,
+      "net_lines": 609,
+      "active_lines_after": 25889,
+      "stale_lines_after": 37494,
+      "computed_status": "ok",
+      "serial_number": "SWITCH-BRICK-0001"
+    },
+    {
+      "brick_id": "switchboard-pass1-foundation",
+      "contract_version": "2026-05-25",
+      "project": "switchboard",
+      "family": "foundation-data",
+      "mode": "programmatic",
+      "status": "done",
+      "source_record": "record 131",
+      "next_action": "laid",
+      "source_task_timestamp": "",
+      "source_task_title": "",
+      "seeded": true,
+      "input_format": "brick_id | family | mode | status | source_record | next_action",
+      "output_schema": "switchboard-brick-registry-v0",
+      "evidence_refs": [
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/brick-registry.json"
+      ],
+      "date_created": "2026-05-24T01:13:44+05:30",
+      "commit": "9c3a96ae81b8ac3e2795299a25cdb6a410e688a6",
+      "commit_subject": "Add Switchboard foundation projections",
+      "version_introduced": "1.12.6",
+      "files_changed": 14,
+      "insertions": 2187,
+      "deletions": 47,
+      "net_lines": 2140,
+      "active_lines_after": 25889,
+      "stale_lines_after": 37494,
+      "computed_status": "ok",
+      "serial_number": "SWITCH-BRICK-0002"
+    },
+    {
+      "brick_id": "switchboard-pass2-foundation-compression",
+      "contract_version": "2026-05-25",
+      "project": "switchboard",
+      "family": "front-page-proof",
+      "mode": "hybrid",
+      "status": "done",
+      "source_record": "record 136",
+      "next_action": "laid",
+      "source_task_timestamp": "",
+      "source_task_title": "",
+      "seeded": true,
+      "input_format": "brick_id | family | mode | status | source_record | next_action",
+      "output_schema": "switchboard-brick-registry-v0",
+      "evidence_refs": [
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/brick-registry.json"
+      ],
+      "date_created": "2026-05-24T01:45:15+05:30",
+      "commit": "0020c553567c7cab35aca56cf237226b68f0b14d",
+      "commit_subject": "Add Switchboard foundation compression panel",
+      "version_introduced": "1.12.6",
+      "files_changed": 14,
+      "insertions": 918,
+      "deletions": 126,
+      "net_lines": 792,
+      "active_lines_after": 25889,
+      "stale_lines_after": 37494,
+      "computed_status": "ok",
+      "serial_number": "SWITCH-BRICK-0003"
+    },
+    {
+      "brick_id": "switchboard-1127-front-page-cleanup",
+      "contract_version": "2026-05-25",
+      "project": "switchboard",
+      "family": "product-cleanup",
+      "mode": "hybrid",
+      "status": "done",
+      "source_record": "record 138",
+      "next_action": "release checkpoint",
+      "source_task_timestamp": "",
+      "source_task_title": "",
+      "seeded": true,
+      "input_format": "brick_id | family | mode | status | source_record | next_action",
+      "output_schema": "switchboard-brick-registry-v0",
+      "evidence_refs": [
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/brick-registry.json"
+      ],
+      "date_created": "2026-05-24T08:56:22+05:30",
+      "commit": "7d4a4718deb2541eb80b5da18817bd92ba1814ed",
+      "commit_subject": "Clean Switchboard 1.12.7 dashboard",
+      "version_introduced": "1.12.7",
+      "files_changed": 27,
+      "insertions": 994,
+      "deletions": 1891,
+      "net_lines": -897,
+      "active_lines_after": 25889,
+      "stale_lines_after": 37494,
+      "computed_status": "ok",
+      "serial_number": "SWITCH-BRICK-0004"
+    },
+    {
+      "brick_id": "switchboard-brics-benchmark-keywords",
+      "contract_version": "2026-05-25",
+      "project": "switch",
+      "family": "benchmark-transfer",
+      "mode": "hybrid",
+      "status": "done",
+      "source_record": "current task",
+      "next_action": "use expensive-agent suggestions with human verify before small-model reuse",
+      "source_task_timestamp": "2026-05-25T13:11:23+05:30",
+      "source_task_title": "Add suite brics package, registry evidence, and benchmark keyword contract",
+      "seeded": false,
+      "input_format": "brick_id | family | mode | status | source_record | next_action",
+      "output_schema": "switchboard-brick-registry-v0",
+      "evidence_refs": [
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/brick-registry.json"
+      ],
+      "date_created": "2026-05-25T13:11:23+05:30",
+      "commit": "",
+      "commit_subject": "",
+      "version_introduced": "1.12.7",
+      "files_changed": 0,
+      "insertions": 0,
+      "deletions": 0,
+      "net_lines": 0,
+      "active_lines_after": 25889,
+      "stale_lines_after": 37494,
+      "computed_status": "pending_commit",
+      "serial_number": "SWITCH-BRICK-0005"
+    },
+    {
+      "brick_id": "switchboard-suite-brick-registry",
+      "contract_version": "2026-05-25",
+      "project": "switch",
+      "family": "manager-evidence",
+      "mode": "programmatic",
+      "status": "done",
+      "source_record": "current task",
+      "next_action": "keep bricks internal and generated",
+      "source_task_timestamp": "2026-05-25T13:11:23+05:30",
+      "source_task_title": "Add suite brics package, registry evidence, and benchmark keyword contract",
+      "seeded": false,
+      "input_format": "brick_id | family | mode | status | source_record | next_action",
+      "output_schema": "switchboard-brick-registry-v0",
+      "evidence_refs": [
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/brick-registry.json"
+      ],
+      "date_created": "2026-05-25T13:11:23+05:30",
+      "commit": "",
+      "commit_subject": "",
+      "version_introduced": "1.12.7",
+      "files_changed": 0,
+      "insertions": 0,
+      "deletions": 0,
+      "net_lines": 0,
+      "active_lines_after": 25889,
+      "stale_lines_after": 37494,
+      "computed_status": "pending_commit",
+      "serial_number": "SWITCH-BRICK-0006"
+    }
+  ],
+  "notes": [
+    "No project-brick dashboard panel is generated.",
+    "Agents read this evidence file; humans keep the clean Control Center surface."
+  ]
+}

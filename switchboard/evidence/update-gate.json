@@ -1,13 +1,13 @@
 {
-  "generated": "2026-05-24T03:25:36+00:00",
+  "generated": "2026-05-25T08:00:09+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-24T08:49:35+05:30",
-    "title": "Clean 1.12.7 front page and remove API Lab surface",
+    "timestamp": "2026-05-25T13:11:23+05:30",
+    "title": "Add suite brics package, registry evidence, and benchmark keyword contract",
     "agent": "Codex manager",
-    "tool": "codex-desktop, apply_patch, npm, unittest, switchboard cli"
+    "tool": "codex-desktop, apply_patch, python unittest, npm, switchboard cli"
   },
   "checks": [
     {
@@ -46,6 +46,11 @@
       "message": "switchboard/evidence/completed-tasks.json exists."
     },
     {
+      "check_id": "brick_registry_json_exists",
+      "status": "ok",
+      "message": "switchboard/evidence/brick-registry.json exists."
+    },
+    {
       "check_id": "scope_snapshot_exists",
       "status": "ok",
       "message": "switchboard/evidence/scope.snapshot.json exists."
@@ -64,6 +69,11 @@
       "check_id": "completed_tasks_json_fresh",
       "status": "ok",
       "message": "switchboard/evidence/completed-tasks.json is newer than the latest task entry."
+    },
+    {
+      "check_id": "brick_registry_json_fresh",
+      "status": "ok",
+      "message": "switchboard/evidence/brick-registry.json is newer than the latest task entry."
     },
     {
       "check_id": "scope_snapshot_fresh",

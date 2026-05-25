@@ -7,6 +7,8 @@ from unittest import mock
 from fastapi.testclient import TestClient
 
 from switchboard.defaults import DEFAULT_NODE_PORT
+from switchboard.bricks import build_brick_registry
+from switchboard.bricks import registry as brick_registry_module
 from switchboard.node import (
     init_manager_node,
     install_node,
@@ -16,6 +18,7 @@ from switchboard.node import (
     manager_safe_action,
     manager_upgrade_root,
     node_paths,
+    parse_tasks_completed,
     normalize_manager_root,
     register_manager_root,
     snapshot_node,
@@ -74,7 +77,9 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(result["manifest"]["agent_contract"]["enabled_entrypoints"], ["agents"])
             self.assertEqual(result["manifest"]["service_id"], "sample-service")
             self.assertEqual(result["manifest"]["evidence_paths"]["update_gate"], "switchboard/evidence/update-gate.json")
+            self.assertEqual(result["manifest"]["evidence_paths"]["brick_registry"], "switchboard/evidence/brick-registry.json")
             self.assertIn("Read back Pratik's request before acting.", result["manifest"]["design_principles"]["global"])
+            self.assertIn("Suite Brick Rules", paths["agent_contract_md"].read_text(encoding="utf-8"))
             top_level = sorted(path.name for path in project_root.iterdir())
             self.assertIn("README.md", top_level)
             self.assertIn("switchboard", top_level)
@@ -120,6 +125,8 @@ class NodeModeTests(unittest.TestCase):
                 "  - Standardized the project docs.\n"
                 "- Notes:\n"
                 "  - Added the first handoff entry.\n\n"
+                "- Brick Entries:\n"
+                "  - sample-brick | docs | hybrid | done | current task | no next action\n\n"
                 "## 2026-04-01T13:00:00+00:00 | Updated scope\n"
                 "- Tags: task, decision, runbook, scope\n"
                 "- Summary: Updated the tracked scope and runbook.\n"
@@ -134,8 +141,16 @@ class NodeModeTests(unittest.TestCase):
             completed = json.loads(paths["completed_tasks_json"].read_text(encoding="utf-8"))
             scope_snapshot = json.loads(paths["scope_snapshot"].read_text(encoding="utf-8"))
             doc_index = json.loads(paths["doc_index_json"].read_text(encoding="utf-8"))
+            brick_registry = json.loads(paths["brick_registry"].read_text(encoding="utf-8"))
 
             self.assertEqual(len(completed["tasks"]), 2)
+            self.assertEqual(completed["tasks"][0]["brick_entries"][0]["brick_id"], "sample-brick")
+            self.assertEqual(result["brick_registry"]["schema_version"], "switchboard-brick-registry-v0")
+            self.assertEqual(brick_registry["ui_surface"], "none")
+            self.assertEqual(brick_registry["bricks"][0]["brick_id"], "sample-brick")
+            self.assertEqual(brick_registry["bricks"][0]["serial_number"], "SAMPLE_SERVICE-BRICK-0001")
+            self.assertEqual(brick_registry["bricks"][0]["commit"], "")
+            self.assertEqual(brick_registry["bricks"][0]["computed_status"], "pending_commit")
             self.assertIn("Standardized docs", paths["handoff"].read_text(encoding="utf-8"))
             self.assertIn("Updated scope", paths["runbook"].read_text(encoding="utf-8"))
             self.assertIn("Updated scope", paths["approach_history"].read_text(encoding="utf-8"))
@@ -144,6 +159,92 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(result["manifest"]["managed_docs"][0]["doc_id"], "readme")
             self.assertTrue(any(entry["doc_id"] == "doc_index_json" for entry in doc_index["docs"]))
             self.assertIn("Switchboard Playbook", paths["playbook"].read_text(encoding="utf-8"))
+
+    def test_parse_tasks_completed_redacts_private_brick_entries(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir) / "sample-project"
+            install_node(project_root, service_id="sample-service", display_name="Sample Service")
+            paths = node_paths(project_root)
+            paths["tasks_completed"].write_text(
+                "# Tasks Completed\n\n"
+                "## 2026-04-01T12:00:00+00:00 | Private brick line\n"
+                "- Tags: task\n"
+                "- Summary: Safe summary only.\n"
+                "- Changed Paths: switchboard/local/tasks-completed.md\n"
+                "- Agent: Codex\n"
+                "- Tool: codex-cli\n"
+                "- Read Back: Restated the request.\n"
+                "- Scope Check: Scope unchanged.\n"
+                "- Brick Entries:\n"
+                "  - SECRET_FINANCE_ROW | docs | programmatic | done | current task | email@example.com token raw private payload\n",
+                encoding="utf-8",
+            )
+
+            parsed = parse_tasks_completed(paths["tasks_completed"])
+            serialized = json.dumps(parsed)
+
+            self.assertNotIn("SECRET_FINANCE_ROW", serialized)
+            self.assertNotIn("email@example.com", serialized)
+            self.assertNotIn("raw private payload", serialized)
+            self.assertEqual(parsed[0]["brick_entries"][0]["brick_id"], "unnamed-brick")
+            self.assertEqual(parsed[0]["brick_entries"][0]["next_action"], "review")
+
+    def test_brick_registry_without_bricks_is_empty_and_healthy(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            registry = build_brick_registry(project_root, "sample-service", [], None)
+
+            self.assertEqual(registry["schema_version"], "switchboard-brick-registry-v0")
+            self.assertEqual(registry["summary"]["brick_count"], 0)
+            self.assertEqual(registry["bricks"], [])
+            self.assertEqual(registry["ui_surface"], "none")
+            self.assertEqual(registry["tool"]["package"], "switchboard.bricks")
+            self.assertEqual(registry["tool"]["package_alias"], "switchboard.brics")
+            self.assertEqual(registry["tool"]["version"], "2026-05-25")
+            self.assertEqual(registry["benchmark_keyword_contract"]["keyword_id_format"], "kw_<slug>_<4_digit_serial>")
+            self.assertIn("Human quick verify", " ".join(registry["benchmark_keyword_rules"]))
+
+    def test_switchboard_seeded_brick_registry_uses_git_stats(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            def fake_git(_: Path, args: list[str]) -> str:
+                if args[:2] == ["rev-parse", "HEAD"]:
+                    return "headsha"
+                if args[:2] == ["log", "-1"]:
+                    return "Seed subject"
+                if args[:3] == ["show", "--shortstat", "--format="]:
+                    return " 4 files changed, 10 insertions(+), 3 deletions(-)"
+                if args[:1] == ["show"] and str(args[1]).endswith(":package.json"):
+                    return '{"version":"1.12.6"}'
+                return ""
+
+            with mock.patch.object(brick_registry_module, "_run_git", side_effect=fake_git):
+                registry = build_brick_registry(
+                    project_root,
+                    "switch",
+                    [],
+                    {"line_noise": {"active_source_lines": 100, "noise_line_count": 25}},
+                )
+
+            self.assertEqual(registry["schema_version"], "switchboard-brick-registry-v0")
+            self.assertEqual(registry["tool"]["package"], "switchboard.bricks")
+            self.assertEqual(registry["ui_surface"], "none")
+            self.assertIn("serial_number", registry["contract"]["computed_fields"])
+            self.assertIn("contract_version", registry["contract"]["computed_fields"])
+            self.assertIn("date_created", registry["contract"]["computed_fields"])
+            self.assertEqual(registry["benchmark_keyword_contract"]["bucket_id_format"], "bucket_<slug>_<4_digit_serial>")
+            self.assertEqual(registry["summary"]["seeded_count"], 4)
+            first = registry["bricks"][0]
+            self.assertEqual(first["contract_version"], "2026-05-25")
+            self.assertEqual(first["serial_number"], "SWITCH-BRICK-0001")
+            self.assertEqual(first["files_changed"], 4)
+            self.assertEqual(first["insertions"], 10)
+            self.assertEqual(first["deletions"], 3)
+            self.assertEqual(first["net_lines"], 7)
+            self.assertEqual(first["active_lines_after"], 100)
+            self.assertEqual(first["stale_lines_after"], 25)
+            self.assertEqual(first["version_introduced"], "1.12.6")
 
     def test_verify_update_gate_requires_agent_contract_fields(self) -> None:
         with TemporaryDirectory() as tmpdir:

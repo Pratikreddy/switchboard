@@ -11,6 +11,7 @@ from pathlib import Path
 import typer
 
 from .collectors import CollectionCoordinator
+from .bricks import build_brick_registry
 from .config import ROOT_DIR, get_settings
 from .defaults import DEFAULT_NODE_PORT
 from .manifests import ManifestStore
@@ -28,6 +29,9 @@ from .node import (
     normalize_manager_root,
     manager_upgrade_root,
     manager_safe_action,
+    load_node_manifest,
+    node_paths,
+    parse_tasks_completed,
     register_manager_root,
     snapshot_node,
     upgrade_node,
@@ -49,9 +53,12 @@ from .storage import SnapshotStore
 
 app = typer.Typer(help="Switchboard control-center commands.")
 node_app = typer.Typer(help="Switchboard node-mode commands.")
+bricks_app = typer.Typer(help="Programmatic brick registry tools.")
 release_app = typer.Typer(help="Build releasable Switchboard artifacts.")
 export_app = typer.Typer(help="Export Switchboard state.")
 app.add_typer(node_app, name="node")
+app.add_typer(bricks_app, name="bricks")
+app.add_typer(bricks_app, name="brics")
 app.add_typer(release_app, name="release")
 app.add_typer(export_app, name="export")
 
@@ -200,6 +207,29 @@ def node_verify_update(
     typer.echo(json.dumps(result, indent=2))
     if result.get("status") != "ok":
         raise typer.Exit(1)
+
+
+@bricks_app.command("registry")
+def bricks_registry(
+    project_root: str = typer.Option(..., "--project-root"),
+    write: bool = typer.Option(False, "--write/--no-write"),
+) -> None:
+    root = Path(project_root).resolve()
+    paths = node_paths(root)
+    manifest = load_node_manifest(root) if paths["manifest"].exists() else snapshot_node(root)["manifest"]
+    tasks = parse_tasks_completed(paths["tasks_completed"])
+    foundation_path = paths["node_root"] / "evidence" / "foundation-projection.json"
+    foundation_projection = {}
+    if foundation_path.exists():
+        try:
+            foundation_projection = json.loads(foundation_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            foundation_projection = {}
+    payload = build_brick_registry(root, str(manifest.get("service_id") or root.name), tasks, foundation_projection)
+    if write:
+        paths["brick_registry"].parent.mkdir(parents=True, exist_ok=True)
+        paths["brick_registry"].write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    typer.echo(json.dumps(payload, indent=2))
 
 
 @node_app.command("serve")

@@ -1,5 +1,5 @@
 {
-  "version": "2026-04-29",
+  "version": "2026-05-24",
   "service_id": "switch",
   "display_name": "switchboard",
   "mode": "local",
@@ -59,6 +59,54 @@
     "Run switchboard node snapshot --project-root <path>.",
     "Run switchboard node verify-update --project-root <path>.",
     "Verify manifest, scope snapshot, and Control Center view."
+  ],
+  "suite_brick_rules": [
+    "When work is a real build brick, add one compact `Brick Entries:` block to `switchboard/local/tasks-completed.md`.",
+    "Brick Entries human fields are only: `brick_id | family | mode | status | source_record | next_action`.",
+    "Do not hand-write factual brick fields such as serial number, date created, timestamps, versions, commits, file counts, insertions, deletions, or line totals; Switchboard computes those into `switchboard/evidence/brick-registry.json`.",
+    "Agents and managers read `switchboard/evidence/brick-registry.json` for brick facts; use the `switchboard.bricks` package or `switchboard brics registry` tool, and do not create project-brick UI panels, new docs, or side ledgers.",
+    "Bricks are suite-wide manager/agent accounting for Agent Ops, Switchboard, Palimpsest, Union Bank, X, meeting, sysdocs, and future lanes; they are not user-facing UI panels.",
+    "Benchmark keyword bricks use the separate benchmark keyword contract: expensive-agent suggestions, human quick verification, stable keyword IDs, bucket counts, and small-model reuse.",
+    "Repeated facts are programmatic. Agent judgment is only for semantic labels, status, blockers, and next action."
+  ],
+  "benchmark_keyword_contract": {
+    "name": "benchmark-keywords",
+    "role": "expensive_agent_to_small_model_transfer",
+    "keyword_id_format": "kw_<slug>_<4_digit_serial>",
+    "bucket_id_format": "bucket_<slug>_<4_digit_serial>",
+    "human_fields": [
+      "keyword_id",
+      "label",
+      "plain_meaning",
+      "bucket_id",
+      "similar_bucket_ids",
+      "status",
+      "human_verified"
+    ],
+    "computed_fields": [
+      "keyword_count",
+      "bucket_count",
+      "similar_bucket_count",
+      "created_at",
+      "updated_at",
+      "source_benchmark_ids"
+    ],
+    "workflow": [
+      "Expensive Pro agent keywords a benchmark set first.",
+      "Human performs quick verification before labels become active.",
+      "Smaller model receives only the verified keyword ID map, simple prompt, and examples.",
+      "Existing tags are candidate evidence, not automatic truth.",
+      "New suggestions stay pending until human verification promotes them."
+    ],
+    "pdf_rule": "PDF or human-facing output must be simple, nontechnical, and grouped by verified keyword IDs and bucket counts."
+  },
+  "benchmark_keyword_rules": [
+    "Benchmark keywording is a separate semantic brick: expensive Pro agent suggests labels, but stable IDs and counts are managed programmatically.",
+    "Each keyword needs a stable ID, bucket ID, count, and similar-bucket relation before it is reused by smaller models.",
+    "Existing tags can seed candidates, but they are not dumped blindly into the benchmark. The expensive agent may suggest new pending keywords as the benchmark grows.",
+    "Human quick verify is the promotion gate from pending suggestion to active benchmark keyword.",
+    "Small models should receive verified IDs, simple meanings, and examples only; do not pass annotation bloat or raw expensive-agent reasoning forward.",
+    "PDF summaries for nontechnical users must stay simple: keyword, plain meaning, count, similar buckets, and verification state."
   ],
   "pull_scope": {
     "include": [

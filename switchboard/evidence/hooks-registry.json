@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:04:37Z",
+  "generated": "2026-05-25T19:34:54Z",
   "schema_version": "switchboard-hooks-registry-v0",
   "tool": {
     "name": "switchboard-hooks",
@@ -46,7 +46,7 @@
   ],
   "existing_hooks": {
     "schema_version": "switchboard-existing-hooks-v0",
-    "generated": "2026-05-25T19:04:37Z",
+    "generated": "2026-05-25T19:34:54Z",
     "sources_checked": [
       "~/.claude/settings.json",
       "~/.claude/settings.local.json",

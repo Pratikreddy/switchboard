@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:04:36+00:00",
+  "generated": "2026-05-25T19:34:52+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -7917,6 +7917,176 @@
           "status": "done",
           "source_record": "current task",
           "next_action": "keep discovered Claude hooks in registry evidence"
+        }
+      ],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-26T01:04:45+05:30",
+      "title": "Backfill task-derived brics from completed ledger",
+      "tags": [
+        "task",
+        "handoff",
+        "scope"
+      ],
+      "version": "1.12.8",
+      "summary": "Fixed the bric registry so every completed task becomes a deterministic task-derived bric, while explicit named brics remain separate rows with stable serial numbers.",
+      "changed_paths": [
+        "switchboard/bricks/registry.py",
+        "tests_backend/test_node_mode.py",
+        "switchboard/evidence/brick-registry.json",
+        "switchboard/core/agent-contract.md",
+        "switchboard/core/agent-contract.json",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager",
+      "tool": "codex-desktop, apply_patch, python unittest, npm, switchboard cli",
+      "read_back": "The previous 11-bric count was incomplete because it only counted seeded and explicit `Brick Entries:` rows. The registry must also turn the historical completed task ledger into bric rows programmatically.",
+      "scope_check": "Switchboard bric registry, generated evidence, contract wording, and tests only. No Control Center UI, no project-bric dashboard dump, no raw private payloads.",
+      "bootstrap_version": "",
+      "notes": [
+        "- Registry now emits three entry types: `seeded`, `explicit`, and `task_derived`.",
+        "- Current generated count is `60`: 4 seeded, 7 explicit, 49 task-derived.",
+        "- Existing explicit serials remain stable: `SWITCH-BRICK-0001` through `SWITCH-BRICK-0011`.",
+        "- Task-derived historical rows start at `SWITCH-BRICK-0012`.",
+        "- Each task-derived bric uses sanitized task title, timestamp, inferred family/mode, related commit, package version, file stats, and active/stale line totals."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "evidence",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static",
+        "run_command_hint": "switchboard brics registry --project-root /Users/p/Desktop/dashboard",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "brick_entries": [
+        {
+          "brick_id": "switchboard-brics-task-derived-backfill",
+          "family": "manager-evidence",
+          "mode": "programmatic",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "keep completed tasks and explicit brics in one registry"
         }
       ],
       "diagram": "",

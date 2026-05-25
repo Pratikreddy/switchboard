@@ -36,6 +36,7 @@ BRICK_CONTRACT: dict[str, Any] = {
         "net_lines",
         "active_lines_after",
         "stale_lines_after",
+        "entry_type",
     ],
     "function_contracts": {
         "normalize_brick_lines": {
@@ -99,7 +100,8 @@ BENCHMARK_KEYWORD_RULES = [
 ]
 
 SUITE_BRICK_RULES = [
-    "When work is a real build brick, add one compact `Brick Entries:` block to `switchboard/local/tasks-completed.md`.",
+    "Every completed task becomes a deterministic task-derived bric row in `switchboard/evidence/brick-registry.json`.",
+    "When work is a named build brick, add one compact `Brick Entries:` block to `switchboard/local/tasks-completed.md` so it also appears as an explicit bric.",
     "Brick Entries human fields are only: `brick_id | family | mode | status | source_record | next_action`.",
     "Do not hand-write factual brick fields such as serial number, date created, timestamps, versions, commits, file counts, insertions, deletions, or line totals; Switchboard computes those into `switchboard/evidence/brick-registry.json`.",
     "Agents and managers read `switchboard/evidence/brick-registry.json` for brick facts; use the `switchboard.bricks` package or `switchboard brics registry` tool, and do not create project-brick UI panels, new docs, or side ledgers.",
@@ -305,6 +307,37 @@ def _last_commit_for_path(project_root: Path, relative_path: str) -> str:
     return _run_git(project_root, ["log", "-1", "--format=%H", "--", relative_path])
 
 
+def _last_commit_before(project_root: Path, iso_timestamp: str, relative_paths: list[str]) -> str:
+    if not iso_timestamp:
+        return ""
+    args = ["log", "-1", f"--before={iso_timestamp}", "--format=%H"]
+    safe_paths = [path for path in relative_paths if path and not path.startswith("..")]
+    if safe_paths:
+        args.extend(["--", *safe_paths[:16]])
+    return _run_git(project_root, args)
+
+
+def _repo_relative_paths(project_root: Path, paths: list[str]) -> list[str]:
+    relative_paths: list[str] = []
+    for raw in paths:
+        text = str(raw or "").strip()
+        if not text:
+            continue
+        candidate = Path(text)
+        if candidate.is_absolute():
+            try:
+                relative = candidate.resolve().relative_to(project_root.resolve())
+            except (OSError, ValueError):
+                continue
+            text = relative.as_posix()
+        else:
+            text = candidate.as_posix()
+        if text.startswith("../") or text in {".", ""}:
+            continue
+        relative_paths.append(text)
+    return relative_paths
+
+
 def _brick_line_totals(foundation_projection: dict[str, Any] | None) -> dict[str, int]:
     line_noise = foundation_projection.get("line_noise", {}) if isinstance(foundation_projection, dict) else {}
     return {
@@ -343,6 +376,27 @@ def _computed_brick_fields(project_root: Path, commit: str, date_created: str, l
 def _task_brick_rows(service_id: str, tasks: list[dict[str, Any]], current_commit: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for task in tasks:
+        timestamp = str(task.get("timestamp", ""))
+        title = str(task.get("title", ""))
+        family = _family_from_task(task)
+        row_commit = str(task.get("_computed_commit") or current_commit)
+        rows.append(
+            {
+                "brick_id": _derived_task_brick_id(service_id, timestamp, title),
+                "project": service_id,
+                "family": family,
+                "mode": _mode_from_task(task),
+                "status": "done",
+                "source_record": _safe_brick_text(title, fallback="completed task"),
+                "next_action": _safe_brick_text(str(task.get("summary", "")), fallback="recorded"),
+                "source_task_timestamp": timestamp,
+                "source_task_title": _safe_brick_text(title, fallback="completed task"),
+                "date_created": timestamp,
+                "commit": row_commit,
+                "seeded": False,
+                "entry_type": "task_derived",
+            }
+        )
         task_bricks = task.get("brick_entries", [])
         if not isinstance(task_bricks, list):
             continue
@@ -361,18 +415,63 @@ def _task_brick_rows(service_id: str, tasks: list[dict[str, Any]], current_commi
                     "source_task_timestamp": str(task.get("timestamp", "")),
                     "source_task_title": str(task.get("title", "")),
                     "date_created": str(task.get("timestamp", "")),
-                    "commit": current_commit,
+                    "commit": row_commit,
                     "seeded": False,
+                    "entry_type": "explicit",
                 }
             )
     return rows
 
 
+def _derived_task_brick_id(service_id: str, timestamp: str, title: str) -> str:
+    compact_timestamp = re.sub(r"[^0-9]", "", timestamp)[:12]
+    title_slug = _safe_brick_slug(title, fallback="task")[:80]
+    return f"{_safe_brick_slug(service_id, fallback='project')}-task-{compact_timestamp}-{title_slug}"
+
+
+def _family_from_task(task: dict[str, Any]) -> str:
+    tags = set(task.get("tags", []) or [])
+    changed_paths = " ".join(str(path) for path in task.get("changed_paths", []) or []).lower()
+    title = str(task.get("title", "")).lower()
+    if "hook" in title:
+        return "hooks-memory"
+    if "keyword" in title or "benchmark" in title:
+        return "benchmark-transfer"
+    if "registry" in title or "bric" in title or "brick" in title:
+        return "manager-evidence"
+    if "front page" in title or "dashboard" in title or "ui" in title or "ux" in title or "panel" in title:
+        return "product-code"
+    if "src/" in changed_paths or "switchboard/api.py" in changed_paths or "switchboard/node.py" in changed_paths:
+        return "product-code"
+    if "scope" in title or "boundary" in title:
+        return "scope-control"
+    if "verify" in tags or "test" in title:
+        return "verification"
+    if "handoff" in tags or "handoff" in changed_paths:
+        return "agent-handoff"
+    if "readme" in changed_paths or "doc" in title:
+        return "docs"
+    return "completed-work"
+
+
+def _mode_from_task(task: dict[str, Any]) -> str:
+    title = str(task.get("title", "")).lower()
+    changed_paths = " ".join(str(path) for path in task.get("changed_paths", []) or []).lower()
+    tool = str(task.get("tool", "")).lower()
+    if "snapshot" in title or "registry" in title or "evidence" in changed_paths:
+        return "programmatic"
+    if "gpt" in title or "agent" in tool or "codex" in tool:
+        return "hybrid"
+    return "programmatic"
+
+
 def _with_serial_numbers(service_id: str, bricks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     prefix = _safe_brick_slug(service_id, fallback="project").upper().replace("-", "_")
+    entry_priority = {"seeded": 0, "explicit": 1, "task_derived": 2}
     sorted_bricks = sorted(
         bricks,
         key=lambda row: (
+            entry_priority.get(str(row.get("entry_type", "")), 9),
             str(row.get("date_created", "")),
             str(row.get("project", "")),
             str(row.get("brick_id", "")),
@@ -388,10 +487,18 @@ def build_brick_registry(project_root: Path, service_id: str, tasks: list[dict[s
     line_totals = _brick_line_totals(foundation_projection)
     ledger_path = "switchboard/local/tasks-completed.md"
     task_commit = "" if _git_path_dirty(project_root, ledger_path) else _last_commit_for_path(project_root, ledger_path) or _current_head(project_root)
+    for task in tasks:
+        if _git_path_dirty(project_root, ledger_path):
+            task["_computed_commit"] = ""
+            continue
+        task["_computed_commit"] = (
+            _last_commit_before(project_root, str(task.get("timestamp", "")), _repo_relative_paths(project_root, task.get("changed_paths", []) or []))
+            or task_commit
+        )
     rows: list[dict[str, Any]] = []
     if service_id == "switch":
         for seed in SEEDED_SWITCHBOARD_BRICKS:
-            rows.append({**seed, "source_task_timestamp": "", "source_task_title": "", "date_created": "", "seeded": True})
+            rows.append({**seed, "source_task_timestamp": "", "source_task_title": "", "date_created": "", "seeded": True, "entry_type": "seeded"})
     rows.extend(_task_brick_rows(service_id, tasks, task_commit))
 
     by_id: dict[str, dict[str, Any]] = {}
@@ -412,6 +519,7 @@ def build_brick_registry(project_root: Path, service_id: str, tasks: list[dict[s
             "source_task_timestamp": str(row.get("source_task_timestamp", "")),
             "source_task_title": str(row.get("source_task_title", "")),
             "seeded": bool(row.get("seeded", False)),
+            "entry_type": str(row.get("entry_type", "")) or ("seeded" if row.get("seeded") else "explicit"),
             "input_format": BRICK_CONTRACT["input_format"],
             "output_schema": BRICK_CONTRACT["schema_version"],
             "evidence_refs": [
@@ -446,6 +554,8 @@ def build_brick_registry(project_root: Path, service_id: str, tasks: list[dict[s
         "summary": {
             "brick_count": len(bricks),
             "seeded_count": sum(1 for row in bricks if row.get("seeded")),
+            "explicit_count": sum(1 for row in bricks if row.get("entry_type") == "explicit"),
+            "task_derived_count": sum(1 for row in bricks if row.get("entry_type") == "task_derived"),
             "task_ledger_count": sum(1 for row in bricks if not row.get("seeded")),
             "done_count": sum(1 for row in bricks if row.get("status") == "done"),
             "active_count": sum(1 for row in bricks if row.get("status") == "active"),

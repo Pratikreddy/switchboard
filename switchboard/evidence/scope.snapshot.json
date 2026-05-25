@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:04:36+00:00",
+  "generated": "2026-05-25T19:34:52+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -12,29 +12,8 @@
     },
     {
       "kind": "code",
-      "path_type": "dir",
-      "path": "/Users/p/Desktop/dashboard/switchboard/hooks",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
       "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/node.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -46,16 +25,9 @@
       "source": "tasks_completed"
     },
     {
-      "kind": "test",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
       "kind": "evidence",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -69,35 +41,14 @@
     {
       "kind": "doc",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/README.md",
+      "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.md",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
-      "kind": "config",
+      "kind": "doc",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/package.json",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "config",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/package-lock.json",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "config",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/pyproject.toml",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
+      "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.json",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -6107,6 +6058,133 @@
           "kind": "code",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-26T01:04:45+05:30",
+      "title": "Backfill task-derived brics from completed ledger",
+      "summary": "Fixed the bric registry so every completed task becomes a deterministic task-derived bric, while explicit named brics remain separate rows with stable serial numbers.",
+      "changed_paths": [
+        "switchboard/bricks/registry.py",
+        "tests_backend/test_node_mode.py",
+        "switchboard/evidence/brick-registry.json",
+        "switchboard/core/agent-contract.md",
+        "switchboard/core/agent-contract.json",
+        "switchboard/local/tasks-completed.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "evidence",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.json",
           "enabled": true,
           "source": "tasks_completed"
         },

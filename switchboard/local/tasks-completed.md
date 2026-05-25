@@ -1902,3 +1902,43 @@ Example format:
   - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
   - run_command_hint: switchboard hooks discover --project-root /Users/p/Desktop/dashboard && switchboard hooks registry --project-root /Users/p/Desktop/dashboard
   - monitoring_mode: hook context and source-capture evidence verification
+
+## 2026-05-26T01:04:45+05:30 | Backfill task-derived brics from completed ledger
+
+- Tags: task, handoff, scope
+- Summary: Fixed the bric registry so every completed task becomes a deterministic task-derived bric, while explicit named brics remain separate rows with stable serial numbers.
+- Changed Paths: switchboard/bricks/registry.py, tests_backend/test_node_mode.py, switchboard/evidence/brick-registry.json, switchboard/core/agent-contract.md, switchboard/core/agent-contract.json, switchboard/local/tasks-completed.md
+- Version: 1.12.8
+- Agent: Codex manager
+- Tool: codex-desktop, apply_patch, python unittest, npm, switchboard cli
+- Read Back: The previous 11-bric count was incomplete because it only counted seeded and explicit `Brick Entries:` rows. The registry must also turn the historical completed task ledger into bric rows programmatically.
+- Scope Check: Switchboard bric registry, generated evidence, contract wording, and tests only. No Control Center UI, no project-bric dashboard dump, no raw private payloads.
+- Notes:
+  - Registry now emits three entry types: `seeded`, `explicit`, and `task_derived`.
+  - Current generated count is `60`: 4 seeded, 7 explicit, 49 task-derived.
+  - Existing explicit serials remain stable: `SWITCH-BRICK-0001` through `SWITCH-BRICK-0011`.
+  - Task-derived historical rows start at `SWITCH-BRICK-0012`.
+  - Each task-derived bric uses sanitized task title, timestamp, inferred family/mode, related commit, package version, file stats, and active/stale line totals.
+- Brick Entries:
+  - switchboard-brics-task-derived-backfill | manager-evidence | programmatic | done | current task | keep completed tasks and explicit brics in one registry
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/registry.py
+  - test | file | /Users/p/Desktop/dashboard/tests_backend/test_node_mode.py
+  - evidence | file | /Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/core/agent-contract.md
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/core/agent-contract.json
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+- Runtime:
+  - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
+  - run_command_hint: switchboard brics registry --project-root /Users/p/Desktop/dashboard
+  - monitoring_mode: task-derived bric registry verification

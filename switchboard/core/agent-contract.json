@@ -67,7 +67,9 @@
     "Agents and managers read `switchboard/evidence/brick-registry.json` for brick facts; use the `switchboard.bricks` package or `switchboard brics registry` tool, and do not create project-brick UI panels, new docs, or side ledgers.",
     "Bricks are suite-wide manager/agent accounting for Agent Ops, Switchboard, Palimpsest, Union Bank, X, meeting, sysdocs, and future lanes; they are not user-facing UI panels.",
     "Benchmark keyword bricks use the separate benchmark keyword contract: expensive-agent suggestions, human quick verification, stable keyword IDs, bucket counts, and small-model reuse.",
-    "Repeated facts are programmatic. Agent judgment is only for semantic labels, status, blockers, and next action."
+    "Repeated facts are programmatic. Agent judgment is only for semantic labels, status, blockers, and next action.",
+    "Hook brics capture exact Pratik source text locally once, then inject only compact clean rules into Codex/Claude prompts.",
+    "Mistake and memory brics are budgeted prompt context tools; they must not dump raw private text or long Agent Ops records into builder prompts."
   ],
   "benchmark_keyword_contract": {
     "name": "benchmark-keywords",

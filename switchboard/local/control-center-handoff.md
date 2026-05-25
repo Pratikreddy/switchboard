@@ -1423,3 +1423,55 @@
   - monitoring_mode: manual
 - Brick Entries:
   - switchboard-brics-keyword-registry | benchmark-transfer | programmatic | done | current task | build small-model keyword export next
+
+## 2026-05-26T00:26:34+05:30 | Add suite hooks source capture and existing Claude hook integration
+- Tags: task, handoff, scope
+- Summary: Added the Switchboard hooks package for Codex/Claude prompt context, local-private source capture, mistake-pattern snippets, compact memory query, and discovery of already deployed Claude hooks.
+- Changed Paths: switchboard/hooks/__init__.py, switchboard/hooks/context.py, switchboard/hooks/timeline.py, switchboard/bricks/registry.py, switchboard/cli.py, switchboard/node.py, switchboard/evidence/hooks-registry.json, tests_backend/test_node_mode.py, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/local/tasks-completed.md, package.json, package-lock.json, pyproject.toml, switchboard/__init__.py, README.md
+- Agent: Codex manager
+- Tool: codex-desktop, apply_patch, python unittest, npm, switchboard cli
+- Read Back: Build a hooks/brics/memory layer so exact user prompts are captured locally/private once, agents receive compact rules, and the existing Claude Code hook on this machine is integrated into Switchboard evidence without overwriting it.
+- Scope Check: Switchboard Python package, generated evidence, local hook config, and tests only. No Control Center hook/bric UI, no raw prompt text in git evidence, no Claude history/paste-cache reads, no global Claude config mutation, no Palimpsest ingest, and no `.47` work.
+- Version: 1.12.8
+- Notes:
+  - - Added `switchboard.hooks` with `SUITE-BRIC-SOURCE-0001`, `SUITE-BRIC-MISTAKE-0001`, and `SUITE-BRIC-MEMORY-0001`.
+  - - `UserPromptSubmit` exact prompt text is stored only in a local-private SQLite timeline DB; returned/evidence data uses hashes, timestamps, source refs, cwd, agent, and bric IDs.
+  - - Added compact `Suite Context` injection for Switchboard, Agent Ops, Zapp/client-server, and keyword/benchmark task shapes.
+  - - Added `switchboard brics memory query --task <task> --cwd <path> --budget <n>`.
+  - - Added `switchboard hooks build-context`, `capture`, `user-prompt-submit`, `registry`, `discover`, and `install`.
+  - - Installed repo-local Codex and Claude `UserPromptSubmit` hooks for `/Users/p/Desktop/dashboard`.
+  - - Preserved the existing global Claude `Notification` hook and surfaced it as discovered evidence: command name `claude-voice-notify.sh`, event `Notification`, managed_by_switchboard `false`.
+  - - `hooks-registry.json` now records existing hook summaries with home-redacted command display and command hashes; it does not read Claude histories or prompt caches.
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard | true
+  - code | dir | /Users/p/Desktop/dashboard/switchboard/hooks | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/registry.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/cli.py | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/node.py | true
+  - test | file | /Users/p/Desktop/dashboard/tests_backend/test_node_mode.py | true
+  - test | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts | true
+  - evidence | file | /Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json | true
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md | true
+  - doc | file | /Users/p/Desktop/dashboard/README.md | true
+  - config | file | /Users/p/Desktop/dashboard/package.json | true
+  - config | file | /Users/p/Desktop/dashboard/package-lock.json | true
+  - config | file | /Users/p/Desktop/dashboard/pyproject.toml | true
+  - code | file | /Users/p/Desktop/dashboard/switchboard/__init__.py | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.git | true
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv | true
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules | true
+  - exclude | dir | /Users/p/Desktop/dashboard/dist | true
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads | true
+  - exclude | dir | /Users/p/Desktop/dashboard/logs | true
+  - exclude | dir | /Users/p/Desktop/dashboard/state | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime | true
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static | true
+- Runtime:
+  - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
+  - run_command_hint: switchboard hooks discover --project-root /Users/p/Desktop/dashboard && switchboard hooks registry --project-root /Users/p/Desktop/dashboard
+  - monitoring_mode: manual
+- Brick Entries:
+  - suite-bric-source-capture | hooks-memory | programmatic | done | current task | keep raw prompts local-private
+  - suite-bric-mistake-patterns | hooks-memory | hybrid | done | current task | rank repeated corrections by task
+  - suite-bric-memory-query | hooks-memory | hybrid | done | current task | replace local hints with Palimpsest RAG later
+  - suite-bric-claude-hook-discovery | hooks-memory | programmatic | done | current task | keep discovered Claude hooks in registry evidence

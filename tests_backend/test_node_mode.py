@@ -15,6 +15,14 @@ from switchboard.bricks import (
     normalize_keyword_entries,
 )
 from switchboard.bricks import registry as brick_registry_module
+from switchboard.hooks import (
+    build_context_packet,
+    build_hooks_registry,
+    build_memory_query,
+    build_user_prompt_response,
+    capture_user_prompt,
+    discover_existing_hooks,
+)
 from switchboard.node import (
     init_manager_node,
     install_node,
@@ -85,6 +93,7 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(result["manifest"]["evidence_paths"]["update_gate"], "switchboard/evidence/update-gate.json")
             self.assertEqual(result["manifest"]["evidence_paths"]["brick_registry"], "switchboard/evidence/brick-registry.json")
             self.assertEqual(result["manifest"]["evidence_paths"]["keyword_registry"], "switchboard/evidence/keyword-registry.json")
+            self.assertEqual(result["manifest"]["evidence_paths"]["hooks_registry"], "switchboard/evidence/hooks-registry.json")
             self.assertIn("Read back Pratik's request before acting.", result["manifest"]["design_principles"]["global"])
             self.assertIn("Suite Brick Rules", paths["agent_contract_md"].read_text(encoding="utf-8"))
             top_level = sorted(path.name for path in project_root.iterdir())
@@ -150,6 +159,7 @@ class NodeModeTests(unittest.TestCase):
             doc_index = json.loads(paths["doc_index_json"].read_text(encoding="utf-8"))
             brick_registry = json.loads(paths["brick_registry"].read_text(encoding="utf-8"))
             keyword_registry = json.loads(paths["keyword_registry"].read_text(encoding="utf-8"))
+            hooks_registry = json.loads(paths["hooks_registry"].read_text(encoding="utf-8"))
 
             self.assertEqual(len(completed["tasks"]), 2)
             self.assertEqual(completed["tasks"][0]["brick_entries"][0]["brick_id"], "sample-brick")
@@ -161,6 +171,9 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(brick_registry["bricks"][0]["computed_status"], "pending_commit")
             self.assertEqual(result["keyword_registry"]["schema_version"], "switchboard-keyword-registry-v0")
             self.assertEqual(keyword_registry["summary"]["keyword_count"], 0)
+            self.assertEqual(result["hooks_registry"]["schema_version"], "switchboard-hooks-registry-v0")
+            self.assertEqual(hooks_registry["ui_surface"], "none")
+            self.assertEqual(hooks_registry["timeline"]["raw_prompt_text"], "local_private_only")
             self.assertIn("Standardized docs", paths["handoff"].read_text(encoding="utf-8"))
             self.assertIn("Updated scope", paths["runbook"].read_text(encoding="utf-8"))
             self.assertIn("Updated scope", paths["approach_history"].read_text(encoding="utf-8"))
@@ -296,6 +309,135 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(registry["keywords"], [])
             self.assertEqual(registry["buckets"], [])
             self.assertEqual(registry["privacy"]["existing_tags"], "candidate_evidence_only")
+
+    def test_hooks_source_capture_stores_raw_prompt_locally_and_returns_safe_summary(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "timeline.sqlite"
+            prompt = "Please preserve my exact words but do not dump raw private text to builders."
+
+            captured = capture_user_prompt(
+                prompt=prompt,
+                agent="codex",
+                cwd="/tmp/project",
+                related_brics=["SUITE-BRIC-SOURCE-0001"],
+                db_path=db_path,
+            )
+            registry = build_hooks_registry(Path(tmpdir))
+            serialized = json.dumps({**captured, "registry": registry})
+
+            self.assertTrue(db_path.exists())
+            self.assertEqual(captured["raw_prompt_included"], False)
+            self.assertEqual(captured["prompt_sha256"], "3ef7e603ea8bd6de7ef658389c17a4308c611f14bab6f70e2c7adbd9390a739d")
+            self.assertIn("timeline://prompt/", captured["raw_source_ref"])
+            self.assertNotIn(prompt, serialized)
+            self.assertEqual(registry["schema_version"], "switchboard-hooks-registry-v0")
+            self.assertEqual(registry["ui_surface"], "none")
+
+    def test_hook_context_ranks_task_rules_and_stays_under_budget(self) -> None:
+        packet = build_context_packet(
+            agent="codex",
+            cwd="/Users/p/Desktop/work/zapp/docgenerator",
+            task="zapp .114 docgenerator cleanup with server proof",
+            budget=120,
+        )
+
+        self.assertLessEqual(packet["estimated_tokens"], 120)
+        self.assertIn("No SSH/SFTP/SCP/rsync", packet["content"])
+        self.assertIn("Do not rewrite docgenerator templates", packet["content"])
+        self.assertNotIn("raw private", packet["content"].lower())
+
+    def test_user_prompt_submit_response_captures_and_injects_context(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "timeline.sqlite"
+            with mock.patch.dict("os.environ", {"SWITCHBOARD_HOOKS_DB": str(db_path)}):
+                response = build_user_prompt_response(
+                    hook_payload={
+                        "prompt": "Switchboard bric code task. No UI dumping.",
+                        "cwd": "/Users/p/Desktop/dashboard",
+                        "session_id": "test-session",
+                    },
+                    agent="codex",
+                    budget=220,
+                )
+
+            self.assertEqual(response["hookSpecificOutput"]["hookEventName"], "UserPromptSubmit")
+            self.assertIn("additionalContext", response["hookSpecificOutput"])
+            self.assertIn("No project-bric UI", response["hookSpecificOutput"]["additionalContext"])
+            self.assertEqual(response["switchboard"]["raw_prompt_included"], False)
+            self.assertTrue(response["switchboard"]["source_refs"][0].startswith("timeline://prompt/"))
+
+    def test_memory_query_returns_compact_source_refs_not_raw_records(self) -> None:
+        query = build_memory_query(
+            task="keyword benchmark small model prompt",
+            cwd="/Users/p/Desktop/dashboard",
+            budget=140,
+        )
+
+        self.assertLessEqual(query["estimated_tokens"], 140)
+        self.assertIn("memory://benchmark-keywords", query["source_refs"])
+        self.assertIn("human verification", query["content"])
+        self.assertNotIn("exact words", query["content"].lower())
+
+    def test_existing_claude_hooks_are_discovered_without_history_reads(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            home = root / "home"
+            project = root / "project"
+            (home / ".claude").mkdir(parents=True)
+            (project / ".claude").mkdir(parents=True)
+            (project / ".codex").mkdir(parents=True)
+            (home / ".claude" / "settings.json").write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "Notification": [
+                                {
+                                    "matcher": "*",
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": "/Users/p/claude-voice-notify.sh",
+                                        }
+                                    ],
+                                }
+                            ]
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (project / ".claude" / "settings.local.json").write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "UserPromptSubmit": [
+                                {
+                                    "matcher": "",
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": "python3 -m switchboard.cli hooks user-prompt-submit --agent claude --budget 700",
+                                        }
+                                    ],
+                                }
+                            ]
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with mock.patch("pathlib.Path.home", return_value=home):
+                discovered = discover_existing_hooks(project)
+                registry = build_hooks_registry(project)
+
+            self.assertEqual(discovered["hook_count"], 2)
+            self.assertIn("Notification", discovered["events"])
+            self.assertIn("UserPromptSubmit", discovered["events"])
+            self.assertEqual(discovered["switchboard_managed_count"], 1)
+            self.assertEqual(discovered["privacy"]["raw_history_files"], "not_read")
+            self.assertEqual(registry["existing_hooks"]["hook_count"], 2)
+            self.assertIn("claude-voice-notify.sh", json.dumps(discovered))
 
     def test_verify_update_gate_requires_agent_contract_fields(self) -> None:
         with TemporaryDirectory() as tmpdir:

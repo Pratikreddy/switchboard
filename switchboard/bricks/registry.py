@@ -46,6 +46,14 @@ BRICK_CONTRACT: dict[str, Any] = {
             "input": "project_root, service_id, parsed task ledger rows, optional foundation projection",
             "output": "`switchboard/evidence/brick-registry.json` payload",
         },
+        "switchboard.hooks.build_context_packet": {
+            "input": "agent, cwd, task, budget",
+            "output": "compact hook-injected prompt context with source refs and no raw prompt text",
+        },
+        "switchboard.hooks.capture_user_prompt": {
+            "input": "exact UserPromptSubmit text, agent, cwd, source metadata",
+            "output": "local-private timeline row plus git-safe hash/ref summary",
+        },
     },
 }
 
@@ -98,6 +106,8 @@ SUITE_BRICK_RULES = [
     "Bricks are suite-wide manager/agent accounting for Agent Ops, Switchboard, Palimpsest, Union Bank, X, meeting, sysdocs, and future lanes; they are not user-facing UI panels.",
     "Benchmark keyword bricks use the separate benchmark keyword contract: expensive-agent suggestions, human quick verification, stable keyword IDs, bucket counts, and small-model reuse.",
     "Repeated facts are programmatic. Agent judgment is only for semantic labels, status, blockers, and next action.",
+    "Hook brics capture exact Pratik source text locally once, then inject only compact clean rules into Codex/Claude prompts.",
+    "Mistake and memory brics are budgeted prompt context tools; they must not dump raw private text or long Agent Ops records into builder prompts.",
 ]
 
 SEEDED_SWITCHBOARD_BRICKS: tuple[dict[str, str], ...] = (

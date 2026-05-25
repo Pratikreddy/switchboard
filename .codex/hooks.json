@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -m switchboard.cli hooks user-prompt-submit --agent codex --budget 700"
+          }
+        ]
+      }
+    ]
+  }
+}

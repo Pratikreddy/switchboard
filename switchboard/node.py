@@ -21,6 +21,7 @@ from .bricks import (
 )
 from .config import ROOT_DIR
 from .defaults import DEFAULT_NODE_PORT
+from .hooks import build_hooks_registry
 
 
 NODE_DIR_NAME = "switchboard"
@@ -94,6 +95,7 @@ def node_paths(project_root: Path) -> dict[str, Path]:
         "pull_bundle_history": root / EVIDENCE_DIR_NAME / "pull-bundle-history.json",
         "brick_registry": root / EVIDENCE_DIR_NAME / "brick-registry.json",
         "keyword_registry": root / EVIDENCE_DIR_NAME / "keyword-registry.json",
+        "hooks_registry": root / EVIDENCE_DIR_NAME / "hooks-registry.json",
         "scope_snapshot": root / EVIDENCE_DIR_NAME / "scope.snapshot.json",
         "update_gate": root / EVIDENCE_DIR_NAME / "update-gate.json",
         "runtime": root / "runtime",
@@ -297,6 +299,12 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "- Do not hand-write serial numbers, dates, timestamps, versions, commits, file counts, insertions, deletions, or line totals; Switchboard computes those into `switchboard/evidence/brick-registry.json`.\n"
             "- The reusable Python tool is the installed `switchboard.bricks` package plus `switchboard brics registry --project-root <path>`.\n"
             "- Bricks are suite-wide agent/manager accounting, not Control Center UI panels.\n\n"
+            "## Prompt Hook Brics\n\n"
+            "- Codex and Claude hook brics may inject compact `Suite Context` into prompts.\n"
+            "- Raw Pratik wording is captured once in a local-private timeline DB and must not be pasted into builder prompts.\n"
+            "- Repeated corrections become short operational snippets selected by task and budget.\n"
+            "- Memory context is a small source-ref packet now and a Palimpsest/RAG adapter later.\n"
+            "- The reusable Python package is `switchboard.hooks`; git-safe evidence is `switchboard/evidence/hooks-registry.json`.\n\n"
             "## Benchmark Keyword Bricks\n\n"
             "- Use this only when the task needs a benchmark set for transferring expensive-agent judgment to smaller models.\n"
             "- Expensive Pro agent suggests keyword labels; each keyword gets a stable ID and bucket relation before reuse.\n"
@@ -345,6 +353,7 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "- If project root docs should be framework-owned, record the needed `Readme`, `API`, `Changelog`, and `Version` blocks in `tasks-completed.md` and enable those docs through the node managed-doc config.\n"
             "- If the work is a real build brick, include a compact `Brick Entries:` block. Do not hand-write computed brick facts.\n"
             "- `switchboard.bricks` is the reusable tool package for brick parsing, contracts, serial numbers, versioning, and registry output; `switchboard brics registry` is the CLI surface.\n"
+            "- `switchboard.hooks` is the reusable hook package for Codex/Claude prompt context, local-private source capture, mistake snippets, and compact memory query.\n"
             "- For benchmark keyword work, keep expensive-agent suggestions pending until human quick verify; smaller models should only receive verified keyword IDs, simple meanings, and examples.\n"
             "- Record the standardization work in `switchboard/local/tasks-completed.md` using the required entry format.\n"
             "- Finish by running `switchboard node snapshot --project-root <path>`.\n"
@@ -364,6 +373,7 @@ def _core_templates(service_id: str, display_name: str) -> dict[str, str]:
             "- If runtime config changed, include a `Runtime:` block in the entry.\n"
             "- If the work is a real build brick, include `Brick Entries:` lines in `brick_id | family | mode | status | source_record | next_action` format.\n"
             "- Never hand-write computed brick facts; Switchboard generates serial number, date created, version, commit, and line statistics into `switchboard/evidence/brick-registry.json`.\n"
+            "- If hook context is available, use it as compact Suite Context only; do not paste raw source captures or long mistake records into the task ledger.\n"
             "- If the work is benchmark keywording, use stable keyword IDs, bucket IDs, similar-bucket counts, and human quick verify before smaller-model reuse.\n"
             "- Finish by running `switchboard node snapshot --project-root <path>` and `switchboard node verify-update --project-root <path>`.\n\n"
             "Entry format:\n"
@@ -1277,6 +1287,7 @@ def _manifest_payload(
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
             "brick_registry": str(paths["brick_registry"].relative_to(project_root)),
             "keyword_registry": str(paths["keyword_registry"].relative_to(project_root)),
+            "hooks_registry": str(paths["hooks_registry"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
         },
@@ -1834,6 +1845,8 @@ def install_node(
         _write_json(paths["brick_registry"], {"generated": "", "schema_version": "switchboard-brick-registry-v0", "bricks": []})
     if not paths["keyword_registry"].exists():
         _write_json(paths["keyword_registry"], build_keyword_registry(project_root, []))
+    if not paths["hooks_registry"].exists():
+        _write_json(paths["hooks_registry"], build_hooks_registry(project_root))
     if not paths["scope_snapshot"].exists():
         _write_json(paths["scope_snapshot"], _evidence_defaults(service_id, project_root, manifest))
     if not paths["update_gate"].exists():
@@ -1926,6 +1939,7 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
             "brick_registry": str(paths["brick_registry"].relative_to(project_root)),
             "keyword_registry": str(paths["keyword_registry"].relative_to(project_root)),
+            "hooks_registry": str(paths["hooks_registry"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
             "foundation_projection": str((paths["node_root"] / "evidence" / "foundation-projection.json").relative_to(project_root)),
@@ -2093,8 +2107,10 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
     foundation_projection = _snapshot_foundation_projection(project_root)
     brick_registry = build_brick_registry(project_root, manifest["service_id"], tasks, foundation_projection)
     keyword_registry = build_keyword_registry(project_root, [])
+    hooks_registry = build_hooks_registry(project_root)
     _write_json(paths["brick_registry"], brick_registry)
     _write_json(paths["keyword_registry"], keyword_registry)
+    _write_json(paths["hooks_registry"], hooks_registry)
     return {
         "manifest": manifest,
         "tasks": tasks,
@@ -2103,6 +2119,7 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
         "foundation_projection": foundation_projection,
         "brick_registry": brick_registry,
         "keyword_registry": keyword_registry,
+        "hooks_registry": hooks_registry,
     }
 
 
@@ -2194,6 +2211,7 @@ def verify_node_update(project_root: str | Path, write: bool = True) -> dict[str
         ("completed_tasks_json_exists", paths["completed_tasks_json"]),
         ("brick_registry_json_exists", paths["brick_registry"]),
         ("keyword_registry_json_exists", paths["keyword_registry"]),
+        ("hooks_registry_json_exists", paths["hooks_registry"]),
         ("scope_snapshot_exists", paths["scope_snapshot"]),
     ):
         add_check(check_id, path.exists(), f"{path.relative_to(project_root)} exists.")
@@ -2207,6 +2225,7 @@ def verify_node_update(project_root: str | Path, write: bool = True) -> dict[str
             ("completed_tasks_json_fresh", paths["completed_tasks_json"], "generated"),
             ("brick_registry_json_fresh", paths["brick_registry"], "generated"),
             ("keyword_registry_json_fresh", paths["keyword_registry"], "generated"),
+            ("hooks_registry_json_fresh", paths["hooks_registry"], "generated"),
             ("scope_snapshot_fresh", paths["scope_snapshot"], "generated"),
         )
         for check_id, path, field in freshness_sources:

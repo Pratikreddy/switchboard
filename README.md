@@ -6,7 +6,14 @@ Switchboard is a project-first control center for tracking services, servers, pr
 switchboard/local/tasks-completed.md
 ```
 
-Current release: `1.12.7`
+Current release: `1.12.8`
+
+## What 1.12.8 Adds
+
+- Adds the suite hooks layer for Codex and Claude prompt context.
+- Captures exact `UserPromptSubmit` text in a local-private timeline DB while keeping git evidence to hashes, timestamps, source refs, and counts.
+- Adds compact mistake-pattern and memory-query brics for task-specific prompt snippets without raw prompt dumps.
+- Keeps hook/bric/memory state out of the front-page UI.
 
 ## What 1.12.7 Fixes
 

@@ -1,0 +1,187 @@
+{
+  "generated": "2026-05-25T18:57:31Z",
+  "schema_version": "switchboard-hooks-registry-v0",
+  "tool": {
+    "name": "switchboard-hooks",
+    "version": "2026-05-26",
+    "package": "switchboard.hooks",
+    "type": "programmatic_python_package"
+  },
+  "role": "agent_prompt_context_and_local_private_source_capture",
+  "ui_surface": "none",
+  "project_root": "/Users/p/Desktop/dashboard",
+  "timeline": {
+    "schema_version": "switchboard-hook-timeline-v0",
+    "db_location": "~/.agent-ops/private/hooks/timeline.sqlite",
+    "raw_prompt_text": "local_private_only",
+    "git_safe_summary_only": true,
+    "db_exists": false,
+    "event_count": 0,
+    "context_packet_count": 0,
+    "last_event_at": "",
+    "last_context_packet_at": ""
+  },
+  "brics": [
+    {
+      "brick_id": "SUITE-BRIC-SOURCE-0001",
+      "name": "source-capture",
+      "mode": "programmatic",
+      "status": "active",
+      "summary": "Capture exact UserPromptSubmit text locally, then expose only timestamp/hash/source refs to git-safe evidence."
+    },
+    {
+      "brick_id": "SUITE-BRIC-MISTAKE-0001",
+      "name": "mistake-patterns",
+      "mode": "hybrid",
+      "status": "active",
+      "summary": "Turn repeated corrections and mistake records into compact task-relevant prompt rules."
+    },
+    {
+      "brick_id": "SUITE-BRIC-MEMORY-0001",
+      "name": "memory-query",
+      "mode": "hybrid",
+      "status": "active",
+      "summary": "Query approved local sources now; keep the interface stable for Palimpsest/RAG later."
+    }
+  ],
+  "existing_hooks": {
+    "schema_version": "switchboard-existing-hooks-v0",
+    "generated": "2026-05-25T18:57:31Z",
+    "sources_checked": [
+      "~/.claude/settings.json",
+      "~/.claude/settings.local.json",
+      "~/Desktop/dashboard/.claude/settings.local.json",
+      "~/Desktop/dashboard/.codex/hooks.json"
+    ],
+    "hook_count": 3,
+    "claude_hook_count": 2,
+    "codex_hook_count": 1,
+    "switchboard_managed_count": 2,
+    "events": [
+      "Notification",
+      "UserPromptSubmit"
+    ],
+    "hooks": [
+      {
+        "agent": "claude",
+        "scope": "global",
+        "source_path": "~/.claude/settings.json",
+        "event": "Notification",
+        "matcher": "*",
+        "entry_index": 0,
+        "hook_index": 0,
+        "hook_type": "command",
+        "managed_by_switchboard": false,
+        "command_name": "claude-voice-notify.sh",
+        "command_hash": "aee2fb7b0826fd7f89362c085018809b0f2b22bd23c8f10f1335cdf0bacee4b7",
+        "command_display": "~/claude-voice-notify.sh"
+      },
+      {
+        "agent": "claude",
+        "scope": "project",
+        "source_path": "~/Desktop/dashboard/.claude/settings.local.json",
+        "event": "UserPromptSubmit",
+        "matcher": "",
+        "entry_index": 0,
+        "hook_index": 0,
+        "hook_type": "command",
+        "managed_by_switchboard": true,
+        "command_name": "python3",
+        "command_hash": "18d04625516df38a0c5dea104752f6a21e24a55b010446c5e33f1765b74e6d72",
+        "command_display": "python3 -m switchboard.cli hooks user-prompt-submit --agent claude --budget 700"
+      },
+      {
+        "agent": "codex",
+        "scope": "project",
+        "source_path": "~/Desktop/dashboard/.codex/hooks.json",
+        "event": "UserPromptSubmit",
+        "matcher": "",
+        "entry_index": 0,
+        "hook_index": 0,
+        "hook_type": "command",
+        "managed_by_switchboard": true,
+        "command_name": "python3",
+        "command_hash": "be4094992f0809a5e1584b38cc4d6018f4afdfe02a4690f9a3b2a07f41720263",
+        "command_display": "python3 -m switchboard.cli hooks user-prompt-submit --agent codex --budget 700"
+      }
+    ],
+    "privacy": {
+      "raw_history_files": "not_read",
+      "prompt_cache_files": "not_read",
+      "command_hashes": "included",
+      "command_display": "truncated_home_redacted"
+    }
+  },
+  "contracts": {
+    "source_capture": {
+      "hook_event": "UserPromptSubmit",
+      "raw_fields_local_private": [
+        "raw_prompt"
+      ],
+      "git_safe_fields": [
+        "timestamp",
+        "hash",
+        "cwd",
+        "agent",
+        "source_type",
+        "related_bric_ids"
+      ]
+    },
+    "mistake_patterns": {
+      "inputs": [
+        "MISTAKES.md",
+        "Agent Ops intake rows",
+        "hook event tags"
+      ],
+      "output": "ranked compact prompt snippets",
+      "raw_language": "manager_private_refs_only"
+    },
+    "memory_query": {
+      "v1_sources": [
+        "local Agent Ops rules",
+        "Switchboard evidence",
+        "memory hints"
+      ],
+      "future_backend": "Palimpsest RAG",
+      "output": "budgeted rules, source refs, stale/fresh status, confidence"
+    }
+  },
+  "source_to_rule_examples": [
+    {
+      "raw_source_ref": "manager-private:pratik-words-need-recording",
+      "compact_rule": "Preserve raw source language in a local-private record first.",
+      "category": "source_capture"
+    },
+    {
+      "raw_source_ref": "manager-private:timestamp-each-atomic-row",
+      "compact_rule": "Generate timestamps and record IDs programmatically.",
+      "category": "programmatic_facts"
+    },
+    {
+      "raw_source_ref": "manager-private:repeated-facts-programmatic",
+      "compact_rule": "Repeated factual fields are computed by code; agents provide only semantic labels.",
+      "category": "programmatic_facts"
+    },
+    {
+      "raw_source_ref": "manager-private:no-project-bric-ui-dump",
+      "compact_rule": "Keep brics internal to agents/managers unless explicitly exposed.",
+      "category": "ui_boundary"
+    },
+    {
+      "raw_source_ref": "manager-private:no-ui-dumping",
+      "compact_rule": "Do not add dashboard UI for project bric dumps.",
+      "category": "ui_boundary"
+    }
+  ],
+  "prompt_examples": {
+    "switchboard_code_task": "Suite Context:\n- Agent: codex\n- CWD: /Users/p/Desktop/dashboard\n- Task: switchboard bric code task\n- Source capture bric: SUITE-BRIC-SOURCE-0001.\n- Raw Pratik wording stays local-private; builders get compact rules.\n- No project-bric UI panels or dashboard dumps.\n- Do not hand-write computed bric facts; Python computes them.\n- Use apply_patch for manual file edits.\n- No SSH/SFTP/SCP/rsync to .47, .114, or .253; use public checks or Pratik-run commands.\n- Fuel/usage checks are side monitors; continue the main task.\n- No side files; canonical record only unless requested.\n- Active bric is read from task/context, not guessed.\n- No UI unless explicitly requested.\n- Add `Brick Entries:` only for real brics.\n- Python computes serial/date/version/line stats.\n- Run snapshot and verify-update before closeout.",
+    "zapp_client_server_task": "Suite Context:\n- Agent: codex\n- CWD: /Users/p/Desktop/work/zapp/docgenerator\n- Task: zapp .114 docgenerator cleanup\n- Source capture bric: SUITE-BRIC-SOURCE-0001.\n- Raw Pratik wording stays local-private; builders get compact rules.\n- No SSH/SFTP/SCP/rsync to .47, .114, or .253; use public checks or Pratik-run commands.\n- Do not rewrite docgenerator templates or layout.\n- No side files; canonical record only unless requested.\n- Fuel/usage checks are side monitors; continue the main task.\n- No project-bric UI panels or dashboard dumps.\n- Do not hand-write computed bric facts; Python computes them.\n- No SSH/SFTP/SCP/rsync to .114, .253, or .47.\n- Public HTTP checks are allowed.\n- Server truth requires Pratik-run commands.\n- Do not rewrite docgenerator templates/layout.",
+    "keyword_benchmark_task": "Suite Context:\n- Agent: codex\n- CWD: /Users/p/Desktop/dashboard\n- Task: keyword benchmark small model\n- Source capture bric: SUITE-BRIC-SOURCE-0001.\n- Raw Pratik wording stays local-private; builders get compact rules.\n- Benchmark keywords need human verification before small-model reuse.\n- No project-bric UI panels or dashboard dumps.\n- No SSH/SFTP/SCP/rsync to .47, .114, or .253; use public checks or Pratik-run commands.\n- Fuel/usage checks are side monitors; continue the main task.\n- Do not hand-write computed bric facts; Python computes them.\n- No side files; canonical record only unless requested.\n- Existing tags are candidates, not truth.\n- Expensive model suggests keywords; human verifies.\n- Small model receives only verified keyword IDs, plain meanings, examples.\n- Exclude expensive-agent reasoning and annotation bloat.\n- Active bric is read from task/context, not guessed.\n- No UI unless explicitly requested.\n- Add `Brick Entries:` only for real brics.\n- Python computes serial/date/version/line stats.\n- Run snapshot and verify-update before closeout."
+  },
+  "privacy": {
+    "classification": "git_safe_metadata",
+    "raw_prompts": "excluded",
+    "raw_profanity_or_private_text": "excluded",
+    "builder_prompt": "clean_operational_rules_only"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T14:06:57+00:00",
+  "generated": "2026-05-25T18:57:30+00:00",
   "schema_version": "switchboard-pass1-foundation-v0",
   "privacy": {
     "classification": "git_safe_metadata",
@@ -18,7 +18,7 @@
     ]
   },
   "line_noise": {
-    "generated": "2026-05-25T14:06:57+00:00",
+    "generated": "2026-05-25T18:57:30+00:00",
     "schema_version": "line-noise-v0",
     "taxonomy": [
       "active_source",
@@ -33,17 +33,17 @@
       "docs",
       "harness_adapters"
     ],
-    "total_lines": 64983,
-    "active_source_lines": 26658,
-    "noise_line_count": 38325,
-    "active_source_ratio": 0.4102,
-    "noise_ratio": 0.5898,
+    "total_lines": 65965,
+    "active_source_lines": 26895,
+    "noise_line_count": 39070,
+    "active_source_ratio": 0.4077,
+    "noise_ratio": 0.5923,
     "tracked_file_count": 134,
     "classified_category_count": 11,
     "top_files": [
       {
         "path": "switchboard/evidence/completed-tasks.json",
-        "lines": 7673,
+        "lines": 7928,
         "classification": "generated_evidence"
       },
       {
@@ -52,14 +52,14 @@
         "classification": "active_source"
       },
       {
+        "path": "switchboard/evidence/scope.snapshot.json",
+        "lines": 6179,
+        "classification": "generated_evidence"
+      },
+      {
         "path": "switchboard/manifests/services.json",
         "lines": 6030,
         "classification": "manifest_data"
-      },
-      {
-        "path": "switchboard/evidence/scope.snapshot.json",
-        "lines": 5959,
-        "classification": "generated_evidence"
       },
       {
         "path": "package-lock.json",
@@ -78,12 +78,12 @@
       },
       {
         "path": "switchboard/node.py",
-        "lines": 2308,
+        "lines": 2327,
         "classification": "active_source"
       },
       {
         "path": "switchboard/local/tasks-completed.md",
-        "lines": 1851,
+        "lines": 1904,
         "classification": "docs"
       },
       {
@@ -95,15 +95,15 @@
     "categories": {
       "active_source": {
         "file_count": 63,
-        "line_count": 26658
+        "line_count": 26895
       },
       "generated_evidence": {
         "file_count": 19,
-        "line_count": 15837
+        "line_count": 16316
       },
       "manifest_data": {
         "file_count": 10,
-        "line_count": 8508
+        "line_count": 8513
       },
       "runtime_cache": {
         "file_count": 0,
@@ -127,15 +127,15 @@
       },
       "tests": {
         "file_count": 15,
-        "line_count": 5295
+        "line_count": 5442
       },
       "docs": {
         "file_count": 23,
-        "line_count": 4794
+        "line_count": 4906
       },
       "harness_adapters": {
         "file_count": 2,
-        "line_count": 76
+        "line_count": 78
       }
     },
     "excluded_prefixes": [
@@ -169,7 +169,7 @@
     ]
   },
   "production_usage": {
-    "generated": "2026-05-25T14:06:57+00:00",
+    "generated": "2026-05-25T18:57:30+00:00",
     "schema_version": "production-usage-v0",
     "privacy": {
       "classification": "git_safe_metadata",
@@ -198,12 +198,12 @@
       "tokens"
     ],
     "summary": {
-      "model": 39,
-      "tool": 247,
+      "model": 40,
+      "tool": 252,
       "api": 15,
       "runtime": 19,
       "storage": 248,
-      "manual": 260,
+      "manual": 265,
       "human_ui": 2,
       "tokens": 0
     },
@@ -215,8 +215,8 @@
         "source_kind": "ledger_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 260,
-        "latest_at": "2026-05-25T19:05:00+05:30",
+        "count": 265,
+        "latest_at": "2026-05-26T00:26:34+05:30",
         "token_count": null,
         "labels": [],
         "private_payload": "excluded",
@@ -229,8 +229,8 @@
         "source_kind": "ledger_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 247,
-        "latest_at": "2026-05-25T19:05:00+05:30",
+        "count": 252,
+        "latest_at": "2026-05-26T00:26:34+05:30",
         "token_count": null,
         "labels": [
           "codex-cli",
@@ -254,8 +254,8 @@
         "source_kind": "derived_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 39,
-        "latest_at": "2026-05-25T19:05:00+05:30",
+        "count": 40,
+        "latest_at": "2026-05-26T00:26:34+05:30",
         "token_count": null,
         "labels": [],
         "private_payload": "excluded",
@@ -351,17 +351,17 @@
     ]
   },
   "agent_handoff_quality": {
-    "generated": "2026-05-25T14:06:57+00:00",
+    "generated": "2026-05-25T18:57:30+00:00",
     "schema_version": "agent-handoff-quality-v0",
     "source": "task_ledgers",
-    "task_count": 260,
-    "handoff_tag_count": 129,
-    "with_read_back": 247,
-    "with_scope_check": 247,
-    "with_changed_paths": 260,
-    "with_agent": 247,
-    "with_tool": 247,
-    "with_verification_hint": 72,
+    "task_count": 265,
+    "handoff_tag_count": 133,
+    "with_read_back": 252,
+    "with_scope_check": 252,
+    "with_changed_paths": 265,
+    "with_agent": 252,
+    "with_tool": 252,
+    "with_verification_hint": 74,
     "quality_score": 96,
     "missing": {
       "read_back": 13,
@@ -371,6 +371,61 @@
       "tool": 13
     },
     "latest_records": [
+      {
+        "service_id": "switch",
+        "timestamp": "2026-05-26T00:26:34+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-26T00:25:35+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-26T00:22:06+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-26T00:18:26+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": true
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-25T23:59:27+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": true
+      },
       {
         "service_id": "agent-ops",
         "timestamp": "2026-05-25T19:05:00+05:30",
@@ -403,61 +458,6 @@
         "has_tool": true,
         "has_handoff_tag": false,
         "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:52:20+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:37:50+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:34:56+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": true
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:33:20+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:17:23+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
       }
     ],
     "privacy": {
@@ -478,10 +478,10 @@
     }
   },
   "docs_relevance": {
-    "generated": "2026-05-25T14:06:57+00:00",
+    "generated": "2026-05-25T18:57:30+00:00",
     "schema_version": "docs-relevance-v0",
     "source": "switchboard/evidence/doc-index.json",
-    "latest_task_at": "2026-05-25T19:05:00+05:30",
+    "latest_task_at": "2026-05-26T00:26:34+05:30",
     "doc_count": 8,
     "enabled_count": 5,
     "current_count": 4,
@@ -515,8 +515,8 @@
         "enabled": false,
         "generated_at": "",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 48,
-        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
+        "contributor_count": 49,
+        "latest_contributor_at": "2026-05-26T00:26:34+05:30",
         "lifecycle_state": "disabled",
         "memory_role": "disabled_root_doc"
       },
@@ -524,10 +524,10 @@
         "doc_id": "handoff",
         "path": "switchboard/local/control-center-handoff.md",
         "enabled": true,
-        "generated_at": "2026-05-25T14:06:57+00:00",
+        "generated_at": "2026-05-25T18:57:30+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 41,
-        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
+        "contributor_count": 42,
+        "latest_contributor_at": "2026-05-26T00:26:34+05:30",
         "lifecycle_state": "current",
         "memory_role": "project_local_memory"
       },
@@ -535,7 +535,7 @@
         "doc_id": "runbook",
         "path": "switchboard/local/runbook.md",
         "enabled": true,
-        "generated_at": "2026-05-25T14:06:57+00:00",
+        "generated_at": "2026-05-25T18:57:30+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 0,
         "latest_contributor_at": "",
@@ -546,7 +546,7 @@
         "doc_id": "approach_history",
         "path": "switchboard/local/approach-history.md",
         "enabled": true,
-        "generated_at": "2026-05-25T14:06:57+00:00",
+        "generated_at": "2026-05-25T18:57:30+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 5,
         "latest_contributor_at": "2026-05-15T05:45:53+00:00",
@@ -557,10 +557,10 @@
         "doc_id": "doc_index_md",
         "path": "switchboard/local/doc-index.md",
         "enabled": true,
-        "generated_at": "2026-05-25T14:06:57+00:00",
+        "generated_at": "2026-05-25T18:57:30+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 48,
-        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
+        "contributor_count": 49,
+        "latest_contributor_at": "2026-05-26T00:26:34+05:30",
         "lifecycle_state": "current",
         "memory_role": "project_local_memory"
       },
@@ -568,10 +568,10 @@
         "doc_id": "doc_index_json",
         "path": "switchboard/evidence/doc-index.json",
         "enabled": true,
-        "generated_at": "2026-05-25T14:06:57+00:00",
+        "generated_at": "2026-05-25T18:57:30+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 48,
-        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
+        "contributor_count": 49,
+        "latest_contributor_at": "2026-05-26T00:26:34+05:30",
         "lifecycle_state": "current",
         "memory_role": "derived_git_safe_projection"
       }
@@ -594,10 +594,10 @@
     }
   },
   "harness_source_map": {
-    "generated": "2026-05-25T14:06:57+00:00",
+    "generated": "2026-05-25T18:57:30+00:00",
     "canonical_source": "switchboard/core/agent-contract.md",
     "canonical_exists": true,
-    "canonical_line_count": 62,
+    "canonical_line_count": 64,
     "enabled_entrypoints": [
       "agents"
     ],
@@ -618,7 +618,7 @@
         "points_to": "switchboard/core/agent-contract.md",
         "contract_pointer_status": "canonical",
         "injected_context_source": "switchboard/core/agent-contract.md",
-        "last_generated_at": "2026-05-25T14:06:57+00:00",
+        "last_generated_at": "2026-05-25T18:57:30+00:00",
         "warnings": []
       },
       {
@@ -676,7 +676,7 @@
     ]
   },
   "suite_boundaries": {
-    "generated": "2026-05-25T14:06:57+00:00",
+    "generated": "2026-05-25T18:57:30+00:00",
     "schema_version": "suite-boundaries-v0",
     "source": "manifests_and_manager_rules",
     "suites": [

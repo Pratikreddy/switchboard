@@ -14,6 +14,14 @@ from .collectors import CollectionCoordinator
 from .bricks import build_brick_registry, build_keyword_registry, normalize_keyword_entries
 from .config import ROOT_DIR, get_settings
 from .defaults import DEFAULT_NODE_PORT
+from .hooks import (
+    build_context_packet,
+    build_hooks_registry,
+    build_memory_query,
+    build_user_prompt_response,
+    capture_user_prompt,
+    discover_existing_hooks,
+)
 from .manifests import ManifestStore
 from .models import CollectRequest, GitHubBackupRequest
 from .node import (
@@ -54,11 +62,15 @@ from .storage import SnapshotStore
 app = typer.Typer(help="Switchboard control-center commands.")
 node_app = typer.Typer(help="Switchboard node-mode commands.")
 bricks_app = typer.Typer(help="Programmatic brick registry tools.")
+memory_app = typer.Typer(help="Compact local memory query tools.")
+hooks_app = typer.Typer(help="Codex/Claude hook adapters and source-capture tools.")
 release_app = typer.Typer(help="Build releasable Switchboard artifacts.")
 export_app = typer.Typer(help="Export Switchboard state.")
 app.add_typer(node_app, name="node")
+bricks_app.add_typer(memory_app, name="memory")
 app.add_typer(bricks_app, name="bricks")
 app.add_typer(bricks_app, name="brics")
+app.add_typer(hooks_app, name="hooks")
 app.add_typer(release_app, name="release")
 app.add_typer(export_app, name="export")
 
@@ -249,6 +261,200 @@ def brics_keywords(
         paths["keyword_registry"].parent.mkdir(parents=True, exist_ok=True)
         paths["keyword_registry"].write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     typer.echo(json.dumps(payload, indent=2))
+
+
+@memory_app.command("query")
+def brics_memory_query(
+    task: str = typer.Option(..., "--task"),
+    cwd: str = typer.Option("", "--cwd"),
+    budget: int = typer.Option(800, "--budget"),
+) -> None:
+    payload = build_memory_query(task=task, cwd=cwd, budget=budget)
+    typer.echo(json.dumps(payload, indent=2))
+
+
+def _read_stdin_json() -> dict[str, object]:
+    raw = sys.stdin.read()
+    if not raw.strip():
+        return {}
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise typer.BadParameter(f"stdin is not valid JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise typer.BadParameter("stdin JSON must be an object")
+    return payload
+
+
+def _hook_python_command(project_root: Path, agent: str, budget: int) -> str:
+    return f"python3 -m switchboard.cli hooks user-prompt-submit --agent {agent} --budget {budget}"
+
+
+def _codex_hooks_config(command: str) -> dict[str, object]:
+    return {
+        "hooks": {
+            "UserPromptSubmit": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": command,
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+
+
+def _claude_hooks_config(command: str) -> dict[str, object]:
+    return {
+        "hooks": {
+            "UserPromptSubmit": [
+                {
+                    "matcher": "",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": command,
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+
+
+def _merge_user_prompt_hook_config(path: Path, command: str) -> tuple[dict[str, object], str]:
+    payload: dict[str, object] = {}
+    status = "written"
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return {}, "preserved_invalid_json"
+        if isinstance(existing, dict):
+            payload = existing
+    hooks = payload.get("hooks")
+    if not isinstance(hooks, dict):
+        hooks = {}
+    entries = hooks.get("UserPromptSubmit")
+    if not isinstance(entries, list):
+        entries = []
+    command_exists = command in json.dumps(entries)
+    if not command_exists:
+        entries.append(
+            {
+                "matcher": "",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": command,
+                    }
+                ],
+            }
+        )
+    else:
+        status = "already_present"
+    hooks["UserPromptSubmit"] = entries
+    payload["hooks"] = hooks
+    return payload, status
+
+
+@hooks_app.command("build-context")
+def hooks_build_context(
+    agent: str = typer.Option("codex", "--agent"),
+    cwd: str = typer.Option("", "--cwd"),
+    task: str = typer.Option("", "--task"),
+    budget: int = typer.Option(800, "--budget"),
+) -> None:
+    payload = build_context_packet(agent=agent, cwd=cwd, task=task, budget=budget)
+    typer.echo(json.dumps(payload, indent=2))
+
+
+@hooks_app.command("capture")
+def hooks_capture(
+    agent: str = typer.Option("codex", "--agent"),
+    cwd: str = typer.Option("", "--cwd"),
+    prompt: str = typer.Option("", "--prompt"),
+    related_bric: list[str] = typer.Option(None, "--related-bric"),
+) -> None:
+    text = prompt or sys.stdin.read()
+    payload = capture_user_prompt(prompt=text, agent=agent, cwd=cwd, related_brics=related_bric or [])
+    typer.echo(json.dumps(payload, indent=2))
+
+
+@hooks_app.command("user-prompt-submit")
+def hooks_user_prompt_submit(
+    agent: str = typer.Option("codex", "--agent"),
+    budget: int = typer.Option(800, "--budget"),
+    capture: bool = typer.Option(True, "--capture/--no-capture"),
+) -> None:
+    payload = _read_stdin_json()
+    response = build_user_prompt_response(hook_payload=payload, agent=agent, budget=budget, capture=capture)
+    typer.echo(json.dumps(response, separators=(",", ":")))
+
+
+@hooks_app.command("registry")
+def hooks_registry(
+    project_root: str = typer.Option(..., "--project-root"),
+    write: bool = typer.Option(False, "--write/--no-write"),
+) -> None:
+    root = Path(project_root).resolve()
+    payload = build_hooks_registry(root)
+    if write:
+        paths = node_paths(root)
+        paths["hooks_registry"].parent.mkdir(parents=True, exist_ok=True)
+        paths["hooks_registry"].write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    typer.echo(json.dumps(payload, indent=2))
+
+
+@hooks_app.command("discover")
+def hooks_discover(
+    project_root: str = typer.Option(..., "--project-root"),
+) -> None:
+    root = Path(project_root).resolve()
+    payload = discover_existing_hooks(root)
+    typer.echo(json.dumps(payload, indent=2))
+
+
+@hooks_app.command("install")
+def hooks_install(
+    project_root: str = typer.Option(..., "--project-root"),
+    agent: list[str] = typer.Option(None, "--agent"),
+    budget: int = typer.Option(800, "--budget"),
+    write: bool = typer.Option(False, "--write/--dry-run"),
+) -> None:
+    root = Path(project_root).resolve()
+    requested = agent or ["codex", "claude"]
+    outputs: dict[str, object] = {"project_root": str(root), "write": write, "installed": []}
+    for item in requested:
+        normalized = item.strip().lower()
+        command = _hook_python_command(root, normalized, budget)
+        if normalized == "codex":
+            path = root / ".codex" / "hooks.json"
+            config = _codex_hooks_config(command)
+        elif normalized in {"claude", "claude-code"}:
+            path = root / ".claude" / "settings.local.json"
+            config = _claude_hooks_config(command)
+        else:
+            continue
+        if write:
+            config, status = _merge_user_prompt_hook_config(path, command)
+            if status != "preserved_invalid_json":
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+        else:
+            status = "dry_run"
+        outputs["installed"].append(
+            {
+                "agent": normalized,
+                "path": str(path),
+                "command": command,
+                "status": status,
+            }
+        )
+    typer.echo(json.dumps(outputs, indent=2))
 
 
 @node_app.command("serve")

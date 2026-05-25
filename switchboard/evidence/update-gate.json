@@ -1,11 +1,11 @@
 {
-  "generated": "2026-05-25T14:06:58+00:00",
+  "generated": "2026-05-25T18:57:32+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-25T17:26:18+05:30",
-    "title": "Add brics keyword registry core",
+    "timestamp": "2026-05-26T00:26:34+05:30",
+    "title": "Add suite hooks source capture and existing Claude hook integration",
     "agent": "Codex manager",
     "tool": "codex-desktop, apply_patch, python unittest, npm, switchboard cli"
   },
@@ -56,6 +56,11 @@
       "message": "switchboard/evidence/keyword-registry.json exists."
     },
     {
+      "check_id": "hooks_registry_json_exists",
+      "status": "ok",
+      "message": "switchboard/evidence/hooks-registry.json exists."
+    },
+    {
       "check_id": "scope_snapshot_exists",
       "status": "ok",
       "message": "switchboard/evidence/scope.snapshot.json exists."
@@ -84,6 +89,11 @@
       "check_id": "keyword_registry_json_fresh",
       "status": "ok",
       "message": "switchboard/evidence/keyword-registry.json is newer than the latest task entry."
+    },
+    {
+      "check_id": "hooks_registry_json_fresh",
+      "status": "ok",
+      "message": "switchboard/evidence/hooks-registry.json is newer than the latest task entry."
     },
     {
       "check_id": "scope_snapshot_fresh",

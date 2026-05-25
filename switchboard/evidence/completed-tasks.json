@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T14:06:57+00:00",
+  "generated": "2026-05-25T18:57:30+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -7662,6 +7662,261 @@
           "status": "done",
           "source_record": "current task",
           "next_action": "build small-model keyword export next"
+        }
+      ],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-26T00:26:34+05:30",
+      "title": "Add suite hooks source capture and existing Claude hook integration",
+      "tags": [
+        "task",
+        "handoff",
+        "scope"
+      ],
+      "version": "1.12.8",
+      "summary": "Added the Switchboard hooks package for Codex/Claude prompt context, local-private source capture, mistake-pattern snippets, compact memory query, and discovery of already deployed Claude hooks.",
+      "changed_paths": [
+        "switchboard/hooks/__init__.py",
+        "switchboard/hooks/context.py",
+        "switchboard/hooks/timeline.py",
+        "switchboard/bricks/registry.py",
+        "switchboard/cli.py",
+        "switchboard/node.py",
+        "switchboard/evidence/hooks-registry.json",
+        "tests_backend/test_node_mode.py",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "switchboard/local/tasks-completed.md",
+        "package.json",
+        "package-lock.json",
+        "pyproject.toml",
+        "switchboard/__init__.py",
+        "README.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager",
+      "tool": "codex-desktop, apply_patch, python unittest, npm, switchboard cli",
+      "read_back": "Build a hooks/brics/memory layer so exact user prompts are captured locally/private once, agents receive compact rules, and the existing Claude Code hook on this machine is integrated into Switchboard evidence without overwriting it.",
+      "scope_check": "Switchboard Python package, generated evidence, local hook config, and tests only. No Control Center hook/bric UI, no raw prompt text in git evidence, no Claude history/paste-cache reads, no global Claude config mutation, no Palimpsest ingest, and no `.47` work.",
+      "bootstrap_version": "",
+      "notes": [
+        "- Added `switchboard.hooks` with `SUITE-BRIC-SOURCE-0001`, `SUITE-BRIC-MISTAKE-0001`, and `SUITE-BRIC-MEMORY-0001`.",
+        "- `UserPromptSubmit` exact prompt text is stored only in a local-private SQLite timeline DB; returned/evidence data uses hashes, timestamps, source refs, cwd, agent, and bric IDs.",
+        "- Added compact `Suite Context` injection for Switchboard, Agent Ops, Zapp/client-server, and keyword/benchmark task shapes.",
+        "- Added `switchboard brics memory query --task <task> --cwd <path> --budget <n>`.",
+        "- Added `switchboard hooks build-context`, `capture`, `user-prompt-submit`, `registry`, `discover`, and `install`.",
+        "- Installed repo-local Codex and Claude `UserPromptSubmit` hooks for `/Users/p/Desktop/dashboard`.",
+        "- Preserved the existing global Claude `Notification` hook and surfaced it as discovered evidence: command name `claude-voice-notify.sh`, event `Notification`, managed_by_switchboard `false`.",
+        "- `hooks-registry.json` now records existing hook summaries with home-redacted command display and command hashes; it does not read Claude histories or prompt caches."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "evidence",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/README.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package-lock.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/pyproject.toml",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static",
+        "run_command_hint": "switchboard hooks discover --project-root /Users/p/Desktop/dashboard && switchboard hooks registry --project-root /Users/p/Desktop/dashboard",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "brick_entries": [
+        {
+          "brick_id": "suite-bric-source-capture",
+          "family": "hooks-memory",
+          "mode": "programmatic",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "keep raw prompts local-private"
+        },
+        {
+          "brick_id": "suite-bric-mistake-patterns",
+          "family": "hooks-memory",
+          "mode": "hybrid",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "rank repeated corrections by task"
+        },
+        {
+          "brick_id": "suite-bric-memory-query",
+          "family": "hooks-memory",
+          "mode": "hybrid",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "replace local hints with Palimpsest RAG later"
+        },
+        {
+          "brick_id": "suite-bric-claude-hook-discovery",
+          "family": "hooks-memory",
+          "mode": "programmatic",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "keep discovered Claude hooks in registry evidence"
         }
       ],
       "diagram": "",

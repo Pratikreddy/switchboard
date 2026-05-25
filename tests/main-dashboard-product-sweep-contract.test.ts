@@ -14,7 +14,7 @@ const projectsPanel = readFileSync(resolve(process.cwd(), 'src/components/Projec
 const serviceDetail = readFileSync(resolve(process.cwd(), 'src/pages/ServiceDetailPage.tsx'), 'utf-8')
 
 describe('main dashboard product sweep contract', () => {
-  it('keeps the 1.12.7 home dashboard to activity and overview only', () => {
+  it('keeps the 1.12.8 home dashboard to activity and overview only', () => {
     expect(panelRegistry).toContain("export type ControlCenterPanelGroupId = 'activity' | 'overview'")
     expect(panelRegistry).toContain("id: 'activity'")
     expect(panelRegistry).toContain("id: 'overview'")
@@ -52,6 +52,11 @@ describe('main dashboard product sweep contract', () => {
     expect(homeSurface).not.toContain('Brick Entries')
     expect(homeSurface).not.toContain('brick-registry')
     expect(homeSurface).not.toContain('keyword-registry')
+    expect(homeSurface).not.toContain('hooks-registry')
+    expect(homeSurface).not.toContain('Source Capture')
+    expect(homeSurface).not.toContain('Mistake Patterns')
+    expect(homeSurface).not.toContain('Memory Query')
+    expect(homeSurface).not.toContain('UserPromptSubmit')
     expect(homeSurface).not.toContain('Benchmark Keywords')
     expect(homeSurface).not.toContain('Project Bricks')
     expect(homeSurface).not.toContain('Backend:')
@@ -88,7 +93,7 @@ describe('main dashboard product sweep contract', () => {
       branch_metadata: {
         active_branch: 'main',
         current_head: 'abc123',
-        branches: ['main', 'release/1.12.7'],
+        branches: ['main', 'release/1.12.8'],
         generated: '2026-05-24T08:39:17+05:30',
       },
       line_noise: {

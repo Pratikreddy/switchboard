@@ -1,11 +1,11 @@
 {
-  "generated": "2026-05-25T08:01:24+00:00",
+  "generated": "2026-05-25T12:30:49+00:00",
   "status": "ok",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "latest_task": {
-    "timestamp": "2026-05-25T13:11:23+05:30",
-    "title": "Add suite brics package, registry evidence, and benchmark keyword contract",
+    "timestamp": "2026-05-25T17:26:18+05:30",
+    "title": "Add brics keyword registry core",
     "agent": "Codex manager",
     "tool": "codex-desktop, apply_patch, python unittest, npm, switchboard cli"
   },
@@ -51,6 +51,11 @@
       "message": "switchboard/evidence/brick-registry.json exists."
     },
     {
+      "check_id": "keyword_registry_json_exists",
+      "status": "ok",
+      "message": "switchboard/evidence/keyword-registry.json exists."
+    },
+    {
       "check_id": "scope_snapshot_exists",
       "status": "ok",
       "message": "switchboard/evidence/scope.snapshot.json exists."
@@ -74,6 +79,11 @@
       "check_id": "brick_registry_json_fresh",
       "status": "ok",
       "message": "switchboard/evidence/brick-registry.json is newer than the latest task entry."
+    },
+    {
+      "check_id": "keyword_registry_json_fresh",
+      "status": "ok",
+      "message": "switchboard/evidence/keyword-registry.json is newer than the latest task entry."
     },
     {
       "check_id": "scope_snapshot_fresh",

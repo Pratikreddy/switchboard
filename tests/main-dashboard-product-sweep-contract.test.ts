@@ -51,6 +51,8 @@ describe('main dashboard product sweep contract', () => {
     expect(homeSurface).not.toContain('GitHub Backup')
     expect(homeSurface).not.toContain('Brick Entries')
     expect(homeSurface).not.toContain('brick-registry')
+    expect(homeSurface).not.toContain('keyword-registry')
+    expect(homeSurface).not.toContain('Benchmark Keywords')
     expect(homeSurface).not.toContain('Project Bricks')
     expect(homeSurface).not.toContain('Backend:')
     expect(homeSurface).not.toContain('metadata-only projection')

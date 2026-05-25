@@ -7,7 +7,13 @@ from unittest import mock
 from fastapi.testclient import TestClient
 
 from switchboard.defaults import DEFAULT_NODE_PORT
-from switchboard.bricks import build_brick_registry
+from switchboard.bricks import (
+    build_brick_registry,
+    build_keyword_registry,
+    export_simple_keyword_report,
+    export_small_model_packet,
+    normalize_keyword_entries,
+)
 from switchboard.bricks import registry as brick_registry_module
 from switchboard.node import (
     init_manager_node,
@@ -78,6 +84,7 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(result["manifest"]["service_id"], "sample-service")
             self.assertEqual(result["manifest"]["evidence_paths"]["update_gate"], "switchboard/evidence/update-gate.json")
             self.assertEqual(result["manifest"]["evidence_paths"]["brick_registry"], "switchboard/evidence/brick-registry.json")
+            self.assertEqual(result["manifest"]["evidence_paths"]["keyword_registry"], "switchboard/evidence/keyword-registry.json")
             self.assertIn("Read back Pratik's request before acting.", result["manifest"]["design_principles"]["global"])
             self.assertIn("Suite Brick Rules", paths["agent_contract_md"].read_text(encoding="utf-8"))
             top_level = sorted(path.name for path in project_root.iterdir())
@@ -142,6 +149,7 @@ class NodeModeTests(unittest.TestCase):
             scope_snapshot = json.loads(paths["scope_snapshot"].read_text(encoding="utf-8"))
             doc_index = json.loads(paths["doc_index_json"].read_text(encoding="utf-8"))
             brick_registry = json.loads(paths["brick_registry"].read_text(encoding="utf-8"))
+            keyword_registry = json.loads(paths["keyword_registry"].read_text(encoding="utf-8"))
 
             self.assertEqual(len(completed["tasks"]), 2)
             self.assertEqual(completed["tasks"][0]["brick_entries"][0]["brick_id"], "sample-brick")
@@ -151,6 +159,8 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(brick_registry["bricks"][0]["serial_number"], "SAMPLE_SERVICE-BRICK-0001")
             self.assertEqual(brick_registry["bricks"][0]["commit"], "")
             self.assertEqual(brick_registry["bricks"][0]["computed_status"], "pending_commit")
+            self.assertEqual(result["keyword_registry"]["schema_version"], "switchboard-keyword-registry-v0")
+            self.assertEqual(keyword_registry["summary"]["keyword_count"], 0)
             self.assertIn("Standardized docs", paths["handoff"].read_text(encoding="utf-8"))
             self.assertIn("Updated scope", paths["runbook"].read_text(encoding="utf-8"))
             self.assertIn("Updated scope", paths["approach_history"].read_text(encoding="utf-8"))
@@ -245,6 +255,47 @@ class NodeModeTests(unittest.TestCase):
             self.assertEqual(first["active_lines_after"], 100)
             self.assertEqual(first["stale_lines_after"], 25)
             self.assertEqual(first["version_introduced"], "1.12.6")
+
+    def test_keyword_registry_generates_stable_ids_counts_and_exports(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            entries = normalize_keyword_entries(
+                [
+                    "source quality | Whether source evidence is clear | evidence | safety; coverage | verified | yes | source has timestamp; source has owner | bench-1, bench-2",
+                    "prompt bloat | When labels are too verbose | cleanup | evidence | pending | no | long notes removed | bench-3",
+                    "raw leak | email@example.com token raw private payload | secrets | evidence | verified | yes | password token | bench-4",
+                ]
+            )
+            registry = build_keyword_registry(project_root, entries)
+            packet = export_small_model_packet(registry)
+            report = export_simple_keyword_report(registry)
+            serialized = json.dumps(registry)
+
+            self.assertEqual(registry["schema_version"], "switchboard-keyword-registry-v0")
+            self.assertEqual(registry["summary"]["keyword_count"], 3)
+            self.assertEqual(registry["summary"]["bucket_count"], 3)
+            self.assertGreaterEqual(registry["summary"]["similar_bucket_count"], 2)
+            self.assertEqual(registry["summary"]["human_verified_count"], 2)
+            self.assertEqual(registry["summary"]["active_count"], 2)
+            self.assertTrue(all(item["keyword_id"].startswith("kw_") for item in registry["keywords"]))
+            self.assertTrue(all(item["bucket_id"].startswith("bucket_") for item in registry["keywords"]))
+            self.assertNotIn("email@example.com", serialized)
+            self.assertNotIn("raw private payload", serialized)
+            self.assertNotIn("password token", serialized)
+            self.assertEqual(len(packet["keywords"]), 2)
+            self.assertNotIn("prompt bloat", json.dumps(packet))
+            self.assertIn("Source Quality", report.title())
+
+    def test_keyword_registry_without_entries_is_empty_and_healthy(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            registry = build_keyword_registry(project_root, [])
+
+            self.assertEqual(registry["summary"]["keyword_count"], 0)
+            self.assertEqual(registry["summary"]["bucket_count"], 0)
+            self.assertEqual(registry["keywords"], [])
+            self.assertEqual(registry["buckets"], [])
+            self.assertEqual(registry["privacy"]["existing_tags"], "candidate_evidence_only")
 
     def test_verify_update_gate_requires_agent_contract_fields(self) -> None:
         with TemporaryDirectory() as tmpdir:

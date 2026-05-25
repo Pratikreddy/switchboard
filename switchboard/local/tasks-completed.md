@@ -1807,3 +1807,45 @@ Example format:
   - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
   - run_command_hint: switchboard node snapshot --project-root /Users/p/Desktop/dashboard && switchboard node verify-update --project-root /Users/p/Desktop/dashboard
   - monitoring_mode: generated evidence verification
+
+## 2026-05-25T17:26:18+05:30 | Add brics keyword registry core
+
+- Tags: task, handoff, scope
+- Summary: Added the first benchmark keyword registry bric under `switchboard.bricks`. It creates stable keyword IDs, bucket IDs, similar-bucket links, verification status, counts, and empty/healthy generated evidence without ingesting a real benchmark dataset.
+- Changed Paths: switchboard/bricks/keywords.py, switchboard/bricks/__init__.py, switchboard/cli.py, switchboard/node.py, tests_backend/test_node_mode.py, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/local/tasks-completed.md, switchboard/evidence/keyword-registry.json
+- Version: 1.12.7
+- Agent: Codex manager
+- Tool: codex-desktop, apply_patch, python unittest, npm, switchboard cli
+- Read Back: This is only `SWITCH-BRICK-0007`. Build the programmatic keyword registry and generated evidence. Do not ingest a real benchmark set yet. Do not add UI. Existing tags remain candidate evidence only, and human verification is required before smaller-model reuse.
+- Scope Check: Switchboard brics package and generated evidence only. No Control Center keyword/bric UI, no real benchmark data ingestion, no Palimpsest repo, no `.47`, no raw private data, no small-model evidence file, and no simple report evidence file in this bric.
+- Notes:
+  - Added `switchboard.bricks.keywords`.
+  - Added `switchboard brics keywords --project-root <path>`.
+  - Added `switchboard/evidence/keyword-registry.json` generation during node snapshot.
+  - Added empty/healthy behavior for projects without keyword entries.
+  - Added pure helper exports for future brics, but did not generate small-model or report evidence in this bric.
+- Brick Entries:
+  - switchboard-brics-keyword-registry | benchmark-transfer | programmatic | done | current task | build small-model keyword export next
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/keywords.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/__init__.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/cli.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/node.py
+  - test | file | /Users/p/Desktop/dashboard/tests_backend/test_node_mode.py
+  - test | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts
+  - evidence | file | /Users/p/Desktop/dashboard/switchboard/evidence/keyword-registry.json
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+- Runtime:
+  - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
+  - run_command_hint: switchboard brics keywords --project-root /Users/p/Desktop/dashboard
+  - monitoring_mode: generated evidence verification

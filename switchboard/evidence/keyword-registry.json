@@ -1,0 +1,32 @@
+{
+  "generated": "2026-05-25T12:30:48Z",
+  "schema_version": "switchboard-keyword-registry-v0",
+  "tool": {
+    "name": "switchboard-brics-keyword-registry",
+    "package": "switchboard.bricks.keywords",
+    "type": "programmatic_python_module"
+  },
+  "project_root": "/Users/p/Desktop/dashboard",
+  "source": "benchmark keyword fixture entries; no real benchmark dataset ingested",
+  "privacy": {
+    "classification": "git_safe_metadata",
+    "raw_expensive_agent_reasoning": "excluded",
+    "raw_private_payloads": "excluded",
+    "existing_tags": "candidate_evidence_only"
+  },
+  "summary": {
+    "keyword_count": 0,
+    "bucket_count": 0,
+    "similar_bucket_count": 0,
+    "pending_count": 0,
+    "active_count": 0,
+    "human_verified_count": 0,
+    "rejected_count": 0
+  },
+  "id_formats": {
+    "keyword_id": "kw_<slug>_<4_digit_serial>",
+    "bucket_id": "bucket_<slug>_<4_digit_serial>"
+  },
+  "keywords": [],
+  "buckets": []
+}

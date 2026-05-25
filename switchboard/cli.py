@@ -11,7 +11,7 @@ from pathlib import Path
 import typer
 
 from .collectors import CollectionCoordinator
-from .bricks import build_brick_registry
+from .bricks import build_brick_registry, build_keyword_registry, normalize_keyword_entries
 from .config import ROOT_DIR, get_settings
 from .defaults import DEFAULT_NODE_PORT
 from .manifests import ManifestStore
@@ -229,6 +229,25 @@ def bricks_registry(
     if write:
         paths["brick_registry"].parent.mkdir(parents=True, exist_ok=True)
         paths["brick_registry"].write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    typer.echo(json.dumps(payload, indent=2))
+
+
+@bricks_app.command("keywords")
+def brics_keywords(
+    project_root: str = typer.Option(..., "--project-root"),
+    input_file: str | None = typer.Option(None, "--input"),
+    write: bool = typer.Option(False, "--write/--no-write"),
+) -> None:
+    root = Path(project_root).resolve()
+    paths = node_paths(root)
+    lines: list[str] = []
+    if input_file:
+        input_path = Path(input_file).expanduser().resolve()
+        lines = input_path.read_text(encoding="utf-8").splitlines()
+    payload = build_keyword_registry(root, normalize_keyword_entries(lines))
+    if write:
+        paths["keyword_registry"].parent.mkdir(parents=True, exist_ok=True)
+        paths["keyword_registry"].write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     typer.echo(json.dumps(payload, indent=2))
 
 

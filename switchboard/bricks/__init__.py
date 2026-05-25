@@ -10,6 +10,14 @@ from .registry import (
     build_brick_registry,
     normalize_brick_lines,
 )
+from .keywords import (
+    KEYWORD_ENTRY_COLUMNS,
+    KEYWORD_REGISTRY_SCHEMA,
+    build_keyword_registry,
+    export_simple_keyword_report,
+    export_small_model_packet,
+    normalize_keyword_entries,
+)
 
 __all__ = [
     "BRICK_CONTRACT",
@@ -20,4 +28,10 @@ __all__ = [
     "SUITE_BRICK_RULES",
     "build_brick_registry",
     "normalize_brick_lines",
+    "KEYWORD_ENTRY_COLUMNS",
+    "KEYWORD_REGISTRY_SCHEMA",
+    "build_keyword_registry",
+    "export_simple_keyword_report",
+    "export_small_model_packet",
+    "normalize_keyword_entries",
 ]

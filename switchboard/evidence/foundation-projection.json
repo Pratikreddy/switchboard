@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T08:01:22+00:00",
+  "generated": "2026-05-25T12:20:46+00:00",
   "schema_version": "switchboard-pass1-foundation-v0",
   "privacy": {
     "classification": "git_safe_metadata",
@@ -18,7 +18,7 @@
     ]
   },
   "line_noise": {
-    "generated": "2026-05-25T08:01:22+00:00",
+    "generated": "2026-05-25T12:30:47+00:00",
     "schema_version": "line-noise-v0",
     "taxonomy": [
       "active_source",
@@ -33,17 +33,17 @@
       "docs",
       "harness_adapters"
     ],
-    "total_lines": 64156,
-    "active_source_lines": 26364,
-    "noise_line_count": 37792,
-    "active_source_ratio": 0.4109,
-    "noise_ratio": 0.5891,
+    "total_lines": 64666,
+    "active_source_lines": 26414,
+    "noise_line_count": 38252,
+    "active_source_ratio": 0.4085,
+    "noise_ratio": 0.5915,
     "tracked_file_count": 132,
     "classified_category_count": 11,
     "top_files": [
       {
         "path": "switchboard/evidence/completed-tasks.json",
-        "lines": 7487,
+        "lines": 7673,
         "classification": "generated_evidence"
       },
       {
@@ -58,7 +58,7 @@
       },
       {
         "path": "switchboard/evidence/scope.snapshot.json",
-        "lines": 5830,
+        "lines": 5959,
         "classification": "generated_evidence"
       },
       {
@@ -78,12 +78,12 @@
       },
       {
         "path": "switchboard/node.py",
-        "lines": 2291,
+        "lines": 2308,
         "classification": "active_source"
       },
       {
         "path": "switchboard/local/tasks-completed.md",
-        "lines": 1809,
+        "lines": 1851,
         "classification": "docs"
       },
       {
@@ -95,15 +95,15 @@
     "categories": {
       "active_source": {
         "file_count": 62,
-        "line_count": 26364
+        "line_count": 26414
       },
       "generated_evidence": {
         "file_count": 18,
-        "line_count": 15445
+        "line_count": 15764
       },
       "manifest_data": {
         "file_count": 10,
-        "line_count": 8503
+        "line_count": 8508
       },
       "runtime_cache": {
         "file_count": 0,
@@ -127,11 +127,11 @@
       },
       "tests": {
         "file_count": 15,
-        "line_count": 5242
+        "line_count": 5295
       },
       "docs": {
         "file_count": 23,
-        "line_count": 4711
+        "line_count": 4794
       },
       "harness_adapters": {
         "file_count": 2,
@@ -169,7 +169,7 @@
     ]
   },
   "production_usage": {
-    "generated": "2026-05-25T08:01:22+00:00",
+    "generated": "2026-05-25T12:20:46+00:00",
     "schema_version": "production-usage-v0",
     "privacy": {
       "classification": "git_safe_metadata",
@@ -198,12 +198,12 @@
       "tokens"
     ],
     "summary": {
-      "model": 38,
-      "tool": 240,
+      "model": 39,
+      "tool": 246,
       "api": 15,
       "runtime": 19,
       "storage": 247,
-      "manual": 253,
+      "manual": 259,
       "human_ui": 2,
       "tokens": 0
     },
@@ -215,8 +215,8 @@
         "source_kind": "ledger_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 253,
-        "latest_at": "2026-05-25T13:17:23+05:30",
+        "count": 259,
+        "latest_at": "2026-05-25T17:26:18+05:30",
         "token_count": null,
         "labels": [],
         "private_payload": "excluded",
@@ -229,8 +229,8 @@
         "source_kind": "ledger_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 240,
-        "latest_at": "2026-05-25T13:17:23+05:30",
+        "count": 246,
+        "latest_at": "2026-05-25T17:26:18+05:30",
         "token_count": null,
         "labels": [
           "codex-cli",
@@ -254,8 +254,8 @@
         "source_kind": "derived_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 38,
-        "latest_at": "2026-05-25T13:17:23+05:30",
+        "count": 39,
+        "latest_at": "2026-05-25T17:26:18+05:30",
         "token_count": null,
         "labels": [],
         "private_payload": "excluded",
@@ -351,17 +351,17 @@
     ]
   },
   "agent_handoff_quality": {
-    "generated": "2026-05-25T08:01:22+00:00",
+    "generated": "2026-05-25T12:20:46+00:00",
     "schema_version": "agent-handoff-quality-v0",
     "source": "task_ledgers",
-    "task_count": 253,
-    "handoff_tag_count": 127,
-    "with_read_back": 240,
-    "with_scope_check": 240,
-    "with_changed_paths": 253,
-    "with_agent": 240,
-    "with_tool": 240,
-    "with_verification_hint": 70,
+    "task_count": 259,
+    "handoff_tag_count": 129,
+    "with_read_back": 246,
+    "with_scope_check": 246,
+    "with_changed_paths": 259,
+    "with_agent": 246,
+    "with_tool": 246,
+    "with_verification_hint": 72,
     "quality_score": 96,
     "missing": {
       "read_back": 13,
@@ -371,6 +371,72 @@
       "tool": 13
     },
     "latest_records": [
+      {
+        "service_id": "switch",
+        "timestamp": "2026-05-25T17:26:18+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": true
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-25T14:14:30+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-25T13:52:20+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-25T13:37:50+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-25T13:34:56+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": true
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-25T13:33:20+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": false
+      },
       {
         "service_id": "agent-ops",
         "timestamp": "2026-05-25T13:17:23+05:30",
@@ -392,72 +458,6 @@
         "has_tool": true,
         "has_handoff_tag": false,
         "has_verification_hint": false
-      },
-      {
-        "service_id": "switch",
-        "timestamp": "2026-05-25T13:11:23+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:08:54+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": true
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T13:05:15+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T12:58:14+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T12:50:00+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": true
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-25T12:49:20+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": false
       }
     ],
     "privacy": {
@@ -478,10 +478,10 @@
     }
   },
   "docs_relevance": {
-    "generated": "2026-05-25T08:01:22+00:00",
+    "generated": "2026-05-25T12:20:46+00:00",
     "schema_version": "docs-relevance-v0",
     "source": "switchboard/evidence/doc-index.json",
-    "latest_task_at": "2026-05-25T13:17:23+05:30",
+    "latest_task_at": "2026-05-25T17:26:18+05:30",
     "doc_count": 8,
     "enabled_count": 5,
     "current_count": 4,
@@ -515,8 +515,8 @@
         "enabled": false,
         "generated_at": "",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 47,
-        "latest_contributor_at": "2026-05-25T13:11:23+05:30",
+        "contributor_count": 48,
+        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
         "lifecycle_state": "disabled",
         "memory_role": "disabled_root_doc"
       },
@@ -524,10 +524,10 @@
         "doc_id": "handoff",
         "path": "switchboard/local/control-center-handoff.md",
         "enabled": true,
-        "generated_at": "2026-05-25T08:01:22+00:00",
+        "generated_at": "2026-05-25T12:20:46+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 40,
-        "latest_contributor_at": "2026-05-25T13:11:23+05:30",
+        "contributor_count": 41,
+        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
         "lifecycle_state": "current",
         "memory_role": "project_local_memory"
       },
@@ -535,7 +535,7 @@
         "doc_id": "runbook",
         "path": "switchboard/local/runbook.md",
         "enabled": true,
-        "generated_at": "2026-05-25T08:01:22+00:00",
+        "generated_at": "2026-05-25T12:20:46+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 0,
         "latest_contributor_at": "",
@@ -546,7 +546,7 @@
         "doc_id": "approach_history",
         "path": "switchboard/local/approach-history.md",
         "enabled": true,
-        "generated_at": "2026-05-25T08:01:22+00:00",
+        "generated_at": "2026-05-25T12:20:46+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 5,
         "latest_contributor_at": "2026-05-15T05:45:53+00:00",
@@ -557,10 +557,10 @@
         "doc_id": "doc_index_md",
         "path": "switchboard/local/doc-index.md",
         "enabled": true,
-        "generated_at": "2026-05-25T08:01:22+00:00",
+        "generated_at": "2026-05-25T12:20:46+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 47,
-        "latest_contributor_at": "2026-05-25T13:11:23+05:30",
+        "contributor_count": 48,
+        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
         "lifecycle_state": "current",
         "memory_role": "project_local_memory"
       },
@@ -568,10 +568,10 @@
         "doc_id": "doc_index_json",
         "path": "switchboard/evidence/doc-index.json",
         "enabled": true,
-        "generated_at": "2026-05-25T08:01:22+00:00",
+        "generated_at": "2026-05-25T12:20:46+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 47,
-        "latest_contributor_at": "2026-05-25T13:11:23+05:30",
+        "contributor_count": 48,
+        "latest_contributor_at": "2026-05-25T17:26:18+05:30",
         "lifecycle_state": "current",
         "memory_role": "derived_git_safe_projection"
       }
@@ -594,7 +594,7 @@
     }
   },
   "harness_source_map": {
-    "generated": "2026-05-25T08:01:22+00:00",
+    "generated": "2026-05-25T12:30:47+00:00",
     "canonical_source": "switchboard/core/agent-contract.md",
     "canonical_exists": true,
     "canonical_line_count": 62,
@@ -618,7 +618,7 @@
         "points_to": "switchboard/core/agent-contract.md",
         "contract_pointer_status": "canonical",
         "injected_context_source": "switchboard/core/agent-contract.md",
-        "last_generated_at": "2026-05-25T08:01:22+00:00",
+        "last_generated_at": "2026-05-25T12:20:46+00:00",
         "warnings": []
       },
       {
@@ -676,7 +676,7 @@
     ]
   },
   "suite_boundaries": {
-    "generated": "2026-05-25T08:01:22+00:00",
+    "generated": "2026-05-25T12:20:46+00:00",
     "schema_version": "suite-boundaries-v0",
     "source": "manifests_and_manager_rules",
     "suites": [

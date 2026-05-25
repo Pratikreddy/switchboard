@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .bricks import BENCHMARK_KEYWORD_CONTRACT, BENCHMARK_KEYWORD_RULES, SUITE_BRICK_RULES, build_brick_registry, normalize_brick_lines
+from .bricks import (
+    BENCHMARK_KEYWORD_CONTRACT,
+    BENCHMARK_KEYWORD_RULES,
+    SUITE_BRICK_RULES,
+    build_brick_registry,
+    build_keyword_registry,
+    normalize_brick_lines,
+)
 from .config import ROOT_DIR
 from .defaults import DEFAULT_NODE_PORT
 
@@ -86,6 +93,7 @@ def node_paths(project_root: Path) -> dict[str, Path]:
         "repo_safety_history": root / EVIDENCE_DIR_NAME / "repo-safety-history.json",
         "pull_bundle_history": root / EVIDENCE_DIR_NAME / "pull-bundle-history.json",
         "brick_registry": root / EVIDENCE_DIR_NAME / "brick-registry.json",
+        "keyword_registry": root / EVIDENCE_DIR_NAME / "keyword-registry.json",
         "scope_snapshot": root / EVIDENCE_DIR_NAME / "scope.snapshot.json",
         "update_gate": root / EVIDENCE_DIR_NAME / "update-gate.json",
         "runtime": root / "runtime",
@@ -1268,6 +1276,7 @@ def _manifest_payload(
             "repo_safety_history": str(paths["repo_safety_history"].relative_to(project_root)),
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
             "brick_registry": str(paths["brick_registry"].relative_to(project_root)),
+            "keyword_registry": str(paths["keyword_registry"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
         },
@@ -1823,6 +1832,8 @@ def install_node(
         _write_json(paths["pull_bundle_history"], {"generated": "", "bundles": []})
     if not paths["brick_registry"].exists():
         _write_json(paths["brick_registry"], {"generated": "", "schema_version": "switchboard-brick-registry-v0", "bricks": []})
+    if not paths["keyword_registry"].exists():
+        _write_json(paths["keyword_registry"], build_keyword_registry(project_root, []))
     if not paths["scope_snapshot"].exists():
         _write_json(paths["scope_snapshot"], _evidence_defaults(service_id, project_root, manifest))
     if not paths["update_gate"].exists():
@@ -1914,6 +1925,7 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
             "repo_safety_history": str(paths["repo_safety_history"].relative_to(project_root)),
             "pull_bundle_history": str(paths["pull_bundle_history"].relative_to(project_root)),
             "brick_registry": str(paths["brick_registry"].relative_to(project_root)),
+            "keyword_registry": str(paths["keyword_registry"].relative_to(project_root)),
             "scope_snapshot": str(paths["scope_snapshot"].relative_to(project_root)),
             "update_gate": str(paths["update_gate"].relative_to(project_root)),
             "foundation_projection": str((paths["node_root"] / "evidence" / "foundation-projection.json").relative_to(project_root)),
@@ -2080,7 +2092,9 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
     _write_json(paths["manifest"], manifest)
     foundation_projection = _snapshot_foundation_projection(project_root)
     brick_registry = build_brick_registry(project_root, manifest["service_id"], tasks, foundation_projection)
+    keyword_registry = build_keyword_registry(project_root, [])
     _write_json(paths["brick_registry"], brick_registry)
+    _write_json(paths["keyword_registry"], keyword_registry)
     return {
         "manifest": manifest,
         "tasks": tasks,
@@ -2088,6 +2102,7 @@ def snapshot_node(project_root: str | Path) -> dict[str, Any]:
         "doc_index": doc_index,
         "foundation_projection": foundation_projection,
         "brick_registry": brick_registry,
+        "keyword_registry": keyword_registry,
     }
 
 
@@ -2178,6 +2193,7 @@ def verify_node_update(project_root: str | Path, write: bool = True) -> dict[str
         ("manifest_exists", paths["manifest"]),
         ("completed_tasks_json_exists", paths["completed_tasks_json"]),
         ("brick_registry_json_exists", paths["brick_registry"]),
+        ("keyword_registry_json_exists", paths["keyword_registry"]),
         ("scope_snapshot_exists", paths["scope_snapshot"]),
     ):
         add_check(check_id, path.exists(), f"{path.relative_to(project_root)} exists.")
@@ -2190,6 +2206,7 @@ def verify_node_update(project_root: str | Path, write: bool = True) -> dict[str
             ("manifest_fresh", paths["manifest"], "updated_at"),
             ("completed_tasks_json_fresh", paths["completed_tasks_json"], "generated"),
             ("brick_registry_json_fresh", paths["brick_registry"], "generated"),
+            ("keyword_registry_json_fresh", paths["keyword_registry"], "generated"),
             ("scope_snapshot_fresh", paths["scope_snapshot"], "generated"),
         )
         for check_id, path, field in freshness_sources:

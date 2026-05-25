@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T08:01:22+00:00",
+  "generated": "2026-05-25T12:20:46+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -13,21 +13,14 @@
     {
       "kind": "code",
       "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/bricks/keywords.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/switchboard/bricks/__init__.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/brics/__init__.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -42,13 +35,6 @@
       "kind": "code",
       "path_type": "file",
       "path": "/Users/p/Desktop/dashboard/switchboard/node.py",
-      "enabled": true,
-      "source": "tasks_completed"
-    },
-    {
-      "kind": "code",
-      "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/models.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -69,7 +55,7 @@
     {
       "kind": "evidence",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/keyword-registry.json",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -5751,6 +5737,149 @@
           "kind": "evidence",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-25T17:26:18+05:30",
+      "title": "Add brics keyword registry core",
+      "summary": "Added the first benchmark keyword registry bric under `switchboard.bricks`. It creates stable keyword IDs, bucket IDs, similar-bucket links, verification status, counts, and empty/healthy generated evidence without ingesting a real benchmark dataset.",
+      "changed_paths": [
+        "switchboard/bricks/keywords.py",
+        "switchboard/bricks/__init__.py",
+        "switchboard/cli.py",
+        "switchboard/node.py",
+        "tests_backend/test_node_mode.py",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "switchboard/local/tasks-completed.md",
+        "switchboard/evidence/keyword-registry.json"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/keywords.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/__init__.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/node.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "evidence",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/keyword-registry.json",
           "enabled": true,
           "source": "tasks_completed"
         },

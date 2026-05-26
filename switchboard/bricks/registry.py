@@ -55,6 +55,10 @@ BRICK_CONTRACT: dict[str, Any] = {
             "input": "exact UserPromptSubmit text, agent, cwd, source metadata",
             "output": "local-private timeline row plus git-safe hash/ref summary",
         },
+        "switchboard.hooks.import_codex_session_prompts": {
+            "input": "~/.codex/sessions/**/*.jsonl or one Codex session file",
+            "output": "local-private timeline rows for Codex Desktop/CLI user prompts when native hooks do not fire",
+        },
     },
 }
 

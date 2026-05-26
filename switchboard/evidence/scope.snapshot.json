@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:34:52+00:00",
+  "generated": "2026-05-26T06:26:31+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "scope_entries": [
@@ -7,6 +7,41 @@
       "kind": "repo",
       "path_type": "dir",
       "path": "/Users/p/Desktop/dashboard",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/hooks/codex_sessions.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/hooks/timeline.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/hooks/context.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/hooks/__init__.py",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -25,9 +60,30 @@
       "source": "tasks_completed"
     },
     {
+      "kind": "test",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
       "kind": "evidence",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/brick-registry.json",
+      "path": "/Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "private-db",
+      "path_type": "file",
+      "path": "/Users/p/.agent-ops/private/hooks/timeline.sqlite",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "local-source",
+      "path_type": "file",
+      "path": "/Users/p/.codex/sessions/2026/05/20/rollout-2026-05-20T09-53-53-019e43a0-3642-7093-a235-8577c677df26.jsonl",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -41,14 +97,35 @@
     {
       "kind": "doc",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.md",
+      "path": "/Users/p/Desktop/dashboard/README.md",
       "enabled": true,
       "source": "tasks_completed"
     },
     {
-      "kind": "doc",
+      "kind": "config",
       "path_type": "file",
-      "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.json",
+      "path": "/Users/p/Desktop/dashboard/package.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "config",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/package-lock.json",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "config",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/pyproject.toml",
+      "enabled": true,
+      "source": "tasks_completed"
+    },
+    {
+      "kind": "code",
+      "path_type": "file",
+      "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
       "enabled": true,
       "source": "tasks_completed"
     },
@@ -6185,6 +6262,219 @@
           "kind": "doc",
           "path_type": "file",
           "path": "/Users/p/Desktop/dashboard/switchboard/core/agent-contract.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-26T10:15:00+05:30",
+      "title": "Add Codex session prompt importer fallback",
+      "summary": "Added a Codex-first fallback importer that reads Codex Desktop/CLI session JSONL user prompts into the local-private Switchboard hook timeline when project hooks do not fire.",
+      "changed_paths": [
+        "switchboard/hooks/codex_sessions.py",
+        "switchboard/hooks/timeline.py",
+        "switchboard/hooks/context.py",
+        "switchboard/hooks/__init__.py",
+        "switchboard/cli.py",
+        "switchboard/bricks/registry.py",
+        "tests_backend/test_node_mode.py",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "switchboard/evidence/hooks-registry.json",
+        "switchboard/local/tasks-completed.md",
+        "package.json",
+        "package-lock.json",
+        "pyproject.toml",
+        "switchboard/__init__.py",
+        "README.md"
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/codex_sessions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/timeline.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/context.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/__init__.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "evidence",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "private-db",
+          "path_type": "file",
+          "path": "/Users/p/.agent-ops/private/hooks/timeline.sqlite",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "local-source",
+          "path_type": "file",
+          "path": "/Users/p/.codex/sessions/2026/05/20/rollout-2026-05-20T09-53-53-019e43a0-3642-7093-a235-8577c677df26.jsonl",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/README.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package-lock.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/pyproject.toml",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
           "enabled": true,
           "source": "tasks_completed"
         },

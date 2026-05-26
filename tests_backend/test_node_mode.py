@@ -22,6 +22,9 @@ from switchboard.hooks import (
     build_user_prompt_response,
     capture_user_prompt,
     discover_existing_hooks,
+    import_codex_session_prompts,
+    iter_codex_session_user_prompts,
+    read_timeline_summary,
 )
 from switchboard.node import (
     init_manager_node,
@@ -371,6 +374,67 @@ class NodeModeTests(unittest.TestCase):
             self.assertIn("No project-bric UI", response["hookSpecificOutput"]["additionalContext"])
             self.assertEqual(response["switchboard"]["raw_prompt_included"], False)
             self.assertTrue(response["switchboard"]["source_refs"][0].startswith("timeline://prompt/"))
+
+    def test_codex_session_import_reads_user_prompts_into_local_timeline(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            session_file = root / "rollout.jsonl"
+            db_path = root / "timeline.sqlite"
+            session_file.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "timestamp": "2026-05-26T04:00:00.000Z",
+                                "type": "session_meta",
+                                "payload": {
+                                    "id": "session-1",
+                                    "cwd": "/tmp/project",
+                                    "originator": "Codex Desktop",
+                                },
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "timestamp": "2026-05-26T04:01:00.000Z",
+                                "type": "response_item",
+                                "payload": {
+                                    "type": "message",
+                                    "role": "user",
+                                    "content": [{"type": "input_text", "text": "record this exact codex prompt"}],
+                                },
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "timestamp": "2026-05-26T04:01:02.000Z",
+                                "type": "response_item",
+                                "payload": {"type": "message", "role": "assistant", "content": []},
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            prompts = list(iter_codex_session_user_prompts(session_file))
+            self.assertEqual(len(prompts), 1)
+            self.assertEqual(prompts[0]["cwd"], "/tmp/project")
+
+            result = import_codex_session_prompts(project_root=root, session_file=session_file, db_path=db_path)
+            repeat = import_codex_session_prompts(project_root=root, session_file=session_file, db_path=db_path)
+            summary = read_timeline_summary(db_path)
+            serialized = json.dumps(result)
+
+            self.assertEqual(result["imported_count"], 1)
+            self.assertEqual(repeat["imported_count"], 1)
+            self.assertEqual(result["project_root"], str(root.resolve()))
+            self.assertEqual(summary["event_count"], 1)
+            self.assertEqual(summary["source_type_counts"]["codex_session_user_prompt"], 1)
+            self.assertEqual(result["events"][0]["cwd"], "/tmp/project")
+            self.assertNotIn("record this exact codex prompt", serialized)
+            self.assertEqual(result["privacy"]["raw_prompt_output"], "excluded")
 
     def test_memory_query_returns_compact_source_refs_not_raw_records(self) -> None:
         query = build_memory_query(

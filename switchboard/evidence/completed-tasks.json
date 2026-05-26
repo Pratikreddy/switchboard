@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:34:52+00:00",
+  "generated": "2026-05-26T06:26:31+00:00",
   "service_id": "switch",
   "project_root": "/Users/p/Desktop/dashboard",
   "tasks": [
@@ -8087,6 +8087,280 @@
           "status": "done",
           "source_record": "current task",
           "next_action": "keep completed tasks and explicit brics in one registry"
+        }
+      ],
+      "diagram": "",
+      "readme": "",
+      "api": "",
+      "changelog": ""
+    },
+    {
+      "timestamp": "2026-05-26T10:15:00+05:30",
+      "title": "Add Codex session prompt importer fallback",
+      "tags": [
+        "task"
+      ],
+      "version": "1.12.9",
+      "summary": "Added a Codex-first fallback importer that reads Codex Desktop/CLI session JSONL user prompts into the local-private Switchboard hook timeline when project hooks do not fire.",
+      "changed_paths": [
+        "switchboard/hooks/codex_sessions.py",
+        "switchboard/hooks/timeline.py",
+        "switchboard/hooks/context.py",
+        "switchboard/hooks/__init__.py",
+        "switchboard/cli.py",
+        "switchboard/bricks/registry.py",
+        "tests_backend/test_node_mode.py",
+        "tests/main-dashboard-product-sweep-contract.test.ts",
+        "switchboard/evidence/hooks-registry.json",
+        "switchboard/local/tasks-completed.md",
+        "package.json",
+        "package-lock.json",
+        "pyproject.toml",
+        "switchboard/__init__.py",
+        "README.md"
+      ],
+      "task_id": null,
+      "agent": "Codex manager",
+      "tool": "codex-desktop, codex-cli, switchboard.hooks, sqlite, python unittest",
+      "read_back": "Codex is the active paid suite, so Switchboard should not rely only on Desktop hook execution. It should also import Codex's own session logs deterministically while keeping Claude and Google as later adapters.",
+      "scope_check": "Codex prompt capture/import package only. No Control Center UI, no raw prompt evidence in git, no Claude hook mutation, no Google/Gemini implementation, no GitHub account switching.",
+      "bootstrap_version": "",
+      "notes": [
+        "- New CLI: `switchboard hooks import-codex-sessions --project-root /Users/p/Desktop/dashboard --session-file <path>`.",
+        "- Input source: `~/.codex/sessions/**/*.jsonl` or one explicit Codex session file.",
+        "- Raw prompt text is stored only in `/Users/p/.agent-ops/private/hooks/timeline.sqlite`.",
+        "- Git-safe outputs expose counts, timestamps, hashes, source refs, cwd, and source type only.",
+        "- Imported the live Codex Desktop session file for this thread: latest proof is generated from the private timeline DB, not hand-written prompt text.",
+        "- Timeline proof after import: latest `hooks-registry.json` records total events and `codex_session_user_prompt` counts from the private timeline DB.",
+        "- Proof rows exist for the latest requested prompts by source refs and hash prefixes only; raw prompt text stays in the local-private timeline DB.",
+        "- Existing Claude hook discovered read-only: `~/.claude/settings.json` has a global `Notification` hook pointing to `~/claude-voice-notify.sh`; this was not modified.",
+        "- GitHub account/folder distinction remains separate: personal GitHub and work/Ayotta GitHub must not be mixed by hook or bric work."
+      ],
+      "scope_entries": [
+        {
+          "kind": "repo",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/codex_sessions.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/timeline.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/context.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/hooks/__init__.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/cli.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/bricks/registry.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests_backend/test_node_mode.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "test",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "evidence",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "private-db",
+          "path_type": "file",
+          "path": "/Users/p/.agent-ops/private/hooks/timeline.sqlite",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "local-source",
+          "path_type": "file",
+          "path": "/Users/p/.codex/sessions/2026/05/20/rollout-2026-05-20T09-53-53-019e43a0-3642-7093-a235-8577c677df26.jsonl",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "doc",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/README.md",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/package-lock.json",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "config",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/pyproject.toml",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "code",
+          "path_type": "file",
+          "path": "/Users/p/Desktop/dashboard/switchboard/__init__.py",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.git",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/.venv",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/node_modules",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/dist",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/downloads",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/logs",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/state",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/runtime",
+          "enabled": true,
+          "source": "tasks_completed"
+        },
+        {
+          "kind": "exclude",
+          "path_type": "dir",
+          "path": "/Users/p/Desktop/dashboard/switchboard/static",
+          "enabled": true,
+          "source": "tasks_completed"
+        }
+      ],
+      "runtime": {
+        "expected_ports": [],
+        "healthcheck_command": "switchboard hooks import-codex-sessions --project-root /Users/p/Desktop/dashboard --session-file /Users/p/.codex/sessions/2026/05/20/rollout-2026-05-20T09-53-53-019e43a0-3642-7093-a235-8577c677df26.jsonl",
+        "run_command_hint": "switchboard hooks registry --project-root /Users/p/Desktop/dashboard --write",
+        "monitoring_mode": "manual",
+        "notes": ""
+      },
+      "runtime_services": [],
+      "dependencies": [],
+      "cross_dependencies": [],
+      "brick_entries": [
+        {
+          "brick_id": "suite-bric-codex-session-import",
+          "family": "hooks-memory",
+          "mode": "programmatic",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "use Codex session JSONL as fallback prompt capture"
+        },
+        {
+          "brick_id": "suite-bric-codex-cli-desktop-source",
+          "family": "source-capture",
+          "mode": "programmatic",
+          "status": "done",
+          "source_record": "current task",
+          "next_action": "unify Codex Desktop and CLI prompts in local-private timeline"
+        },
+        {
+          "brick_id": "suite-bric-claude-hook-readonly-discovery",
+          "family": "hooks-memory",
+          "mode": "programmatic",
+          "status": "active",
+          "source_record": "current task",
+          "next_action": "inspect personal Claude hook source later without mutating it"
         }
       ],
       "diagram": "",

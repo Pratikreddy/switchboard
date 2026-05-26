@@ -23,6 +23,7 @@ HOOKS_REGISTRY_SCHEMA = "switchboard-hooks-registry-v0"
 SOURCE_CAPTURE_BRIC = "SUITE-BRIC-SOURCE-0001"
 MISTAKE_PATTERN_BRIC = "SUITE-BRIC-MISTAKE-0001"
 MEMORY_BRIC = "SUITE-BRIC-MEMORY-0001"
+CODEX_SESSION_CAPTURE_BRIC = "SUITE-BRIC-CODEX-0001"
 
 HOOK_BRICS = (
     {
@@ -45,6 +46,13 @@ HOOK_BRICS = (
         "mode": "hybrid",
         "status": "active",
         "summary": "Query approved local sources now; keep the interface stable for Palimpsest/RAG later.",
+    },
+    {
+        "brick_id": CODEX_SESSION_CAPTURE_BRIC,
+        "name": "codex-session-import",
+        "mode": "programmatic",
+        "status": "active",
+        "summary": "Import Codex Desktop/CLI session JSONL user prompts into the same local-private timeline when native hooks do not fire.",
     },
 )
 
@@ -548,6 +556,12 @@ def build_hooks_registry(project_root: Path) -> dict[str, Any]:
                 "hook_event": "UserPromptSubmit",
                 "raw_fields_local_private": ["raw_prompt"],
                 "git_safe_fields": ["timestamp", "hash", "cwd", "agent", "source_type", "related_bric_ids"],
+            },
+            "codex_session_import": {
+                "input": "~/.codex/sessions/**/*.jsonl",
+                "output": "local-private timeline rows with source_type=codex_session_user_prompt",
+                "dedupe": "stable event id from session path, line number, timestamp, and prompt hash",
+                "raw_language": "local_private_refs_only",
             },
             "mistake_patterns": {
                 "inputs": ["MISTAKES.md", "Agent Ops intake rows", "hook event tags"],

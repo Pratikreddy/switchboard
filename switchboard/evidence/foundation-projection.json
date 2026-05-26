@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:34:52+00:00",
+  "generated": "2026-05-26T06:26:31+00:00",
   "schema_version": "switchboard-pass1-foundation-v0",
   "privacy": {
     "classification": "git_safe_metadata",
@@ -18,7 +18,7 @@
     ]
   },
   "line_noise": {
-    "generated": "2026-05-25T19:34:52+00:00",
+    "generated": "2026-05-26T06:26:31+00:00",
     "schema_version": "line-noise-v0",
     "taxonomy": [
       "active_source",
@@ -33,28 +33,28 @@
       "docs",
       "harness_adapters"
     ],
-    "total_lines": 69164,
-    "active_source_lines": 27841,
-    "noise_line_count": 41323,
-    "active_source_ratio": 0.4025,
-    "noise_ratio": 0.5975,
-    "tracked_file_count": 139,
+    "total_lines": 70296,
+    "active_source_lines": 28067,
+    "noise_line_count": 42229,
+    "active_source_ratio": 0.3993,
+    "noise_ratio": 0.6007,
+    "tracked_file_count": 140,
     "classified_category_count": 11,
     "top_files": [
       {
         "path": "switchboard/evidence/completed-tasks.json",
-        "lines": 8098,
+        "lines": 8372,
+        "classification": "generated_evidence"
+      },
+      {
+        "path": "switchboard/evidence/scope.snapshot.json",
+        "lines": 6547,
         "classification": "generated_evidence"
       },
       {
         "path": "switchboard/collectors.py",
         "lines": 6505,
         "classification": "active_source"
-      },
-      {
-        "path": "switchboard/evidence/scope.snapshot.json",
-        "lines": 6257,
-        "classification": "generated_evidence"
       },
       {
         "path": "switchboard/manifests/services.json",
@@ -83,27 +83,27 @@
       },
       {
         "path": "switchboard/evidence/brick-registry.json",
-        "lines": 2043,
+        "lines": 2239,
         "classification": "generated_evidence"
       },
       {
         "path": "switchboard/local/tasks-completed.md",
-        "lines": 1944,
+        "lines": 2001,
         "classification": "docs"
       }
     ],
     "categories": {
       "active_source": {
-        "file_count": 67,
-        "line_count": 27841
+        "file_count": 68,
+        "line_count": 28067
       },
       "generated_evidence": {
         "file_count": 20,
-        "line_count": 18479
+        "line_count": 19254
       },
       "manifest_data": {
         "file_count": 10,
-        "line_count": 8517
+        "line_count": 8520
       },
       "runtime_cache": {
         "file_count": 0,
@@ -127,11 +127,11 @@
       },
       "tests": {
         "file_count": 15,
-        "line_count": 5448
+        "line_count": 5512
       },
       "docs": {
         "file_count": 23,
-        "line_count": 4985
+        "line_count": 5049
       },
       "harness_adapters": {
         "file_count": 2,
@@ -169,7 +169,7 @@
     ]
   },
   "production_usage": {
-    "generated": "2026-05-25T19:34:52+00:00",
+    "generated": "2026-05-26T06:26:31+00:00",
     "schema_version": "production-usage-v0",
     "privacy": {
       "classification": "git_safe_metadata",
@@ -199,11 +199,11 @@
     ],
     "summary": {
       "model": 41,
-      "tool": 255,
+      "tool": 270,
       "api": 15,
       "runtime": 19,
-      "storage": 250,
-      "manual": 268,
+      "storage": 252,
+      "manual": 283,
       "human_ui": 2,
       "tokens": 0
     },
@@ -215,8 +215,8 @@
         "source_kind": "ledger_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 268,
-        "latest_at": "2026-05-26T01:04:45+05:30",
+        "count": 283,
+        "latest_at": "2026-05-26T11:40:17+05:30",
         "token_count": null,
         "labels": [],
         "private_payload": "excluded",
@@ -229,20 +229,20 @@
         "source_kind": "ledger_metadata",
         "service_id": "",
         "status": "observed",
-        "count": 255,
-        "latest_at": "2026-05-26T01:04:45+05:30",
+        "count": 270,
+        "latest_at": "2026-05-26T11:40:17+05:30",
         "token_count": null,
         "labels": [
           "codex-cli",
           "codex-desktop",
+          "codex-desktop-Apple-Notes-osascript-switchboard.hooks-sqlite",
           "codex-desktop-Browser-Chrome-extension-backend",
           "codex-desktop-Chrome-extension",
           "codex-desktop-Chrome-extension-ChatGPT-Extended-Pro-apply_patch",
           "codex-desktop-Chrome-extension-apply_patch",
           "codex-desktop-Chrome-extension-backend",
           "codex-desktop-Chrome-extension-backend-ChatGPT-GPT-5.5-Pro",
-          "codex-desktop-Chrome-extension-backend-ChatGPT-GitHub-connector-",
-          "codex-desktop-Chrome-extension-backend-GitHub-CLI"
+          "codex-desktop-Chrome-extension-backend-ChatGPT-GitHub-connector-"
         ],
         "private_payload": "excluded",
         "notes": "Agent tool names only; no prompts or transcripts."
@@ -255,7 +255,7 @@
         "service_id": "",
         "status": "observed",
         "count": 41,
-        "latest_at": "2026-05-26T01:04:45+05:30",
+        "latest_at": "2026-05-26T11:40:17+05:30",
         "token_count": null,
         "labels": [],
         "private_payload": "excluded",
@@ -306,11 +306,11 @@
         "source_kind": "metadata_summary",
         "service_id": "",
         "status": "observed",
-        "count": 250,
+        "count": 252,
         "latest_at": "",
         "token_count": null,
         "labels": [
-          "pull_bundles:110"
+          "pull_bundles:112"
         ],
         "private_payload": "excluded",
         "notes": "Repo/doc/log scope counts and bundle counts; file lists are excluded."
@@ -351,17 +351,17 @@
     ]
   },
   "agent_handoff_quality": {
-    "generated": "2026-05-25T19:34:52+00:00",
+    "generated": "2026-05-26T06:26:31+00:00",
     "schema_version": "agent-handoff-quality-v0",
     "source": "task_ledgers",
-    "task_count": 268,
-    "handoff_tag_count": 134,
-    "with_read_back": 255,
-    "with_scope_check": 255,
-    "with_changed_paths": 268,
-    "with_agent": 255,
-    "with_tool": 255,
-    "with_verification_hint": 74,
+    "task_count": 283,
+    "handoff_tag_count": 139,
+    "with_read_back": 270,
+    "with_scope_check": 270,
+    "with_changed_paths": 283,
+    "with_agent": 270,
+    "with_tool": 270,
+    "with_verification_hint": 83,
     "quality_score": 96,
     "missing": {
       "read_back": 13,
@@ -372,41 +372,30 @@
     },
     "latest_records": [
       {
-        "service_id": "switch",
-        "timestamp": "2026-05-26T01:04:45+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": false
-      },
-      {
         "service_id": "agent-ops",
-        "timestamp": "2026-05-26T00:42:46+05:30",
+        "timestamp": "2026-05-26T11:40:17+05:30",
         "has_read_back": true,
         "has_scope_check": true,
         "has_changed_paths": true,
         "has_agent": true,
         "has_tool": true,
         "has_handoff_tag": false,
-        "has_verification_hint": false
+        "has_verification_hint": true
       },
       {
-        "service_id": "switch",
-        "timestamp": "2026-05-26T00:26:34+05:30",
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-26T11:13:31+05:30",
         "has_read_back": true,
         "has_scope_check": true,
         "has_changed_paths": true,
         "has_agent": true,
         "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": false
+        "has_handoff_tag": false,
+        "has_verification_hint": true
       },
       {
         "service_id": "agent-ops",
-        "timestamp": "2026-05-26T00:26:34+05:30",
+        "timestamp": "2026-05-26T11:03:31+05:30",
         "has_read_back": true,
         "has_scope_check": true,
         "has_changed_paths": true,
@@ -417,29 +406,7 @@
       },
       {
         "service_id": "agent-ops",
-        "timestamp": "2026-05-26T00:25:35+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": true,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-26T00:22:06+05:30",
-        "has_read_back": true,
-        "has_scope_check": true,
-        "has_changed_paths": true,
-        "has_agent": true,
-        "has_tool": true,
-        "has_handoff_tag": false,
-        "has_verification_hint": false
-      },
-      {
-        "service_id": "agent-ops",
-        "timestamp": "2026-05-26T00:18:26+05:30",
+        "timestamp": "2026-05-26T11:00:11+05:30",
         "has_read_back": true,
         "has_scope_check": true,
         "has_changed_paths": true,
@@ -449,8 +416,30 @@
         "has_verification_hint": true
       },
       {
+        "service_id": "palimpsest",
+        "timestamp": "2026-05-26T10:35:35+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": false,
+        "has_verification_hint": true
+      },
+      {
         "service_id": "agent-ops",
-        "timestamp": "2026-05-25T23:59:27+05:30",
+        "timestamp": "2026-05-26T10:34:51+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": false
+      },
+      {
+        "service_id": "agent-ops",
+        "timestamp": "2026-05-26T10:29:14+05:30",
         "has_read_back": true,
         "has_scope_check": true,
         "has_changed_paths": true,
@@ -458,6 +447,17 @@
         "has_tool": true,
         "has_handoff_tag": true,
         "has_verification_hint": true
+      },
+      {
+        "service_id": "palimpsest",
+        "timestamp": "2026-05-26T10:27:55+05:30",
+        "has_read_back": true,
+        "has_scope_check": true,
+        "has_changed_paths": true,
+        "has_agent": true,
+        "has_tool": true,
+        "has_handoff_tag": true,
+        "has_verification_hint": false
       }
     ],
     "privacy": {
@@ -478,10 +478,10 @@
     }
   },
   "docs_relevance": {
-    "generated": "2026-05-25T19:34:52+00:00",
+    "generated": "2026-05-26T06:26:31+00:00",
     "schema_version": "docs-relevance-v0",
     "source": "switchboard/evidence/doc-index.json",
-    "latest_task_at": "2026-05-26T01:04:45+05:30",
+    "latest_task_at": "2026-05-26T11:40:17+05:30",
     "doc_count": 8,
     "enabled_count": 5,
     "current_count": 4,
@@ -515,8 +515,8 @@
         "enabled": false,
         "generated_at": "",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 50,
-        "latest_contributor_at": "2026-05-26T01:04:45+05:30",
+        "contributor_count": 51,
+        "latest_contributor_at": "2026-05-26T10:15:00+05:30",
         "lifecycle_state": "disabled",
         "memory_role": "disabled_root_doc"
       },
@@ -524,7 +524,7 @@
         "doc_id": "handoff",
         "path": "switchboard/local/control-center-handoff.md",
         "enabled": true,
-        "generated_at": "2026-05-25T19:34:52+00:00",
+        "generated_at": "2026-05-26T06:26:31+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 43,
         "latest_contributor_at": "2026-05-26T01:04:45+05:30",
@@ -535,7 +535,7 @@
         "doc_id": "runbook",
         "path": "switchboard/local/runbook.md",
         "enabled": true,
-        "generated_at": "2026-05-25T19:34:52+00:00",
+        "generated_at": "2026-05-26T06:26:31+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 0,
         "latest_contributor_at": "",
@@ -546,7 +546,7 @@
         "doc_id": "approach_history",
         "path": "switchboard/local/approach-history.md",
         "enabled": true,
-        "generated_at": "2026-05-25T19:34:52+00:00",
+        "generated_at": "2026-05-26T06:26:31+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
         "contributor_count": 5,
         "latest_contributor_at": "2026-05-15T05:45:53+00:00",
@@ -557,10 +557,10 @@
         "doc_id": "doc_index_md",
         "path": "switchboard/local/doc-index.md",
         "enabled": true,
-        "generated_at": "2026-05-25T19:34:52+00:00",
+        "generated_at": "2026-05-26T06:26:31+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 50,
-        "latest_contributor_at": "2026-05-26T01:04:45+05:30",
+        "contributor_count": 51,
+        "latest_contributor_at": "2026-05-26T10:15:00+05:30",
         "lifecycle_state": "current",
         "memory_role": "project_local_memory"
       },
@@ -568,10 +568,10 @@
         "doc_id": "doc_index_json",
         "path": "switchboard/evidence/doc-index.json",
         "enabled": true,
-        "generated_at": "2026-05-25T19:34:52+00:00",
+        "generated_at": "2026-05-26T06:26:31+00:00",
         "generated_from": "switchboard/local/tasks-completed.md",
-        "contributor_count": 50,
-        "latest_contributor_at": "2026-05-26T01:04:45+05:30",
+        "contributor_count": 51,
+        "latest_contributor_at": "2026-05-26T10:15:00+05:30",
         "lifecycle_state": "current",
         "memory_role": "derived_git_safe_projection"
       }
@@ -594,7 +594,7 @@
     }
   },
   "harness_source_map": {
-    "generated": "2026-05-25T19:34:52+00:00",
+    "generated": "2026-05-26T06:26:31+00:00",
     "canonical_source": "switchboard/core/agent-contract.md",
     "canonical_exists": true,
     "canonical_line_count": 65,
@@ -618,7 +618,7 @@
         "points_to": "switchboard/core/agent-contract.md",
         "contract_pointer_status": "canonical",
         "injected_context_source": "switchboard/core/agent-contract.md",
-        "last_generated_at": "2026-05-25T19:34:52+00:00",
+        "last_generated_at": "2026-05-26T06:26:31+00:00",
         "warnings": []
       },
       {
@@ -676,7 +676,7 @@
     ]
   },
   "suite_boundaries": {
-    "generated": "2026-05-25T19:34:52+00:00",
+    "generated": "2026-05-26T06:26:31+00:00",
     "schema_version": "suite-boundaries-v0",
     "source": "manifests_and_manager_rules",
     "suites": [

@@ -1942,3 +1942,60 @@ Example format:
   - healthcheck_command: git diff --check && .venv/bin/python -m unittest discover tests_backend && npm test && npm run build && npm run check:release-static
   - run_command_hint: switchboard brics registry --project-root /Users/p/Desktop/dashboard
   - monitoring_mode: task-derived bric registry verification
+
+## 2026-05-26T10:15:00+05:30 | Add Codex session prompt importer fallback
+
+- Tags: task, hooks, source-capture, bric
+- Summary: Added a Codex-first fallback importer that reads Codex Desktop/CLI session JSONL user prompts into the local-private Switchboard hook timeline when project hooks do not fire.
+- Changed Paths: switchboard/hooks/codex_sessions.py, switchboard/hooks/timeline.py, switchboard/hooks/context.py, switchboard/hooks/__init__.py, switchboard/cli.py, switchboard/bricks/registry.py, tests_backend/test_node_mode.py, tests/main-dashboard-product-sweep-contract.test.ts, switchboard/evidence/hooks-registry.json, switchboard/local/tasks-completed.md, package.json, package-lock.json, pyproject.toml, switchboard/__init__.py, README.md
+- Version: 1.12.9
+- Agent: Codex manager
+- Tool: codex-desktop, codex-cli, switchboard.hooks, sqlite, python unittest
+- Read Back: Codex is the active paid suite, so Switchboard should not rely only on Desktop hook execution. It should also import Codex's own session logs deterministically while keeping Claude and Google as later adapters.
+- Scope Check: Codex prompt capture/import package only. No Control Center UI, no raw prompt evidence in git, no Claude hook mutation, no Google/Gemini implementation, no GitHub account switching.
+- Notes:
+  - New CLI: `switchboard hooks import-codex-sessions --project-root /Users/p/Desktop/dashboard --session-file <path>`.
+  - Input source: `~/.codex/sessions/**/*.jsonl` or one explicit Codex session file.
+  - Raw prompt text is stored only in `/Users/p/.agent-ops/private/hooks/timeline.sqlite`.
+  - Git-safe outputs expose counts, timestamps, hashes, source refs, cwd, and source type only.
+  - Imported the live Codex Desktop session file for this thread: latest proof is generated from the private timeline DB, not hand-written prompt text.
+  - Timeline proof after import: latest `hooks-registry.json` records total events and `codex_session_user_prompt` counts from the private timeline DB.
+  - Proof rows exist for the latest requested prompts by source refs and hash prefixes only; raw prompt text stays in the local-private timeline DB.
+  - Existing Claude hook discovered read-only: `~/.claude/settings.json` has a global `Notification` hook pointing to `~/claude-voice-notify.sh`; this was not modified.
+  - GitHub account/folder distinction remains separate: personal GitHub and work/Ayotta GitHub must not be mixed by hook or bric work.
+- Brick Entries:
+  - suite-bric-codex-session-import | hooks-memory | programmatic | done | current task | use Codex session JSONL as fallback prompt capture
+  - suite-bric-codex-cli-desktop-source | source-capture | programmatic | done | current task | unify Codex Desktop and CLI prompts in local-private timeline
+  - suite-bric-claude-hook-readonly-discovery | hooks-memory | programmatic | active | current task | inspect personal Claude hook source later without mutating it
+- Scope Entries:
+  - repo | dir | /Users/p/Desktop/dashboard
+  - code | file | /Users/p/Desktop/dashboard/switchboard/hooks/codex_sessions.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/hooks/timeline.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/hooks/context.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/hooks/__init__.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/cli.py
+  - code | file | /Users/p/Desktop/dashboard/switchboard/bricks/registry.py
+  - test | file | /Users/p/Desktop/dashboard/tests_backend/test_node_mode.py
+  - test | file | /Users/p/Desktop/dashboard/tests/main-dashboard-product-sweep-contract.test.ts
+  - evidence | file | /Users/p/Desktop/dashboard/switchboard/evidence/hooks-registry.json
+  - private-db | file | /Users/p/.agent-ops/private/hooks/timeline.sqlite
+  - local-source | file | /Users/p/.codex/sessions/2026/05/20/rollout-2026-05-20T09-53-53-019e43a0-3642-7093-a235-8577c677df26.jsonl
+  - doc | file | /Users/p/Desktop/dashboard/switchboard/local/tasks-completed.md
+  - doc | file | /Users/p/Desktop/dashboard/README.md
+  - config | file | /Users/p/Desktop/dashboard/package.json
+  - config | file | /Users/p/Desktop/dashboard/package-lock.json
+  - config | file | /Users/p/Desktop/dashboard/pyproject.toml
+  - code | file | /Users/p/Desktop/dashboard/switchboard/__init__.py
+  - exclude | dir | /Users/p/Desktop/dashboard/.git
+  - exclude | dir | /Users/p/Desktop/dashboard/.venv
+  - exclude | dir | /Users/p/Desktop/dashboard/node_modules
+  - exclude | dir | /Users/p/Desktop/dashboard/dist
+  - exclude | dir | /Users/p/Desktop/dashboard/downloads
+  - exclude | dir | /Users/p/Desktop/dashboard/logs
+  - exclude | dir | /Users/p/Desktop/dashboard/state
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/runtime
+  - exclude | dir | /Users/p/Desktop/dashboard/switchboard/static
+- Runtime:
+  - healthcheck_command: switchboard hooks import-codex-sessions --project-root /Users/p/Desktop/dashboard --session-file /Users/p/.codex/sessions/2026/05/20/rollout-2026-05-20T09-53-53-019e43a0-3642-7093-a235-8577c677df26.jsonl
+  - run_command_hint: switchboard hooks registry --project-root /Users/p/Desktop/dashboard --write
+  - monitoring_mode: codex session prompt capture fallback

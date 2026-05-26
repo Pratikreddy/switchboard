@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T19:34:54Z",
+  "generated": "2026-05-26T06:26:33Z",
   "schema_version": "switchboard-hooks-registry-v0",
   "tool": {
     "name": "switchboard-hooks",
@@ -15,11 +15,15 @@
     "db_location": "~/.agent-ops/private/hooks/timeline.sqlite",
     "raw_prompt_text": "local_private_only",
     "git_safe_summary_only": true,
-    "db_exists": false,
-    "event_count": 0,
-    "context_packet_count": 0,
-    "last_event_at": "",
-    "last_context_packet_at": ""
+    "db_exists": true,
+    "event_count": 2983,
+    "context_packet_count": 1,
+    "last_event_at": "2026-05-26T06:12:02.487Z",
+    "last_context_packet_at": "2026-05-26T04:21:40Z",
+    "source_type_counts": {
+      "codex_session_user_prompt": 2982,
+      "user_prompt": 1
+    }
   },
   "brics": [
     {
@@ -42,11 +46,18 @@
       "mode": "hybrid",
       "status": "active",
       "summary": "Query approved local sources now; keep the interface stable for Palimpsest/RAG later."
+    },
+    {
+      "brick_id": "SUITE-BRIC-CODEX-0001",
+      "name": "codex-session-import",
+      "mode": "programmatic",
+      "status": "active",
+      "summary": "Import Codex Desktop/CLI session JSONL user prompts into the same local-private timeline when native hooks do not fire."
     }
   ],
   "existing_hooks": {
     "schema_version": "switchboard-existing-hooks-v0",
-    "generated": "2026-05-25T19:34:54Z",
+    "generated": "2026-05-26T06:26:33Z",
     "sources_checked": [
       "~/.claude/settings.json",
       "~/.claude/settings.local.json",
@@ -126,6 +137,12 @@
         "source_type",
         "related_bric_ids"
       ]
+    },
+    "codex_session_import": {
+      "input": "~/.codex/sessions/**/*.jsonl",
+      "output": "local-private timeline rows with source_type=codex_session_user_prompt",
+      "dedupe": "stable event id from session path, line number, timestamp, and prompt hash",
+      "raw_language": "local_private_refs_only"
     },
     "mistake_patterns": {
       "inputs": [

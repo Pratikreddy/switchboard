@@ -21,6 +21,7 @@ from .hooks import (
     build_user_prompt_response,
     capture_user_prompt,
     discover_existing_hooks,
+    import_codex_session_prompts,
 )
 from .manifests import ManifestStore
 from .models import CollectRequest, GitHubBackupRequest
@@ -406,6 +407,22 @@ def hooks_registry(
         paths = node_paths(root)
         paths["hooks_registry"].parent.mkdir(parents=True, exist_ok=True)
         paths["hooks_registry"].write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    typer.echo(json.dumps(payload, indent=2))
+
+
+@hooks_app.command("import-codex-sessions")
+def hooks_import_codex_sessions(
+    project_root: str = typer.Option("", "--project-root"),
+    codex_home: str = typer.Option("", "--codex-home"),
+    session_file: str = typer.Option("", "--session-file"),
+    limit: int = typer.Option(0, "--limit"),
+) -> None:
+    payload = import_codex_session_prompts(
+        project_root=project_root or None,
+        codex_home=codex_home or None,
+        session_file=session_file or None,
+        limit=limit,
+    )
     typer.echo(json.dumps(payload, indent=2))
 
 

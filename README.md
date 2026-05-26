@@ -6,7 +6,14 @@ Switchboard is a project-first control center for tracking services, servers, pr
 switchboard/local/tasks-completed.md
 ```
 
-Current release: `1.12.8`
+Current release: `1.12.9`
+
+## What 1.12.9 Adds
+
+- Adds a Codex-first session importer for Codex Desktop and Codex CLI session JSONL.
+- Imports real Codex user prompts from `~/.codex/sessions/**/*.jsonl` into the same local-private timeline DB when native project hooks do not fire.
+- De-duplicates imported prompts by session path, line number, timestamp, and prompt hash.
+- Keeps raw prompt text local-private; generated evidence exposes only counts, hashes, and source refs.
 
 ## What 1.12.8 Adds
 

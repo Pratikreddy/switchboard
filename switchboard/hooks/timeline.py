@@ -77,6 +77,16 @@ def _json_list(value: list[str] | None) -> str:
     return json.dumps(value or [], separators=(",", ":"))
 
 
+def _event_id_timestamp(value: str) -> str:
+    return (
+        value.replace(":", "")
+        .replace("-", "")
+        .replace(".", "")
+        .replace("+", "")
+        .replace("Z", "Z")
+    )
+
+
 def capture_user_prompt(
     *,
     prompt: str,
@@ -87,12 +97,14 @@ def capture_user_prompt(
     related_brics: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
     db_path: Path | None = None,
+    captured_at: str | None = None,
+    event_id: str | None = None,
 ) -> dict[str, Any]:
     """Store exact prompt text locally and return only git-safe metadata."""
 
-    captured_at = utc_now_iso()
+    captured_at = captured_at or utc_now_iso()
     digest = _sha256(prompt)
-    event_id = f"prompt-{captured_at.replace(':', '').replace('-', '')}-{digest[:12]}"
+    event_id = event_id or f"prompt-{_event_id_timestamp(captured_at)}-{digest[:12]}"
     connection = _connect(db_path)
     connection.execute(
         """
@@ -210,6 +222,12 @@ def read_timeline_summary(db_path: Path | None = None) -> dict[str, Any]:
     packet_count = int(connection.execute("SELECT COUNT(*) FROM context_packets").fetchone()[0])
     last_event_at = connection.execute("SELECT MAX(captured_at) FROM hook_events").fetchone()[0] or ""
     last_packet_at = connection.execute("SELECT MAX(generated_at) FROM context_packets").fetchone()[0] or ""
+    source_type_counts = {
+        str(row[0]): int(row[1])
+        for row in connection.execute(
+            "SELECT source_type, COUNT(*) FROM hook_events GROUP BY source_type ORDER BY source_type"
+        ).fetchall()
+    }
     connection.close()
     return {
         "schema_version": TIMELINE_SCHEMA_VERSION,
@@ -218,4 +236,5 @@ def read_timeline_summary(db_path: Path | None = None) -> dict[str, Any]:
         "context_packet_count": packet_count,
         "last_event_at": last_event_at,
         "last_context_packet_at": last_packet_at,
+        "source_type_counts": source_type_counts,
     }
